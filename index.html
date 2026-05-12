@@ -11,10 +11,10 @@
 <meta property="og:type" content="website" />
 <meta property="og:title" content="내 투자 성향을 MBTI처럼 분석하기 — PDTI" />
 <meta property="og:description" content="80문항으로 풀어보는 투자 성향 테스트. 16가지 유형으로 분석하고 워런 버핏·캐시 우드 같은 닮은 대가와 추천 투자법까지." />
-<meta property="og:url" content="https://joshparkkorea-arch.github.io/PDTI/" />
-<meta property="og:site_name" content="PDTI" />
+<meta property="og:url" content="https://investstory.co.kr/" />
+<meta property="og:site_name" content="PDTI · investstory.co.kr" />
 <meta property="og:locale" content="ko_KR" />
-<meta property="og:image" content="https://joshparkkorea-arch.github.io/PDTI/preview.png" />
+<meta property="og:image" content="https://investstory.co.kr/preview.png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta property="og:image:alt" content="PDTI — Personality Driven Trading/Investment Index" />
@@ -23,7 +23,7 @@
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="내 투자 성향을 MBTI처럼 분석하기 — PDTI" />
 <meta name="twitter:description" content="80문항으로 풀어보는 투자 성향 테스트. 16가지 유형 + 닮은 대가 + 추천 투자법." />
-<meta name="twitter:image" content="https://joshparkkorea-arch.github.io/PDTI/preview.png" />
+<meta name="twitter:image" content="https://investstory.co.kr/preview.png" />
 
 <!-- Author -->
 <meta name="author" content="PARK, Chulwoong" />
@@ -699,40 +699,70 @@
     display: flex;
     justify-content: space-between;
     align-items: baseline;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
     font-family: var(--serif);
+    gap: 12px;
   }
   .axis-name {
     font-size: 15px;
     color: var(--text-secondary);
     letter-spacing: 0.08em;
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
   }
   .axis-name.dominant { color: var(--gold); font-weight: 600; }
+  .axis-pct {
+    font-family: var(--serif);
+    font-size: 17px;
+    font-weight: 500;
+    color: var(--text-muted);
+    letter-spacing: 0.02em;
+  }
+  .axis-name.dominant .axis-pct {
+    color: var(--gold);
+  }
   .axis-bar {
     height: 8px;
     background: var(--bg-card);
     position: relative;
     overflow: hidden;
+    display: flex;
   }
-  .axis-bar-fill {
-    position: absolute;
+  .axis-bar-left, .axis-bar-right {
     height: 100%;
-    background: var(--gold);
     transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .axis-bar-left {
+    background: var(--gold-soft);
+    opacity: 0.35;
+  }
+  .axis-bar-right {
+    background: var(--gold-soft);
+    opacity: 0.35;
+  }
+  .axis-bar-left.dominant,
+  .axis-bar-right.dominant {
+    background: var(--gold);
+    opacity: 1;
+    box-shadow: 0 0 12px var(--gold-glow);
   }
   .axis-bar-mid {
     position: absolute;
-    left: 50%; top: -2px;
-    width: 1px; height: 12px;
-    background: var(--text-muted);
-    opacity: 0.4;
+    left: 50%; top: -3px;
+    width: 1px; height: 14px;
+    background: var(--text-secondary);
+    opacity: 0.5;
+    z-index: 2;
   }
   .axis-score {
     font-family: var(--serif);
-    font-size: 13px;
+    font-size: 12px;
     color: var(--text-muted);
-    margin-top: 6px;
-    letter-spacing: 0.05em;
+    margin-top: 8px;
+    letter-spacing: 0.1em;
+    text-align: center;
+    text-transform: uppercase;
   }
 
   /* Strengths / Cautions */
@@ -2246,18 +2276,25 @@ function renderResult(result) {
           const firstLetter = a.key[0];
           const secondLetter = a.key[1];
           const dominantFirst = a.code === firstLetter;
-          const score = Math.round(a.score);
+          const leftScore = Math.round(a.score);       // first letter dominance %
+          const rightScore = 100 - leftScore;          // second letter dominance %
           return `
             <div class="axis-row">
               <div class="axis-labels">
-                <span class="axis-name ${dominantFirst ? 'dominant' : ''}">${firstLetter} · ${AXIS_LABELS[a.key][firstLetter][lang]}</span>
-                <span class="axis-name ${!dominantFirst ? 'dominant' : ''}">${AXIS_LABELS[a.key][secondLetter][lang]} · ${secondLetter}</span>
+                <span class="axis-name ${dominantFirst ? 'dominant' : ''}">
+                  <span>${firstLetter} · ${AXIS_LABELS[a.key][firstLetter][lang]}</span>
+                  <span class="axis-pct">${leftScore}%</span>
+                </span>
+                <span class="axis-name ${!dominantFirst ? 'dominant' : ''}">
+                  <span class="axis-pct">${rightScore}%</span>
+                  <span>${AXIS_LABELS[a.key][secondLetter][lang]} · ${secondLetter}</span>
+                </span>
               </div>
               <div class="axis-bar">
+                <div class="axis-bar-left ${dominantFirst ? 'dominant' : ''}" style="width: ${leftScore}%"></div>
+                <div class="axis-bar-right ${!dominantFirst ? 'dominant' : ''}" style="width: ${rightScore}%"></div>
                 <div class="axis-bar-mid"></div>
-                <div class="axis-bar-fill" style="width: ${score}%"></div>
               </div>
-              <div class="axis-score">${score} / 100</div>
             </div>
           `;
         }).join('')}
