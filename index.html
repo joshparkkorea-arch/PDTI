@@ -149,6 +149,12 @@
     align-items: center;
     gap: 10px;
   }
+  .topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .back-btn svg { width: 20px; height: 20px; }
   .icon-btn {
     width: 38px;
     height: 38px;
@@ -381,6 +387,207 @@
   .btn-primary::after { bottom: -4px; right: -4px; border-left: none; border-top: none; }
   .btn-primary:active { transform: scale(0.97); }
 
+  .btn-secondary {
+    background: transparent;
+    color: var(--gold);
+    border: none;
+    padding: 14px 24px;
+    margin-top: 16px;
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 16px;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    opacity: 0;
+    animation: revealUp 0.8s 1.6s forwards;
+    text-decoration: underline;
+    text-underline-offset: 6px;
+    text-decoration-color: var(--border-strong);
+  }
+  .btn-secondary:active { transform: scale(0.97); }
+
+  /* ========== GALLERY ========== */
+  .gallery-header {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+  .gallery-eyebrow {
+    font-size: 12px;
+    letter-spacing: 0.4em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .gallery-title {
+    font-family: var(--serif);
+    font-size: 38px;
+    font-weight: 400;
+    color: var(--text-primary);
+    line-height: 1.15;
+    margin-bottom: 12px;
+    letter-spacing: 0.01em;
+  }
+  .gallery-title em { color: var(--gold); font-style: italic; }
+  .gallery-desc {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 16px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    max-width: 320px;
+    margin: 0 auto;
+  }
+  .gallery-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  .gallery-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    padding: 14px 12px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+  .gallery-card::before, .gallery-card::after {
+    content: '';
+    position: absolute;
+    width: 8px; height: 8px;
+    border: 1px solid var(--gold);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .gallery-card::before { top: 4px; left: 4px; border-right: none; border-bottom: none; }
+  .gallery-card::after { bottom: 4px; right: 4px; border-left: none; border-top: none; }
+  .gallery-card:active {
+    transform: scale(0.97);
+    border-color: var(--gold);
+  }
+  .gallery-card:active::before, .gallery-card:active::after { opacity: 1; }
+
+  .gallery-portrait {
+    width: 100%;
+    aspect-ratio: 1;
+    margin-bottom: 12px;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid var(--border);
+    background: var(--bg-deep);
+  }
+  .portrait-sm {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.4s ease, filter 0.3s ease;
+  }
+  .gallery-card:active .portrait-sm {
+    transform: scale(1.05);
+    filter: brightness(1.1);
+  }
+  .gallery-code {
+    font-family: var(--serif);
+    font-size: 26px;
+    color: var(--gold);
+    letter-spacing: 0.08em;
+    margin-bottom: 4px;
+    font-weight: 500;
+  }
+  .gallery-name {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.3;
+    min-height: 34px;
+  }
+
+  /* ========== TYPE DETAIL ========== */
+  .detail-hero {
+    padding: 0 0 32px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+  .detail-hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: var(--noise);
+    opacity: 0.05;
+    pointer-events: none;
+    z-index: 1;
+  }
+  .detail-hero > * { position: relative; z-index: 2; }
+  .detail-portrait {
+    width: 100%;
+    aspect-ratio: 1;
+    margin-bottom: 28px;
+    overflow: hidden;
+    position: relative;
+  }
+  .detail-portrait::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 40%;
+    background: linear-gradient(to bottom, transparent, var(--bg-deep));
+    pointer-events: none;
+  }
+  .portrait-lg {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .detail-hero-text {
+    padding: 0 24px;
+  }
+  .detail-code {
+    font-family: var(--serif);
+    font-size: 64px;
+    line-height: 0.9;
+    color: var(--gold);
+    font-weight: 400;
+    letter-spacing: 0.05em;
+    margin-bottom: 10px;
+    text-shadow: 0 0 30px var(--gold-glow);
+  }
+  .detail-name {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 26px;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+  }
+  .detail-tagline {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 15px;
+    color: var(--text-secondary);
+    margin-bottom: 18px;
+  }
+  .detail-master {
+    display: inline-block;
+    padding: 6px 14px;
+    border: 1px solid var(--border-strong);
+    border-radius: 14px;
+    font-size: 11px;
+    color: var(--gold);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+  .detail-actions {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
   /* ========== QUESTION SCREEN ========== */
   .progress-wrap {
     margin-bottom: 28px;
@@ -597,11 +804,34 @@
 
   .result-hero {
     position: relative;
-    padding: 48px 24px 40px;
+    padding: 0 0 40px;
     background: linear-gradient(180deg, var(--bg-card) 0%, var(--bg-deep) 100%);
     border-bottom: 1px solid var(--border);
     overflow: hidden;
+    text-align: center;
   }
+  .result-portrait {
+    width: 100%;
+    aspect-ratio: 1;
+    overflow: hidden;
+    position: relative;
+    margin-bottom: 28px;
+  }
+  .result-portrait img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .result-portrait::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 40%;
+    background: linear-gradient(to bottom, transparent, var(--bg-deep));
+    pointer-events: none;
+  }
+  .result-hero-text { padding: 0 24px; }
   .result-hero::before {
     content: '';
     position: absolute;
@@ -1016,7 +1246,14 @@
 
   <!-- TOPBAR -->
   <div class="topbar">
-    <div class="brand">P<span class="brand-dot"></span>D<span class="brand-dot"></span>T<span class="brand-dot"></span>I</div>
+    <div class="topbar-left">
+      <button class="icon-btn back-btn" id="backBtn" aria-label="Back" style="display:none;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M15 18l-6-6 6-6"/>
+        </svg>
+      </button>
+      <div class="brand">P<span class="brand-dot"></span>D<span class="brand-dot"></span>T<span class="brand-dot"></span>I</div>
+    </div>
     <div class="topbar-actions">
       <button class="icon-btn" id="resetBtn" aria-label="Reset">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -1053,7 +1290,22 @@
     </p>
     <div class="landing-meta" data-i18n="landing.meta">7–10 MIN · 80 QUESTIONS</div>
     <button class="btn-primary" id="startBtn" data-i18n="landing.start">시작하기</button>
+    <button class="btn-secondary" id="galleryBtn" data-i18n="landing.gallery">유형 미리보기</button>
   </div>
+
+  <!-- GALLERY -->
+  <div class="screen" id="gallery">
+    <div class="gallery-header">
+      <div class="gallery-eyebrow" data-i18n="gallery.eyebrow">16가지 투자 유형</div>
+      <h2 class="gallery-title" data-i18n="gallery.title">당신은 어떤 유형?</h2>
+      <p class="gallery-desc" data-i18n="gallery.desc">각 카드를 눌러 16가지 투자 성향을 미리 둘러보세요.</p>
+    </div>
+    <div class="gallery-grid" id="galleryGrid"></div>
+    <button class="action-btn" id="galleryBackBtn" style="margin-top: 24px;" data-i18n="gallery.back">처음으로</button>
+  </div>
+
+  <!-- TYPE DETAIL -->
+  <div class="screen" id="typeDetail"></div>
 
   <!-- QUESTIONS -->
   <div class="screen" id="questions">
@@ -1132,6 +1384,13 @@ const I18N = {
     'landing.desc': '80개의 직관적 질문으로 당신의 투자 DNA를 16가지 유형으로 분석합니다. 150여 가지 실존 투자 전략 중 가장 잘 맞는 방법을 제안합니다.',
     'landing.meta': '7–10 분 · 80 문항',
     'landing.start': '시작하기',
+    'landing.gallery': '유형 미리보기',
+    'gallery.eyebrow': '16가지 투자 유형',
+    'gallery.title': '당신은 어떤 유형?',
+    'gallery.desc': '각 카드를 눌러 16가지 투자 성향을 미리 둘러보세요.',
+    'gallery.back': '처음으로',
+    'gallery.detail.back': '갤러리로',
+    'gallery.detail.cta': '나도 테스트 하러 가기',
     'nav.prev': '이전',
     'nav.next': '다음',
     'nav.submit': '결과 보기',
@@ -1171,6 +1430,13 @@ const I18N = {
     'landing.desc': '80 intuitive questions decode your investment DNA into 16 archetypes, matched to over 150 real-world investment strategies.',
     'landing.meta': '7–10 MIN · 80 QUESTIONS',
     'landing.start': 'Begin',
+    'landing.gallery': 'View All Types',
+    'gallery.eyebrow': '16 Investor Archetypes',
+    'gallery.title': 'Which One Are You?',
+    'gallery.desc': 'Tap any card to preview each of the 16 investor types.',
+    'gallery.back': 'Back to Start',
+    'gallery.detail.back': 'Back to Gallery',
+    'gallery.detail.cta': 'Take the Test',
     'nav.prev': 'Back',
     'nav.next': 'Next',
     'nav.submit': 'See Result',
@@ -1210,6 +1476,13 @@ const I18N = {
     'landing.desc': '80 questions intuitives décodent votre ADN d\'investisseur en 16 archétypes, associés à plus de 150 stratégies d\'investissement réelles.',
     'landing.meta': '7–10 MIN · 80 QUESTIONS',
     'landing.start': 'Commencer',
+    'landing.gallery': 'Voir tous les Types',
+    'gallery.eyebrow': '16 Archétypes d\'Investisseur',
+    'gallery.title': 'Lequel Êtes-Vous ?',
+    'gallery.desc': 'Appuyez sur une carte pour prévisualiser chacun des 16 types.',
+    'gallery.back': 'Retour',
+    'gallery.detail.back': 'Retour à la Galerie',
+    'gallery.detail.cta': 'Faire le Test',
     'nav.prev': 'Retour',
     'nav.next': 'Suivant',
     'nav.submit': 'Voir le Résultat',
@@ -1249,6 +1522,13 @@ const I18N = {
     'landing.desc': '80問の直感的な質問であなたの投資DNAを16タイプに分析。150以上の実在する投資戦略の中から最適な手法を提案します。',
     'landing.meta': '7–10 分 · 80 問',
     'landing.start': '始める',
+    'landing.gallery': '全タイプを見る',
+    'gallery.eyebrow': '16の投資家アーキタイプ',
+    'gallery.title': 'あなたはどのタイプ？',
+    'gallery.desc': 'カードをタップして16タイプをプレビュー。',
+    'gallery.back': '最初に戻る',
+    'gallery.detail.back': 'ギャラリーへ',
+    'gallery.detail.cta': 'テストを受ける',
     'nav.prev': '戻る',
     'nav.next': '次へ',
     'nav.submit': '結果を見る',
@@ -2070,6 +2350,11 @@ function showScreen(id) {
   document.getElementById(id).classList.add('active');
   document.getElementById('navFixed').style.display = (id === 'questions') ? 'flex' : 'none';
   document.getElementById('footer').style.display = (id === 'questions') ? 'none' : 'block';
+  // Back button visible on gallery and detail screens
+  const backBtn = document.getElementById('backBtn');
+  if (backBtn) {
+    backBtn.style.display = (id === 'gallery' || id === 'typeDetail') ? 'flex' : 'none';
+  }
   window.scrollTo({ top: 0, behavior: 'instant' });
   document.documentElement.scrollTop = 0;
   document.body.scrollTop = 0;
@@ -2091,11 +2376,123 @@ document.querySelectorAll('.lang-option').forEach(opt => {
     document.getElementById('langDropdown').classList.remove('open');
     // Re-render current screen contents
     if (document.getElementById('questions').classList.contains('active')) renderQuestions();
+    if (document.getElementById('gallery').classList.contains('active')) renderGallery();
     if (document.getElementById('result').classList.contains('active')) {
       const last = state.history[state.history.length - 1];
       if (last) renderResult(last);
     }
   });
+});
+
+// ============== PORTRAITS ==============
+// Image-based portraits: one cinematic illustration per type.
+// Images are hosted alongside index.html as /portraits/{CODE}.jpg
+function portraitImg(typeCode, size) {
+  // size: 'sm' (gallery card) or 'lg' (detail hero)
+  return `<img src="portraits/${typeCode}.jpg" alt="${typeCode}" class="portrait-${size}" loading="lazy" />`;
+}
+
+// ============== GALLERY ==============
+function renderGallery() {
+  const lang = state.lang;
+  const grid = document.getElementById('galleryGrid');
+  const order = ['RPVL','RAGH','RAGL','RAVL','RPGL','SPGL','SAVL','SAGL',
+                 'RPVH','SPVL','SAVH','SAGH','SPGH','RAVH','RPGH','SPVH'];
+  grid.innerHTML = order.map(code => {
+    const type = TYPES[code];
+    return `
+      <div class="gallery-card" data-code="${code}">
+        <div class="gallery-portrait">
+          ${portraitImg(code, 'sm')}
+        </div>
+        <div class="gallery-code">${code}</div>
+        <div class="gallery-name">${type.name[lang]}</div>
+      </div>
+    `;
+  }).join('');
+
+  grid.querySelectorAll('.gallery-card').forEach(card => {
+    card.addEventListener('click', () => {
+      renderTypeDetail(card.dataset.code);
+      showScreen('typeDetail');
+    });
+  });
+}
+
+function renderTypeDetail(code) {
+  const type = TYPES[code];
+  const lang = state.lang;
+  const container = document.getElementById('typeDetail');
+
+  container.innerHTML = `
+    <div class="detail-hero" style="background: ${type.bg};">
+      <div class="detail-portrait">
+        ${portraitImg(code, 'lg')}
+      </div>
+      <div class="detail-hero-text">
+      <div class="detail-code">${code}</div>
+      <div class="detail-name">${type.name[lang]}</div>
+      <div class="detail-tagline">"${type.tagline[lang]}"</div>
+      <div class="detail-master">${t('result.master')} · ${type.master}</div>
+      </div>
+    </div>
+
+    <div class="result-section">
+      <div class="section-title">${t('result.profile')}</div>
+      <div class="section-desc">${type.profile[lang]}</div>
+    </div>
+
+    <div class="result-section">
+      <div class="section-title">${t('result.strengths')}</div>
+      <div class="point-list">
+        ${type.strengths[lang].map(s => `<div class="point-item">${s}</div>`).join('')}
+      </div>
+    </div>
+
+    <div class="result-section">
+      <div class="section-title">${t('result.cautions')}</div>
+      <div class="point-list">
+        ${type.cautions[lang].map(s => `<div class="point-item caution">${s}</div>`).join('')}
+      </div>
+    </div>
+
+    <div class="result-section">
+      <div class="section-title">${t('result.methods')}</div>
+      <div class="method-grid">
+        ${type.methods[lang].map(m => `<div class="method-tag">${m}</div>`).join('')}
+      </div>
+    </div>
+
+    <div class="detail-actions">
+      <button class="action-btn primary" id="detailCtaBtn">${t('gallery.detail.cta')}</button>
+      <button class="action-btn" id="detailBackBtn">${t('gallery.detail.back')}</button>
+    </div>
+  `;
+
+  document.getElementById('detailCtaBtn').addEventListener('click', () => {
+    showScreen('questions');
+    renderQuestions();
+  });
+  document.getElementById('detailBackBtn').addEventListener('click', () => {
+    showScreen('gallery');
+  });
+}
+
+document.getElementById('galleryBtn').addEventListener('click', () => {
+  renderGallery();
+  showScreen('gallery');
+});
+document.getElementById('galleryBackBtn').addEventListener('click', () => {
+  showScreen('landing');
+});
+
+document.getElementById('backBtn').addEventListener('click', () => {
+  // If on type detail, go back to gallery; if on gallery, go back to landing
+  if (document.getElementById('typeDetail').classList.contains('active')) {
+    showScreen('gallery');
+  } else if (document.getElementById('gallery').classList.contains('active')) {
+    showScreen('landing');
+  }
 });
 
 // ============== LANDING ==============
@@ -2262,11 +2659,14 @@ function renderResult(result) {
 
   container.innerHTML = `
     <div class="result-hero" id="resultHero" style="background: ${type.bg};">
+      <div class="result-portrait">${portraitImg(result.code, 'lg')}</div>
+      <div class="result-hero-text">
       <div class="result-eyebrow">${t('result.eyebrow')}</div>
       <div class="result-code">${result.code}</div>
       <div class="result-name">${type.name[lang]}</div>
       <div class="result-tagline">"${type.tagline[lang]}"</div>
       <div class="result-master">${t('result.master')} · ${type.master}</div>
+      </div>
     </div>
 
     <div class="result-section">
