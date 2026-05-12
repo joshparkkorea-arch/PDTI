@@ -1,0 +1,2471 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="theme-color" content="#0a0e1a" />
+<title>PDTI — Personality Driven Trading/Investment Index</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Noto+Sans+JP:wght@300;400;500;700&family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+JP:wght@400;500;700&family=Noto+Serif+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  :root {
+    --bg-deep: #0a0e1a;
+    --bg-elev: #131826;
+    --bg-card: #1a2033;
+    --bg-card-2: #20283f;
+    --border: rgba(212, 175, 55, 0.15);
+    --border-strong: rgba(212, 175, 55, 0.35);
+    --text-primary: #f0ead6;
+    --text-secondary: #b8b099;
+    --text-muted: #6b6855;
+    --gold: #d4af37;
+    --gold-soft: #b8941f;
+    --gold-glow: rgba(212, 175, 55, 0.2);
+    --emerald: #4a7c59;
+    --crimson: #8b3a3a;
+    --noise: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E");
+    --serif: 'Cormorant Garamond', 'Noto Serif KR', 'Noto Serif JP', serif;
+    --sans: 'Noto Sans KR', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
+  html, body {
+    background: var(--bg-deep);
+    color: var(--text-primary);
+    font-family: var(--sans);
+    font-weight: 300;
+    font-size: 16px;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.6;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: var(--noise);
+    opacity: 0.03;
+    pointer-events: none;
+    z-index: 1;
+    mix-blend-mode: overlay;
+  }
+
+  body::after {
+    content: '';
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(ellipse at top, rgba(212, 175, 55, 0.08), transparent 50%),
+      radial-gradient(ellipse at bottom, rgba(74, 124, 89, 0.05), transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  #app {
+    position: relative;
+    z-index: 2;
+    max-width: 480px;
+    margin: 0 auto;
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ========== TOP BAR ========== */
+  .topbar {
+    position: sticky;
+    top: 0;
+    background: rgba(10, 14, 26, 0.92);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 50;
+  }
+  .brand {
+    font-family: var(--serif);
+    font-size: 26px;
+    font-weight: 500;
+    letter-spacing: 0.15em;
+    color: var(--gold);
+  }
+  .brand-dot {
+    display: inline-block;
+    width: 4px; height: 4px;
+    background: var(--gold);
+    border-radius: 50%;
+    margin: 0 6px;
+    vertical-align: middle;
+  }
+  .lang-btn {
+    background: transparent;
+    border: 1px solid var(--border-strong);
+    color: var(--text-primary);
+    padding: 8px 14px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-family: var(--sans);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    letter-spacing: 0.05em;
+  }
+  .lang-btn:active { background: var(--bg-card); }
+
+  .topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .icon-btn {
+    width: 38px;
+    height: 38px;
+    border: 1px solid var(--border-strong);
+    border-radius: 50%;
+    background: transparent;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+    transition: all 0.2s;
+  }
+  .icon-btn svg { width: 18px; height: 18px; }
+  .icon-btn:active {
+    background: var(--gold);
+    color: var(--bg-deep);
+    border-color: var(--gold);
+    transform: scale(0.92);
+  }
+
+  /* ========== RESET MODAL ========== */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 14, 26, 0.85);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 300;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: fadeIn 0.25s ease;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal {
+    background: var(--bg-card);
+    border: 1px solid var(--border-strong);
+    padding: 32px 24px 24px;
+    max-width: 360px;
+    width: 100%;
+    text-align: center;
+    position: relative;
+  }
+  .modal::before, .modal::after {
+    content: '';
+    position: absolute;
+    width: 10px; height: 10px;
+    border: 1px solid var(--gold);
+  }
+  .modal::before { top: -5px; left: -5px; border-right: none; border-bottom: none; }
+  .modal::after { bottom: -5px; right: -5px; border-left: none; border-top: none; }
+  .modal-icon {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 18px;
+    border: 1px solid var(--gold);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--gold);
+  }
+  .modal-icon svg { width: 22px; height: 22px; }
+  .modal-text {
+    font-family: var(--serif);
+    font-size: 17px;
+    line-height: 1.5;
+    color: var(--text-primary);
+    margin-bottom: 24px;
+  }
+  .modal-actions { display: flex; gap: 10px; }
+  .modal-btn {
+    flex: 1;
+    padding: 14px;
+    border: 1px solid var(--border-strong);
+    background: transparent;
+    color: var(--text-primary);
+    font-family: var(--sans);
+    font-size: 13px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .modal-btn.danger {
+    background: var(--gold);
+    color: var(--bg-deep);
+    border-color: var(--gold);
+    font-weight: 600;
+  }
+
+  .lang-dropdown {
+    position: absolute;
+    top: 56px;
+    right: 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-strong);
+    border-radius: 12px;
+    overflow: hidden;
+    min-width: 140px;
+    box-shadow: 0 12px 36px rgba(0,0,0,0.5);
+    z-index: 100;
+    display: none;
+  }
+  .lang-dropdown.open { display: block; }
+  .lang-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 18px;
+    cursor: pointer;
+    font-size: 15px;
+    border-bottom: 1px solid var(--border);
+  }
+  .lang-option:last-child { border-bottom: none; }
+  .lang-option:active { background: var(--bg-card-2); }
+  .lang-option.active { color: var(--gold); }
+
+  /* ========== SCREENS ========== */
+  .screen { display: none; flex: 1; padding: 24px 20px 100px; animation: fadeIn 0.5s ease; }
+  .screen.active { display: flex; flex-direction: column; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ========== LANDING ========== */
+  #landing { justify-content: center; align-items: center; text-align: center; min-height: calc(100vh - 60px); min-height: calc(100dvh - 60px); }
+  .landing-eyebrow {
+    font-family: var(--sans);
+    font-size: 13px;
+    letter-spacing: 0.4em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 24px;
+    opacity: 0;
+    animation: revealUp 0.8s 0.2s forwards;
+  }
+  .landing-title {
+    font-family: var(--serif);
+    font-size: 88px;
+    line-height: 0.9;
+    font-weight: 400;
+    letter-spacing: 0.02em;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+    opacity: 0;
+    animation: revealUp 0.8s 0.4s forwards;
+  }
+  .landing-title em {
+    font-style: italic;
+    color: var(--gold);
+    font-weight: 300;
+  }
+  .landing-subtitle {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 20px;
+    color: var(--text-secondary);
+    margin-bottom: 40px;
+    max-width: 340px;
+    line-height: 1.4;
+    opacity: 0;
+    animation: revealUp 0.8s 0.6s forwards;
+  }
+  .ornament {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin: 32px 0;
+    opacity: 0;
+    animation: revealUp 0.8s 0.8s forwards;
+  }
+  .ornament-line { width: 60px; height: 1px; background: var(--border-strong); }
+  .ornament-diamond {
+    width: 6px; height: 6px;
+    background: var(--gold);
+    transform: rotate(45deg);
+  }
+  .landing-desc {
+    font-size: 16px;
+    color: var(--text-secondary);
+    max-width: 340px;
+    margin-bottom: 40px;
+    line-height: 1.7;
+    opacity: 0;
+    animation: revealUp 0.8s 1.0s forwards;
+  }
+  .landing-meta {
+    font-size: 13px;
+    color: var(--text-muted);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 32px;
+    opacity: 0;
+    animation: revealUp 0.8s 1.2s forwards;
+  }
+  @keyframes revealUp {
+    to { opacity: 1; }
+  }
+
+  .btn-primary {
+    background: var(--gold);
+    color: var(--bg-deep);
+    border: none;
+    padding: 18px 52px;
+    border-radius: 0;
+    font-family: var(--sans);
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.3s;
+    opacity: 0;
+    animation: revealUp 0.8s 1.4s forwards;
+  }
+  .btn-primary::before, .btn-primary::after {
+    content: '';
+    position: absolute;
+    width: 8px; height: 8px;
+    border: 1px solid var(--gold);
+  }
+  .btn-primary::before { top: -4px; left: -4px; border-right: none; border-bottom: none; }
+  .btn-primary::after { bottom: -4px; right: -4px; border-left: none; border-top: none; }
+  .btn-primary:active { transform: scale(0.97); }
+
+  /* ========== QUESTION SCREEN ========== */
+  .progress-wrap {
+    margin-bottom: 28px;
+  }
+  .progress-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+  }
+  .progress-page {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 15px;
+    color: var(--text-secondary);
+    letter-spacing: 0.1em;
+  }
+  .progress-pct {
+    font-family: var(--serif);
+    font-size: 26px;
+    color: var(--gold);
+    font-weight: 500;
+    letter-spacing: 0.05em;
+  }
+  .progress-bar {
+    height: 2px;
+    background: var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+  .progress-fill {
+    position: absolute;
+    top: 0; left: 0;
+    height: 100%;
+    background: linear-gradient(90deg, var(--gold), var(--gold-soft));
+    width: 0%;
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .progress-fill::after {
+    content: '';
+    position: absolute;
+    right: 0; top: -2px;
+    width: 6px; height: 6px;
+    background: var(--gold);
+    border-radius: 50%;
+    box-shadow: 0 0 12px var(--gold);
+  }
+
+  .question-list {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+  .question-card {
+    padding: 20px 0;
+    border-bottom: 1px solid var(--border);
+    animation: slideUp 0.4s ease backwards;
+  }
+  .question-card:last-child { border-bottom: none; }
+  .question-card:nth-child(1) { animation-delay: 0.05s; }
+  .question-card:nth-child(2) { animation-delay: 0.1s; }
+  .question-card:nth-child(3) { animation-delay: 0.15s; }
+  .question-card:nth-child(4) { animation-delay: 0.2s; }
+  .question-card:nth-child(5) { animation-delay: 0.25s; }
+  .question-card:nth-child(6) { animation-delay: 0.3s; }
+  .question-card:nth-child(7) { animation-delay: 0.35s; }
+  .question-card:nth-child(8) { animation-delay: 0.4s; }
+  .question-card:nth-child(9) { animation-delay: 0.45s; }
+  .question-card:nth-child(10) { animation-delay: 0.5s; }
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .q-number {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 15px;
+    color: var(--gold);
+    margin-bottom: 10px;
+    letter-spacing: 0.1em;
+  }
+  .q-text {
+    font-family: var(--serif);
+    font-size: 22px;
+    line-height: 1.4;
+    color: var(--text-primary);
+    margin-bottom: 22px;
+    font-weight: 400;
+  }
+  .q-scale {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+  }
+  .q-option {
+    aspect-ratio: 1;
+    border: 1px solid var(--border-strong);
+    background: transparent;
+    border-radius: 50%;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.25s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--serif);
+    font-size: 32px;
+    font-weight: 500;
+    line-height: 1;
+    color: var(--text-secondary);
+    max-width: 60px;
+    margin: 0 auto;
+    width: 100%;
+  }
+  .q-option:active { transform: scale(0.9); }
+  .q-option.selected {
+    background: var(--gold);
+    border-color: var(--gold);
+    color: var(--bg-deep);
+    box-shadow: 0 0 20px var(--gold-glow);
+  }
+  .q-option[data-val="1"], .q-option[data-val="5"] { border-width: 2px; }
+  .scale-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 14px;
+    padding: 0 4px;
+  }
+  .scale-label {
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    letter-spacing: 0.03em;
+    text-align: center;
+    flex: 1;
+  }
+  .scale-label:first-child { text-align: left; color: var(--gold); }
+  .scale-label:last-child { text-align: right; color: var(--gold); }
+
+  /* ========== NAV BUTTONS ========== */
+  .nav-fixed {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 480px;
+    background: linear-gradient(to top, var(--bg-deep) 60%, transparent);
+    padding: 20px 20px 24px;
+    display: flex;
+    gap: 12px;
+    z-index: 40;
+  }
+  .nav-btn {
+    flex: 1;
+    padding: 16px;
+    border: 1px solid var(--border-strong);
+    background: var(--bg-card);
+    color: var(--text-primary);
+    font-family: var(--sans);
+    font-size: 14px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .nav-btn:active { transform: scale(0.97); }
+  .nav-btn:disabled { opacity: 0.3; pointer-events: none; }
+  .nav-btn.primary {
+    background: var(--gold);
+    color: var(--bg-deep);
+    border-color: var(--gold);
+    font-weight: 600;
+  }
+
+  /* ========== LOADING ========== */
+  #loading {
+    justify-content: center;
+    align-items: center;
+    min-height: calc(100vh - 60px);
+    min-height: calc(100dvh - 60px);
+  }
+  .loading-orb {
+    width: 80px; height: 80px;
+    border: 1px solid var(--gold);
+    border-radius: 50%;
+    position: relative;
+    animation: spin 3s linear infinite;
+    margin-bottom: 32px;
+  }
+  .loading-orb::before, .loading-orb::after {
+    content: '';
+    position: absolute;
+    border: 1px solid var(--gold-soft);
+    border-radius: 50%;
+  }
+  .loading-orb::before { inset: 8px; opacity: 0.6; animation: spin 2s linear infinite reverse; }
+  .loading-orb::after { inset: 18px; background: var(--gold); opacity: 0.4; animation: pulse 1.5s ease infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
+  .loading-text {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 20px;
+    color: var(--text-secondary);
+    text-align: center;
+    letter-spacing: 0.1em;
+  }
+
+  /* ========== RESULT ========== */
+  #result { padding: 0 0 60px; }
+
+  .result-hero {
+    position: relative;
+    padding: 48px 24px 40px;
+    background: linear-gradient(180deg, var(--bg-card) 0%, var(--bg-deep) 100%);
+    border-bottom: 1px solid var(--border);
+    overflow: hidden;
+  }
+  .result-hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: var(--noise);
+    opacity: 0.05;
+    pointer-events: none;
+  }
+  .result-hero-bg {
+    position: absolute;
+    inset: 0;
+    opacity: 0.25;
+    background-size: cover;
+    background-position: center;
+    z-index: 0;
+  }
+  .result-hero > * { position: relative; z-index: 2; }
+
+  .result-eyebrow {
+    font-size: 13px;
+    letter-spacing: 0.4em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .result-code {
+    font-family: var(--serif);
+    font-size: 92px;
+    line-height: 0.9;
+    color: var(--gold);
+    font-weight: 400;
+    letter-spacing: 0.04em;
+    margin-bottom: 14px;
+    text-shadow: 0 0 40px var(--gold-glow);
+  }
+  .result-name {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 32px;
+    color: var(--text-primary);
+    font-weight: 400;
+    margin-bottom: 10px;
+    line-height: 1.2;
+  }
+  .result-tagline {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 18px;
+    color: var(--text-secondary);
+    margin-bottom: 24px;
+  }
+  .result-master {
+    display: inline-block;
+    padding: 8px 16px;
+    border: 1px solid var(--border-strong);
+    border-radius: 16px;
+    font-size: 12px;
+    color: var(--gold);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+
+  .result-section {
+    padding: 32px 24px;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-title {
+    font-family: var(--serif);
+    font-size: 14px;
+    color: var(--gold);
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    margin-bottom: 22px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-title::before {
+    content: '';
+    width: 24px; height: 1px;
+    background: var(--gold);
+  }
+  .section-desc {
+    font-family: var(--serif);
+    font-size: 19px;
+    line-height: 1.65;
+    color: var(--text-primary);
+    font-weight: 300;
+  }
+
+  /* Axis bars */
+  .axis-list { display: flex; flex-direction: column; gap: 18px; }
+  .axis-row { }
+  .axis-labels {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 6px;
+    font-family: var(--serif);
+  }
+  .axis-name {
+    font-size: 15px;
+    color: var(--text-secondary);
+    letter-spacing: 0.08em;
+  }
+  .axis-name.dominant { color: var(--gold); font-weight: 600; }
+  .axis-bar {
+    height: 8px;
+    background: var(--bg-card);
+    position: relative;
+    overflow: hidden;
+  }
+  .axis-bar-fill {
+    position: absolute;
+    height: 100%;
+    background: var(--gold);
+    transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .axis-bar-mid {
+    position: absolute;
+    left: 50%; top: -2px;
+    width: 1px; height: 12px;
+    background: var(--text-muted);
+    opacity: 0.4;
+  }
+  .axis-score {
+    font-family: var(--serif);
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 6px;
+    letter-spacing: 0.05em;
+  }
+
+  /* Strengths / Cautions */
+  .point-list { display: flex; flex-direction: column; gap: 16px; }
+  .point-item {
+    padding-left: 26px;
+    position: relative;
+    font-size: 16px;
+    line-height: 1.65;
+    color: var(--text-primary);
+  }
+  .point-item::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 12px;
+    width: 14px; height: 1px;
+    background: var(--gold);
+  }
+  .point-item.caution::before { background: var(--crimson); }
+
+  /* Investment methods */
+  .method-grid { display: flex; flex-direction: column; gap: 8px; }
+  .method-tag {
+    padding: 16px 20px;
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    font-family: var(--sans);
+    font-size: 16px;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .method-tag::before {
+    content: counter(method);
+    counter-increment: method;
+    font-family: var(--serif);
+    font-style: italic;
+    color: var(--gold);
+    font-size: 15px;
+    min-width: 24px;
+  }
+  .method-grid { counter-reset: method; }
+
+  /* Allocation pie */
+  .alloc-wrap {
+    position: relative;
+    width: 240px;
+    height: 240px;
+    margin: 0 auto 24px;
+  }
+  .alloc-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .alloc-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 15px;
+  }
+  .alloc-row:last-child { border-bottom: none; }
+  .alloc-left { display: flex; align-items: center; gap: 12px; }
+  .alloc-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .alloc-pct {
+    font-family: var(--serif);
+    font-size: 18px;
+    color: var(--gold);
+    font-weight: 500;
+  }
+
+  /* Meta info */
+  .meta-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .meta-card {
+    padding: 18px;
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+  }
+  .meta-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .meta-value {
+    font-family: var(--serif);
+    font-size: 18px;
+    color: var(--text-primary);
+  }
+  .meta-sub {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 6px;
+  }
+
+  /* Action buttons */
+  .result-actions {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .action-btn {
+    padding: 16px;
+    border: 1px solid var(--border-strong);
+    background: var(--bg-card);
+    color: var(--text-primary);
+    font-family: var(--sans);
+    font-size: 14px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+  .action-btn.primary {
+    background: var(--gold);
+    color: var(--bg-deep);
+    border-color: var(--gold);
+    font-weight: 600;
+  }
+
+  /* Disclaimer */
+  .disclaimer {
+    padding: 18px 24px;
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.65;
+    text-align: center;
+    font-style: italic;
+    font-family: var(--serif);
+  }
+
+  /* ========== FOOTER ========== */
+  .footer {
+    padding: 32px 24px 40px;
+    text-align: center;
+    border-top: 1px solid var(--border);
+    margin-top: auto;
+  }
+  .footer-ornament {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .footer-ornament .ornament-line { width: 30px; }
+  .footer-copy {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+    letter-spacing: 0.05em;
+  }
+  .footer-year {
+    font-family: var(--serif);
+    font-size: 12px;
+    color: var(--text-muted);
+    letter-spacing: 0.3em;
+    margin-bottom: 16px;
+  }
+  .footer-insta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 20px;
+    border: 1px solid var(--border-strong);
+    color: var(--gold);
+    text-decoration: none;
+    font-size: 12px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    border-radius: 22px;
+    transition: all 0.3s;
+  }
+  .footer-insta:active {
+    background: var(--gold);
+    color: var(--bg-deep);
+  }
+  .footer-insta svg { width: 14px; height: 14px; }
+
+  /* History */
+  .history-list { padding: 0 24px 24px; display: flex; flex-direction: column; gap: 10px; }
+  .history-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 18px;
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    font-size: 15px;
+  }
+  .history-code { font-family: var(--serif); color: var(--gold); font-size: 20px; letter-spacing: 0.05em; }
+  .history-date { color: var(--text-muted); font-size: 13px; }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--bg-card);
+    color: var(--text-primary);
+    padding: 14px 22px;
+    border: 1px solid var(--gold);
+    font-size: 14px;
+    letter-spacing: 0.1em;
+    opacity: 0;
+    transition: all 0.3s;
+    z-index: 200;
+    pointer-events: none;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* Save backdrop */
+  .save-card {
+    position: fixed;
+    top: -9999px;
+    left: -9999px;
+    width: 480px;
+    background: var(--bg-deep);
+    z-index: -1;
+  }
+
+  @media (max-width: 380px) {
+    .landing-title { font-size: 70px; }
+    .result-code { font-size: 72px; }
+    .q-text { font-size: 19px; }
+    .q-option { font-size: 28px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="brand">P<span class="brand-dot"></span>D<span class="brand-dot"></span>T<span class="brand-dot"></span>I</div>
+    <div class="topbar-actions">
+      <button class="icon-btn" id="resetBtn" aria-label="Reset">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12a9 9 0 1 0 3-6.7L3 8"/>
+          <path d="M3 3v5h5"/>
+        </svg>
+      </button>
+      <button class="lang-btn" id="langBtn">
+        <span id="langFlag">🇰🇷</span>
+        <span id="langLabel">KO</span>
+        <span style="font-size:9px;">▼</span>
+      </button>
+    </div>
+    <div class="lang-dropdown" id="langDropdown">
+      <div class="lang-option active" data-lang="ko"><span>🇰🇷</span><span>한국어</span></div>
+      <div class="lang-option" data-lang="en"><span>🇺🇸</span><span>English</span></div>
+      <div class="lang-option" data-lang="fr"><span>🇫🇷</span><span>Français</span></div>
+      <div class="lang-option" data-lang="ja"><span>🇯🇵</span><span>日本語</span></div>
+    </div>
+  </div>
+
+  <!-- LANDING -->
+  <div class="screen active" id="landing">
+    <div class="landing-eyebrow" data-i18n="landing.eyebrow">투자 성향 분석</div>
+    <h1 class="landing-title">P<em>D</em>T<em>I</em></h1>
+    <div class="landing-subtitle" data-i18n="landing.subtitle">Personality Driven Trading/Investment Index</div>
+    <div class="ornament">
+      <span class="ornament-line"></span>
+      <span class="ornament-diamond"></span>
+      <span class="ornament-line"></span>
+    </div>
+    <p class="landing-desc" data-i18n="landing.desc">
+      80개의 직관적 질문으로 당신의 투자 DNA를 16가지 유형으로 분석합니다. 150가지 실존 투자 전략 중 가장 잘 맞는 방법을 제안합니다.
+    </p>
+    <div class="landing-meta" data-i18n="landing.meta">7–10 MIN · 80 QUESTIONS</div>
+    <button class="btn-primary" id="startBtn" data-i18n="landing.start">시작하기</button>
+  </div>
+
+  <!-- QUESTIONS -->
+  <div class="screen" id="questions">
+    <div class="progress-wrap">
+      <div class="progress-meta">
+        <span class="progress-page" id="progressPage">Page 1 / 8</span>
+        <span class="progress-pct" id="progressPct">0%</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    </div>
+    <div class="question-list" id="questionList"></div>
+  </div>
+
+  <!-- LOADING -->
+  <div class="screen" id="loading">
+    <div class="loading-orb"></div>
+    <div class="loading-text" data-i18n="loading.text">당신의 투자 성향을<br/>분석하고 있습니다</div>
+  </div>
+
+  <!-- RESULT -->
+  <div class="screen" id="result"></div>
+
+  <!-- NAV (questions only) -->
+  <div class="nav-fixed" id="navFixed" style="display:none;">
+    <button class="nav-btn" id="prevBtn" data-i18n="nav.prev">이전</button>
+    <button class="nav-btn primary" id="nextBtn" data-i18n="nav.next">다음</button>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer" id="footer">
+    <div class="footer-ornament">
+      <span class="ornament-line"></span>
+      <span class="ornament-diamond"></span>
+      <span class="ornament-line"></span>
+    </div>
+    <div class="footer-copy">© PARK, Chulwoong</div>
+    <div class="footer-year">MMXXVI</div>
+    <a href="https://www.instagram.com/joshcwpark" target="_blank" rel="noopener" class="footer-insta">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="18" cy="6" r="1" fill="currentColor"/></svg>
+      <span data-i18n="footer.insta">@joshcwpark</span>
+    </a>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="save-card" id="saveCard"></div>
+
+<div class="modal-backdrop" id="resetModal">
+  <div class="modal">
+    <div class="modal-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 12a9 9 0 1 0 3-6.7L3 8"/>
+        <path d="M3 3v5h5"/>
+      </svg>
+    </div>
+    <div class="modal-text" id="resetModalText">답변과 진행 상황이 모두 삭제됩니다. 계속할까요?</div>
+    <div class="modal-actions">
+      <button class="modal-btn" id="resetCancel" data-i18n="nav.prev">이전</button>
+      <button class="modal-btn danger" id="resetConfirm" data-i18n="action.restart">다시 풀기</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   PDTI — Personality Driven Trading/Investment Index
+   © 2026 PARK, Chulwoong
+============================================================ */
+
+// ============== I18N ==============
+const I18N = {
+  ko: {
+    'landing.eyebrow': '투자 성향 분석',
+    'landing.subtitle': 'Personality Driven Trading/Investment Index',
+    'landing.desc': '80개의 직관적 질문으로 당신의 투자 DNA를 16가지 유형으로 분석합니다. 150여 가지 실존 투자 전략 중 가장 잘 맞는 방법을 제안합니다.',
+    'landing.meta': '7–10 분 · 80 문항',
+    'landing.start': '시작하기',
+    'nav.prev': '이전',
+    'nav.next': '다음',
+    'nav.submit': '결과 보기',
+    'loading.text': '당신의 투자 성향을<br/>분석하고 있습니다',
+    'progress.page': '페이지 {n} / 8',
+    'result.eyebrow': '당신의 투자 성향',
+    'result.master': '닮은 대가',
+    'result.axes': '4축 분석',
+    'result.profile': '성향 프로필',
+    'result.strengths': '강점',
+    'result.cautions': '주의할 점',
+    'result.methods': '추천 투자 방법',
+    'result.allocation': '추천 자산 배분',
+    'result.meta': '운용 가이드',
+    'result.checkup': '점검 주기',
+    'result.complement': '궁합 좋은 유형',
+    'result.opposite': '대척점',
+    'result.style': '투자 스타일',
+    'action.save': '결과 이미지 저장',
+    'action.share': '링크 복사',
+    'action.history': '이력 보기',
+    'action.restart': '다시 풀기',
+    'disclaimer': '본 결과는 일반 가이드이며 개별 재무 상황을 반영하지 않습니다. 투자 결정은 본인의 책임이며, 과거 수익이 미래를 보장하지 않습니다.',
+    'footer.insta': '@joshcwpark',
+    'toast.saved': '이미지 저장 완료',
+    'toast.copied': '링크 복사됨',
+    'toast.incomplete': '모든 문항에 답해 주세요',
+    'scale.1': '매우 아니다',
+    'scale.5': '매우 그렇다',
+    'history.title': '이전 결과',
+    'reset.confirm': '답변과 진행 상황이 모두 삭제됩니다. 계속할까요?',
+    'reset.done': '초기화되었습니다'
+  },
+  en: {
+    'landing.eyebrow': 'Investment Personality',
+    'landing.subtitle': 'Personality Driven Trading/Investment Index',
+    'landing.desc': '80 intuitive questions decode your investment DNA into 16 archetypes, matched to over 150 real-world investment strategies.',
+    'landing.meta': '7–10 MIN · 80 QUESTIONS',
+    'landing.start': 'Begin',
+    'nav.prev': 'Back',
+    'nav.next': 'Next',
+    'nav.submit': 'See Result',
+    'loading.text': 'Analyzing your<br/>investment personality',
+    'progress.page': 'Page {n} / 8',
+    'result.eyebrow': 'Your Investment Type',
+    'result.master': 'Closest Master',
+    'result.axes': 'Four Axes',
+    'result.profile': 'Profile',
+    'result.strengths': 'Strengths',
+    'result.cautions': 'Cautions',
+    'result.methods': 'Recommended Methods',
+    'result.allocation': 'Suggested Allocation',
+    'result.meta': 'Operating Guide',
+    'result.checkup': 'Review Cadence',
+    'result.complement': 'Complementary',
+    'result.opposite': 'Opposite',
+    'result.style': 'Style',
+    'action.save': 'Save as Image',
+    'action.share': 'Copy Link',
+    'action.history': 'View History',
+    'action.restart': 'Take Again',
+    'disclaimer': 'This result is general guidance only and does not reflect individual financial circumstances. Investment decisions are your responsibility; past returns do not guarantee future results.',
+    'footer.insta': '@joshcwpark',
+    'toast.saved': 'Image saved',
+    'toast.copied': 'Link copied',
+    'toast.incomplete': 'Please answer all questions',
+    'scale.1': 'Strongly Disagree',
+    'scale.5': 'Strongly Agree',
+    'history.title': 'Previous Results',
+    'reset.confirm': 'All your answers and progress will be erased. Continue?',
+    'reset.done': 'Reset complete'
+  },
+  fr: {
+    'landing.eyebrow': 'Profil d\'Investissement',
+    'landing.subtitle': 'Personality Driven Trading/Investment Index',
+    'landing.desc': '80 questions intuitives décodent votre ADN d\'investisseur en 16 archétypes, associés à plus de 150 stratégies d\'investissement réelles.',
+    'landing.meta': '7–10 MIN · 80 QUESTIONS',
+    'landing.start': 'Commencer',
+    'nav.prev': 'Retour',
+    'nav.next': 'Suivant',
+    'nav.submit': 'Voir le Résultat',
+    'loading.text': 'Analyse de votre<br/>profil d\'investisseur',
+    'progress.page': 'Page {n} / 8',
+    'result.eyebrow': 'Votre Type d\'Investisseur',
+    'result.master': 'Maître Proche',
+    'result.axes': 'Quatre Axes',
+    'result.profile': 'Profil',
+    'result.strengths': 'Forces',
+    'result.cautions': 'Précautions',
+    'result.methods': 'Méthodes Recommandées',
+    'result.allocation': 'Allocation Suggérée',
+    'result.meta': 'Guide Opérationnel',
+    'result.checkup': 'Fréquence de Suivi',
+    'result.complement': 'Complémentaire',
+    'result.opposite': 'Opposé',
+    'result.style': 'Style',
+    'action.save': 'Enregistrer l\'Image',
+    'action.share': 'Copier le Lien',
+    'action.history': 'Historique',
+    'action.restart': 'Recommencer',
+    'disclaimer': 'Ce résultat est un guide général et ne reflète pas votre situation financière individuelle. Les décisions d\'investissement relèvent de votre responsabilité; les performances passées ne garantissent pas les résultats futurs.',
+    'footer.insta': '@joshcwpark',
+    'toast.saved': 'Image enregistrée',
+    'toast.copied': 'Lien copié',
+    'toast.incomplete': 'Veuillez répondre à toutes les questions',
+    'scale.1': 'Pas du tout d\'accord',
+    'scale.5': 'Tout à fait d\'accord',
+    'history.title': 'Résultats Précédents',
+    'reset.confirm': 'Toutes vos réponses et progrès seront effacés. Continuer ?',
+    'reset.done': 'Réinitialisation terminée'
+  },
+  ja: {
+    'landing.eyebrow': '投資性向診断',
+    'landing.subtitle': 'Personality Driven Trading/Investment Index',
+    'landing.desc': '80問の直感的な質問であなたの投資DNAを16タイプに分析。150以上の実在する投資戦略の中から最適な手法を提案します。',
+    'landing.meta': '7–10 分 · 80 問',
+    'landing.start': '始める',
+    'nav.prev': '戻る',
+    'nav.next': '次へ',
+    'nav.submit': '結果を見る',
+    'loading.text': 'あなたの投資性向を<br/>分析しています',
+    'progress.page': 'ページ {n} / 8',
+    'result.eyebrow': 'あなたの投資タイプ',
+    'result.master': '近い巨匠',
+    'result.axes': '4軸分析',
+    'result.profile': 'プロフィール',
+    'result.strengths': '強み',
+    'result.cautions': '注意点',
+    'result.methods': '推奨投資手法',
+    'result.allocation': '推奨資産配分',
+    'result.meta': '運用ガイド',
+    'result.checkup': '点検周期',
+    'result.complement': '相性の良いタイプ',
+    'result.opposite': '対極',
+    'result.style': '投資スタイル',
+    'action.save': '画像を保存',
+    'action.share': 'リンクをコピー',
+    'action.history': '履歴を見る',
+    'action.restart': 'もう一度',
+    'disclaimer': '本結果は一般的なガイドであり、個別の財務状況を反映するものではありません。投資判断はご自身の責任であり、過去の収益は将来を保証しません。',
+    'footer.insta': '@joshcwpark',
+    'toast.saved': '画像を保存しました',
+    'toast.copied': 'リンクをコピーしました',
+    'toast.incomplete': 'すべての質問にお答えください',
+    'scale.1': '全くそう思わない',
+    'scale.5': '非常にそう思う',
+    'history.title': '過去の結果',
+    'reset.confirm': 'すべての回答と進行状況が削除されます。続けますか？',
+    'reset.done': 'リセットしました'
+  }
+};
+
+// ============== AXES ==============
+// R/S = Risk/Stability, A/P = Active/Passive, G/V = Growth/Value, H/L = sHort/Long-term
+
+// ============== QUESTIONS (80) ==============
+// axis: 'RS'|'AP'|'GV'|'HL', dir: which letter higher score points to
+const QUESTIONS = [
+  // Page 1: warmup mix
+  { axis:'RS', dir:'R', text:{ko:'고수익 가능성이 있다면 큰 손실 위험도 감수할 수 있다.',en:'I can accept high loss risk if there is potential for high returns.',fr:'J\'accepte un risque de perte élevé si le potentiel de gain est important.',ja:'高収益の可能性があれば大きな損失リスクも受け入れられる。'} },
+  { axis:'HL', dir:'L', text:{ko:'한 번 매수하면 최소 5년은 보유할 생각으로 산다.',en:'When I buy, I plan to hold for at least 5 years.',fr:'Quand j\'achète, je prévois de garder au moins 5 ans.',ja:'一度買ったら最低5年は保有するつもりで購入する。'} },
+  { axis:'GV', dir:'G', text:{ko:'아직 수익이 없어도 미래 성장 가능성이 큰 기업이 좋다.',en:'I prefer companies with high growth potential even without current profits.',fr:'Je préfère les entreprises à fort potentiel de croissance même sans profits actuels.',ja:'まだ利益がなくても将来の成長性が高い企業が好きだ。'} },
+  { axis:'AP', dir:'P', text:{ko:'주식은 사놓고 잊어버리는 게 최고다.',en:'The best strategy is to buy stocks and forget about them.',fr:'La meilleure stratégie est d\'acheter et d\'oublier.',ja:'株は買って忘れるのが一番だ。'} },
+  { axis:'RS', dir:'S', text:{ko:'원금 손실은 어떤 경우에도 최소화하고 싶다.',en:'I want to minimize principal loss under any circumstances.',fr:'Je veux minimiser les pertes en capital en toutes circonstances.',ja:'元本損失はいかなる場合も最小化したい。'} },
+  { axis:'AP', dir:'A', text:{ko:'시장 상황에 따라 포지션을 자주 조정한다.',en:'I frequently adjust positions based on market conditions.',fr:'J\'ajuste fréquemment mes positions selon les conditions du marché.',ja:'市場の状況に応じてポジションを頻繁に調整する。'} },
+  { axis:'GV', dir:'V', text:{ko:'저평가된 기업의 주식이 매력적이다.',en:'Undervalued company stocks appeal to me most.',fr:'Les actions sous-évaluées m\'attirent le plus.',ja:'割安な企業の株式に魅力を感じる。'} },
+  { axis:'HL', dir:'H', text:{ko:'며칠~몇 주 안에 수익을 보는 매매가 즐겁다.',en:'I enjoy trading that generates returns within days or weeks.',fr:'J\'apprécie le trading qui génère des gains en jours ou semaines.',ja:'数日〜数週間で利益を得る取引が楽しい。'} },
+  { axis:'RS', dir:'R', text:{ko:'레버리지나 신용 거래를 활용할 의향이 있다.',en:'I am willing to use leverage or margin trading.',fr:'Je suis prêt à utiliser l\'effet de levier ou le trading sur marge.',ja:'レバレッジや信用取引を活用する意思がある。'} },
+  { axis:'AP', dir:'A', text:{ko:'매일 시세를 확인하는 것이 즐겁다.',en:'I enjoy checking market prices daily.',fr:'J\'aime vérifier les cours du marché quotidiennement.',ja:'毎日相場をチェックするのが楽しい。'} },
+
+  // Page 2: risk tolerance
+  { axis:'RS', dir:'S', text:{ko:'30% 평가손실이 나면 잠을 잘 못 잘 것 같다.',en:'A 30% paper loss would keep me up at night.',fr:'Une perte de 30% en valeur me ferait perdre le sommeil.',ja:'30%の評価損が出たら眠れなくなりそうだ。'} },
+  { axis:'RS', dir:'R', text:{ko:'변동성이 큰 자산일수록 흥미롭다.',en:'The more volatile an asset, the more interesting it is to me.',fr:'Plus un actif est volatil, plus il me semble intéressant.',ja:'ボラティリティが大きい資産ほど面白い。'} },
+  { axis:'RS', dir:'S', text:{ko:'예적금처럼 보장된 수익률이 마음 편하다.',en:'Guaranteed returns like deposits make me feel at ease.',fr:'Les rendements garantis comme les dépôts me rassurent.',ja:'預貯金のような保証された利回りが気楽だ。'} },
+  { axis:'RS', dir:'R', text:{ko:'한 종목에 집중 투자해서 큰 수익을 노려본 적이 있다.',en:'I have concentrated in a single stock hoping for big gains.',fr:'J\'ai déjà concentré sur une seule action en espérant des gains importants.',ja:'一銘柄に集中投資して大きな利益を狙ったことがある。'} },
+  { axis:'RS', dir:'S', text:{ko:'분산 투자는 투자의 기본이라고 생각한다.',en:'Diversification is the foundation of investing.',fr:'La diversification est le fondement de l\'investissement.',ja:'分散投資は投資の基本だと思う。'} },
+  { axis:'RS', dir:'R', text:{ko:'신규 상장 코인이나 IPO에 관심이 많다.',en:'I am very interested in new coin listings or IPOs.',fr:'Je m\'intéresse beaucoup aux nouvelles cotations de coins ou IPOs.',ja:'新規上場コインやIPOに関心が高い。'} },
+  { axis:'RS', dir:'S', text:{ko:'\'잃지 않는 것이 가장 중요하다\'는 워런 버핏의 말에 공감한다.',en:'I agree with Buffett: "The first rule is don\'t lose money."',fr:'Je suis d\'accord avec Buffett: "La première règle est de ne pas perdre d\'argent."',ja:'「失わないことが最も重要」というバフェットの言葉に共感する。'} },
+  { axis:'RS', dir:'R', text:{ko:'시장 폭락은 매수 기회로 보인다.',en:'Market crashes look like buying opportunities to me.',fr:'Les krachs boursiers me semblent être des opportunités d\'achat.',ja:'市場暴落は買いのチャンスに見える。'} },
+  { axis:'RS', dir:'S', text:{ko:'보수적이라는 평가를 많이 듣는다.',en:'People often describe me as conservative.',fr:'On me décrit souvent comme prudent.',ja:'保守的だとよく言われる。'} },
+  { axis:'RS', dir:'R', text:{ko:'고위험 고수익이 인생의 묘미다.',en:'High risk, high reward is the spice of life.',fr:'Haut risque, haute récompense — c\'est le sel de la vie.',ja:'ハイリスク・ハイリターンこそ人生の醍醐味だ。'} },
+
+  // Page 3: active vs passive
+  { axis:'AP', dir:'A', text:{ko:'시장보다 더 나은 수익을 낼 수 있다고 믿는다.',en:'I believe I can beat the market.',fr:'Je crois pouvoir battre le marché.',ja:'市場以上の収益を出せると信じている。'} },
+  { axis:'AP', dir:'P', text:{ko:'장기적으로 인덱스를 이기는 건 거의 불가능하다.',en:'Long-term, beating the index is nearly impossible.',fr:'Sur le long terme, battre l\'indice est presque impossible.',ja:'長期的にインデックスを上回るのはほぼ不可能だ。'} },
+  { axis:'AP', dir:'A', text:{ko:'차트를 분석하는 시간이 즐겁다.',en:'I enjoy analyzing charts.',fr:'J\'aime analyser les graphiques.',ja:'チャートを分析する時間が楽しい。'} },
+  { axis:'AP', dir:'P', text:{ko:'자동 적립식 ETF가 가장 합리적인 투자다.',en:'Automated DCA into ETFs is the most rational approach.',fr:'L\'investissement programmé en ETF est l\'approche la plus rationnelle.',ja:'自動積立のETFが最も合理的な投資だ。'} },
+  { axis:'AP', dir:'A', text:{ko:'시장 타이밍을 잡는 것이 중요하다.',en:'Market timing matters.',fr:'Le timing du marché est important.',ja:'マーケットタイミングを掴むことが重要だ。'} },
+  { axis:'AP', dir:'P', text:{ko:'매매 수수료와 세금을 줄이는 게 수익률에 큰 영향을 준다.',en:'Reducing fees and taxes significantly impacts returns.',fr:'Réduire les frais et taxes impacte fortement les rendements.',ja:'売買手数料と税金を抑えることが収益率に大きく影響する。'} },
+  { axis:'AP', dir:'A', text:{ko:'기회를 놓치는 것이 손실보다 더 아쉽다.',en:'Missing an opportunity hurts more than taking a loss.',fr:'Manquer une opportunité me peine plus qu\'une perte.',ja:'機会を逃すことが損失よりも惜しい。'} },
+  { axis:'AP', dir:'P', text:{ko:'\'아무것도 하지 않기\'가 최선의 전략일 때가 많다.',en:'"Do nothing" is often the best strategy.',fr:'"Ne rien faire" est souvent la meilleure stratégie.',ja:'「何もしない」が最善の戦略であることが多い。'} },
+  { axis:'AP', dir:'A', text:{ko:'리서치하고 발굴하는 과정이 투자의 핵심이다.',en:'Research and discovery is the heart of investing.',fr:'La recherche et la découverte sont au cœur de l\'investissement.',ja:'リサーチと発掘のプロセスが投資の核心だ。'} },
+  { axis:'AP', dir:'P', text:{ko:'\'시간을 시장에 두기\'가 \'시장 타이밍\'보다 낫다.',en:'Time in the market beats timing the market.',fr:'Le temps sur le marché surpasse le timing du marché.',ja:'「時間を市場に置く」ことが「タイミング」より優れている。'} },
+
+  // Page 4: analysis style
+  { axis:'AP', dir:'A', text:{ko:'데이터와 숫자를 기반으로 결정하는 편이다.',en:'I tend to decide based on data and numbers.',fr:'Je décide plutôt sur la base de données et de chiffres.',ja:'データと数字に基づいて決定する方だ。'} },
+  { axis:'GV', dir:'V', text:{ko:'PER, PBR, 배당수익률을 자주 본다.',en:'I frequently check PER, PBR, and dividend yield.',fr:'Je regarde fréquemment le PER, PBR et le rendement du dividende.',ja:'PER、PBR、配当利回りをよくチェックする。'} },
+  { axis:'GV', dir:'G', text:{ko:'미래 비전이 있는 회사라면 현재 가격은 덜 중요하다.',en:'If a company has vision, current price matters less.',fr:'Si une entreprise a une vision, le prix actuel importe moins.',ja:'未来のビジョンがある会社なら現在の価格はそれほど重要ではない。'} },
+  { axis:'AP', dir:'A', text:{ko:'경제 뉴스와 거시 지표를 자주 챙겨본다.',en:'I regularly follow economic news and macro indicators.',fr:'Je suis régulièrement l\'actualité économique et les indicateurs macro.',ja:'経済ニュースとマクロ指標をよく追う。'} },
+  { axis:'AP', dir:'P', text:{ko:'뉴스를 끊고 사는 게 투자에 더 좋다.',en:'Tuning out the news is better for investing.',fr:'Ignorer l\'actualité est meilleur pour investir.',ja:'ニュースを断った方が投資には良い。'} },
+  { axis:'GV', dir:'V', text:{ko:'\'안전 마진\'이라는 개념이 마음에 든다.',en:'I like the concept of "margin of safety."',fr:'J\'aime le concept de "marge de sécurité."',ja:'「安全余裕(セーフティマージン)」という概念が気に入っている。'} },
+  { axis:'GV', dir:'G', text:{ko:'10년 뒤 산업 지형을 바꿀 기업에 끌린다.',en:'I am drawn to companies that will reshape industries in 10 years.',fr:'Je suis attiré par les entreprises qui transformeront les industries dans 10 ans.',ja:'10年後の産業地図を変える企業に惹かれる。'} },
+  { axis:'AP', dir:'A', text:{ko:'\'정보 우위\'가 있다고 느낄 때 자신감이 생긴다.',en:'I feel confident when I have an information edge.',fr:'Je me sens confiant quand j\'ai un avantage informationnel.',ja:'「情報優位」を感じると自信が湧く。'} },
+  { axis:'GV', dir:'V', text:{ko:'재무제표를 읽는 것이 어렵지 않다.',en:'Reading financial statements is not difficult for me.',fr:'Lire les états financiers n\'est pas difficile pour moi.',ja:'財務諸表を読むのは難しくない。'} },
+  { axis:'GV', dir:'G', text:{ko:'질적 분석(스토리, 경영진, 시장)이 양적 분석보다 중요하다.',en:'Qualitative analysis matters more than quantitative.',fr:'L\'analyse qualitative compte plus que la quantitative.',ja:'定性分析(ストーリー、経営陣、市場)が定量分析より重要だ。'} },
+
+  // Page 5: growth vs value
+  { axis:'GV', dir:'G', text:{ko:'AI, 바이오, 우주 산업에 끌린다.',en:'I am drawn to AI, biotech, and space industries.',fr:'L\'IA, la biotech et le spatial m\'attirent.',ja:'AI、バイオ、宇宙産業に惹かれる。'} },
+  { axis:'GV', dir:'V', text:{ko:'배당을 꾸준히 주는 회사가 좋은 회사다.',en:'Companies that pay steady dividends are good companies.',fr:'Les entreprises qui versent des dividendes réguliers sont de bonnes entreprises.',ja:'配当を継続的に出す会社が良い会社だ。'} },
+  { axis:'GV', dir:'G', text:{ko:'\'PER 100배\'라도 성장성이 있으면 살 수 있다.',en:'I can buy at PER 100 if growth potential is strong.',fr:'Je peux acheter à un PER de 100 si le potentiel de croissance est fort.',ja:'PER100倍でも成長性があれば買える。'} },
+  { axis:'GV', dir:'V', text:{ko:'시장이 외면한 우량 기업을 발굴하는 것이 즐겁다.',en:'I enjoy finding overlooked quality companies.',fr:'J\'aime dénicher des entreprises de qualité oubliées.',ja:'市場から見放された優良企業を発掘するのが楽しい。'} },
+  { axis:'GV', dir:'G', text:{ko:'전기차, 친환경, 신재생에너지의 미래를 믿는다.',en:'I believe in the future of EVs and renewable energy.',fr:'Je crois en l\'avenir des VE et des énergies renouvelables.',ja:'EV、環境、再生可能エネルギーの未来を信じる。'} },
+  { axis:'GV', dir:'V', text:{ko:'경기 사이클을 활용한 매매가 매력적이다.',en:'Trading economic cycles appeals to me.',fr:'Le trading des cycles économiques m\'attire.',ja:'景気サイクルを活用した取引が魅力的だ。'} },
+  { axis:'GV', dir:'G', text:{ko:'\'미래를 사는 것\'이 투자의 본질이다.',en:'Investing is buying the future.',fr:'Investir, c\'est acheter l\'avenir.',ja:'「未来を買うこと」が投資の本質だ。'} },
+  { axis:'GV', dir:'V', text:{ko:'아무리 좋아도 비싸게 사면 안 된다.',en:'No matter how good, never overpay.',fr:'Aussi bonne soit-elle, ne jamais surpayer.',ja:'いくら良くても高く買ってはいけない。'} },
+  { axis:'GV', dir:'G', text:{ko:'캐시 우드(ARK) 같은 혁신 투자자에게 영감을 받는다.',en:'I am inspired by innovation investors like Cathie Wood.',fr:'Je m\'inspire d\'investisseurs en innovation comme Cathie Wood.',ja:'キャシー・ウッド(ARK)のような革新投資家に刺激を受ける。'} },
+  { axis:'GV', dir:'V', text:{ko:'벤저민 그레이엄이나 워런 버핏의 책을 즐겨 본다.',en:'I enjoy reading Graham or Buffett.',fr:'J\'aime lire Graham ou Buffett.',ja:'ベンジャミン・グレアムやバフェットの本をよく読む。'} },
+
+  // Page 6: time horizon
+  { axis:'HL', dir:'L', text:{ko:'복리의 힘을 가장 신뢰한다.',en:'I trust the power of compounding above all.',fr:'Je fais confiance au pouvoir des intérêts composés avant tout.',ja:'複利の力を最も信頼する。'} },
+  { axis:'HL', dir:'H', text:{ko:'단기 매매로 빠르게 수익을 실현하는 게 좋다.',en:'I prefer quick gains through short-term trading.',fr:'Je préfère les gains rapides via le trading court terme.',ja:'短期売買で素早く利益を実現するのが好きだ。'} },
+  { axis:'HL', dir:'L', text:{ko:'10년 이상 보유할 종목을 발굴하는 데 시간을 쓴다.',en:'I spend time finding 10+ year holdings.',fr:'Je passe du temps à trouver des placements pour 10+ ans.',ja:'10年以上保有する銘柄を発掘するのに時間を使う。'} },
+  { axis:'HL', dir:'H', text:{ko:'손익을 자주 확인하는 편이다.',en:'I check my P&L often.',fr:'Je vérifie souvent mes gains et pertes.',ja:'損益を頻繁にチェックする方だ。'} },
+  { axis:'HL', dir:'L', text:{ko:'\'은퇴 자금\' 관점에서 투자를 본다.',en:'I think of investing in terms of retirement.',fr:'Je vois l\'investissement sous l\'angle de la retraite.',ja:'「老後資金」の観点から投資を見る。'} },
+  { axis:'HL', dir:'H', text:{ko:'한 달 이상 같은 종목을 들고 있으면 답답하다.',en:'Holding one stock over a month feels stagnant.',fr:'Tenir une action plus d\'un mois me semble stagnant.',ja:'1ヶ月以上同じ銘柄を持つと退屈に感じる。'} },
+  { axis:'HL', dir:'L', text:{ko:'좋은 기업이라면 단기 가격 변동은 무시할 수 있다.',en:'For great companies, I can ignore short-term volatility.',fr:'Pour les grandes entreprises, j\'ignore la volatilité court terme.',ja:'良い企業なら短期の価格変動は無視できる。'} },
+  { axis:'HL', dir:'H', text:{ko:'스윙 트레이딩 또는 데이트레이딩에 관심이 있다.',en:'I am interested in swing or day trading.',fr:'Je m\'intéresse au swing trading ou au day trading.',ja:'スイングトレードやデイトレードに関心がある。'} },
+  { axis:'HL', dir:'L', text:{ko:'주식은 \'사업의 일부를 소유하는 것\'이다.',en:'A stock is owning a piece of a business.',fr:'Une action, c\'est posséder une part d\'entreprise.',ja:'株式は「事業の一部を所有すること」だ。'} },
+  { axis:'HL', dir:'H', text:{ko:'\'언제 사고 언제 파느냐\'가 가장 중요하다.',en:'When to buy and sell matters most.',fr:'Quand acheter et vendre est ce qui compte le plus.',ja:'「いつ買っていつ売るか」が最も重要だ。'} },
+
+  // Page 7: loss/crisis response
+  { axis:'RS', dir:'R', text:{ko:'-20% 종목을 보면 추가 매수를 고려한다.',en:'Down 20%? I consider buying more.',fr:'En baisse de 20% ? J\'envisage d\'acheter plus.',ja:'-20%の銘柄を見ると追加買いを検討する。'} },
+  { axis:'RS', dir:'S', text:{ko:'손절매 규칙은 반드시 지킨다.',en:'I always follow stop-loss rules.',fr:'Je respecte toujours les règles de stop-loss.',ja:'損切りルールは必ず守る。'} },
+  { axis:'AP', dir:'P', text:{ko:'시장이 폭락해도 적립식을 멈추지 않는다.',en:'I don\'t stop DCA even in a crash.',fr:'Je n\'arrête pas l\'investissement programmé même en cas de krach.',ja:'市場が暴落しても積立を止めない。'} },
+  { axis:'AP', dir:'A', text:{ko:'시장이 과열되면 일부 현금화한다.',en:'I take some cash off the table when markets overheat.',fr:'Je prends des liquidités quand le marché surchauffe.',ja:'市場が過熱したら一部現金化する。'} },
+  { axis:'HL', dir:'L', text:{ko:'손실은 \'평가손실\'일 뿐, 매도해야 진짜 손실이다.',en:'A paper loss is only a loss when you sell.',fr:'Une perte latente n\'est une perte qu\'à la vente.',ja:'損失は「評価損」に過ぎず、売って初めて本当の損失だ。'} },
+  { axis:'HL', dir:'H', text:{ko:'\'기다리는 것\'보다 \'대응하는 것\'이 낫다.',en:'Responding beats waiting.',fr:'Réagir vaut mieux qu\'attendre.',ja:'「待つ」より「対応する」方が良い。'} },
+  { axis:'RS', dir:'R', text:{ko:'위기일수록 더 큰 베팅의 기회다.',en:'A crisis is the time for bigger bets.',fr:'La crise est le moment des plus gros paris.',ja:'危機ほど大きな賭けのチャンスだ。'} },
+  { axis:'RS', dir:'S', text:{ko:'시장이 불안하면 안전 자산 비중을 늘린다.',en:'In uncertain markets, I increase safe assets.',fr:'Dans les marchés incertains, j\'augmente les actifs sûrs.',ja:'市場が不安定な時は安全資産の比重を増やす。'} },
+  { axis:'GV', dir:'V', text:{ko:'위기 때 좋은 기업이 싸게 나오는 게 기회다.',en:'A crisis brings great companies on sale.',fr:'Une crise met les meilleures entreprises en solde.',ja:'危機の時に良い企業が安く出るのがチャンスだ。'} },
+  { axis:'GV', dir:'G', text:{ko:'위기에도 미래 트렌드는 변하지 않는다.',en:'Even in a crisis, future trends remain.',fr:'Même en crise, les tendances futures restent.',ja:'危機でも未来のトレンドは変わらない。'} },
+
+  // Page 8: integrated scenarios
+  { axis:'RS', dir:'R', text:{ko:'친구가 \'대박날 종목\'을 알려주면 진지하게 검토한다.',en:'If a friend recommends a hot stock, I seriously consider it.',fr:'Si un ami me recommande une action chaude, je la considère sérieusement.',ja:'友人が「大化け銘柄」を教えてくれたら真剣に検討する。'} },
+  { axis:'AP', dir:'A', text:{ko:'시장의 비효율을 찾아내는 게 투자의 묘미다.',en:'Finding market inefficiencies is the joy of investing.',fr:'Trouver les inefficiences du marché est la joie de l\'investissement.',ja:'市場の非効率を見つけ出すのが投資の醍醐味だ。'} },
+  { axis:'GV', dir:'G', text:{ko:'\'경제적 해자\'보다 \'시장 선점\'이 더 중요하다.',en:'Market dominance matters more than economic moats.',fr:'La domination du marché compte plus que les douves économiques.',ja:'「経済的堀」より「市場先取り」がより重要だ。'} },
+  { axis:'HL', dir:'L', text:{ko:'투자 후 5년 뒤 결과만 평가하면 된다.',en:'I only judge results after 5 years.',fr:'Je n\'évalue les résultats qu\'après 5 ans.',ja:'投資後5年経ってから結果を評価すれば良い。'} },
+  { axis:'RS', dir:'S', text:{ko:'\'잠 못 자는 투자\'는 하지 않는다.',en:'I don\'t do investments that keep me awake.',fr:'Je ne fais pas d\'investissements qui m\'empêchent de dormir.',ja:'「眠れない投資」はしない。'} },
+  { axis:'AP', dir:'P', text:{ko:'\'단순함이 정교함의 극치\'다.',en:'Simplicity is the ultimate sophistication.',fr:'La simplicité est la sophistication ultime.',ja:'「シンプルさが洗練の極致」だ。'} },
+  { axis:'GV', dir:'V', text:{ko:'PER이 낮을수록 매력적이다.',en:'The lower the PER, the more attractive.',fr:'Plus le PER est bas, plus c\'est attractif.',ja:'PERが低いほど魅力的だ。'} },
+  { axis:'HL', dir:'H', text:{ko:'\'모멘텀\'이 있는 종목을 선호한다.',en:'I prefer stocks with momentum.',fr:'Je préfère les actions avec du momentum.',ja:'「モメンタム」のある銘柄を好む。'} },
+  { axis:'RS', dir:'R', text:{ko:'\'한 방\'을 노리는 투자가 흥미롭다.',en:'Going for a "home run" investment excites me.',fr:'Viser un "coup de circuit" me passionne.',ja:'「一発」を狙う投資が面白い。'} },
+  { axis:'AP', dir:'A', text:{ko:'시장보다 똑똑하다고 자부한다.',en:'I pride myself on being smarter than the market.',fr:'Je suis fier d\'être plus intelligent que le marché.',ja:'市場より賢いと自負している。'} }
+];
+
+// ============== 16 TYPES ==============
+// Each type with name, tagline, master, profile, strengths, cautions, methods, allocation, checkup, complement, opposite, bgGradient
+const TYPES = {
+  RAGH: {
+    name: {ko:'공격형 트레이더',en:'Aggressive Trader',fr:'Trader Agressif',ja:'攻撃型トレーダー'},
+    tagline: {ko:'시장을 사냥하는 매',en:'The Hawk Who Hunts Markets',fr:'Le Faucon Chasseur',ja:'市場を狩る鷹'},
+    master: 'George Soros',
+    bg: 'linear-gradient(135deg, #2a1a1a 0%, #1a0e0e 100%)',
+    profile: {
+      ko:'당신은 시장의 모든 움직임을 기회로 보는 사냥꾼입니다. 단기 모멘텀과 변동성을 활용해 빠른 수익을 추구하며, 위험을 두려워하지 않습니다. 직관과 분석이 결합된 결단력 있는 결정을 내립니다.',
+      en:'You are a hunter who sees every market move as opportunity. You pursue rapid gains through momentum and volatility, unafraid of risk. Your decisions combine intuition and analysis.',
+      fr:'Vous êtes un chasseur qui voit chaque mouvement du marché comme une opportunité. Vous recherchez des gains rapides via le momentum et la volatilité.',
+      ja:'あなたは市場のあらゆる動きを機会と捉えるハンターです。短期モメンタムとボラティリティを活用して素早い利益を追求します。'
+    },
+    strengths: {
+      ko:['빠른 의사결정과 실행력','시장 변화에 민감한 직관','손실을 빠르게 인정하고 다음 기회로'],
+      en:['Rapid decision and execution','Keen intuition for market shifts','Quick acceptance of losses, on to next'],
+      fr:['Décision et exécution rapides','Intuition aiguë du marché','Acceptation rapide des pertes'],
+      ja:['迅速な意思決定と実行力','市場変化への鋭い直感','損失を素早く認め次へ進む']
+    },
+    cautions: {
+      ko:['과잉 매매로 인한 수수료/세금 누수','잦은 손실 시 감정적 보복매매','단기 시야로 큰 흐름을 놓침'],
+      en:['Excessive trading drains fees and taxes','Revenge trading after losses','Short view misses big moves'],
+      fr:['Trading excessif érode les rendements','Trading vengeur après pertes','Vue courte rate les grands mouvements'],
+      ja:['過剰取引による手数料・税金漏れ','損失時の感情的リベンジ取引','短期視点で大きな流れを逃す']
+    },
+    methods: {
+      ko:['데이트레이딩 / 스캘핑','모멘텀 매매','옵션 매수 (콜/풋)','레버리지 ETF','크립토 단기 트레이딩','선물 / CFD','브레이크아웃 매매'],
+      en:['Day Trading / Scalping','Momentum Trading','Long Options (Calls/Puts)','Leveraged ETFs','Crypto Short-term','Futures / CFDs','Breakout Trading'],
+      fr:['Day Trading / Scalping','Trading de Momentum','Options Longues','ETF à Effet de Levier','Crypto Court Terme','Futures / CFDs','Trading de Breakout'],
+      ja:['デイトレード/スキャルピング','モメンタム取引','オプション買い','レバレッジETF','暗号資産短期','先物/CFD','ブレイクアウト取引']
+    },
+    allocation: [
+      {label:{ko:'단기 매매 자금',en:'Trading Capital',fr:'Capital de Trading',ja:'短期取引資金'}, pct:50, color:'#d4af37'},
+      {label:{ko:'성장주 ETF',en:'Growth ETFs',fr:'ETF Croissance',ja:'成長株ETF'}, pct:20, color:'#b8941f'},
+      {label:{ko:'암호화폐',en:'Crypto',fr:'Crypto',ja:'暗号資産'}, pct:15, color:'#8b6914'},
+      {label:{ko:'현금/단기채',en:'Cash/ST Bonds',fr:'Liquidités',ja:'現金/短期債'}, pct:15, color:'#5a4410'}
+    ],
+    checkup: {ko:'매일',en:'Daily',fr:'Quotidien',ja:'毎日'},
+    complement: 'SPVL', opposite: 'SPVL'
+  },
+  RAGL: {
+    name: {ko:'비전 투자자',en:'Vision Investor',fr:'Investisseur Visionnaire',ja:'ビジョン投資家'},
+    tagline: {ko:'미래를 사는 사람',en:'The One Who Buys Tomorrow',fr:'Celui Qui Achète Demain',ja:'未来を買う者'},
+    master: 'Cathie Wood',
+    bg: 'linear-gradient(135deg, #1a2240 0%, #0d1428 100%)',
+    profile: {
+      ko:'당신은 10년 뒤 세상을 그려보고 그곳으로 자본을 보내는 비전 투자자입니다. 혁신과 파괴적 기술에 끌리며, 단기 변동성보다 거대한 트렌드를 봅니다.',
+      en:'You envision the world a decade ahead and direct capital there. You are drawn to innovation and disruption, seeing trends over volatility.',
+      fr:'Vous imaginez le monde dans dix ans et y orientez votre capital. L\'innovation vous attire.',
+      ja:'あなたは10年後の世界を描きそこに資本を送るビジョン投資家です。革新と破壊的技術に惹かれます。'
+    },
+    strengths: {
+      ko:['장기 트렌드를 읽는 통찰력','확신을 가지고 인내하는 능력','혁신 기업을 일찍 발견'],
+      en:['Insight into long-term trends','Patience born of conviction','Early discovery of innovators'],
+      fr:['Vision des tendances long terme','Patience par conviction','Découverte précoce d\'innovateurs'],
+      ja:['長期トレンドを読む洞察力','確信を持って耐える力','革新企業を早期に発見']
+    },
+    cautions: {
+      ko:['평가 거품에 취약 (성장주 폭락)','한 테마에 과집중하기 쉬움','현금흐름 없는 기업의 함정'],
+      en:['Vulnerable to growth bubbles','Tendency to over-concentrate in themes','Trap of cashless companies'],
+      fr:['Vulnérable aux bulles de croissance','Surconcentration thématique','Piège des entreprises sans cash flow'],
+      ja:['成長バブルに脆弱','テーマへの過集中','キャッシュフローのない企業の罠']
+    },
+    methods: {
+      ko:['성장주 집중 투자','ARK형 혁신 ETF','벤처/엔젤 투자','테마형 ETF (AI, 바이오, 우주)','크립토 장기 보유 (HODL)','테슬라형 단일 종목 장기','크라우드펀딩'],
+      en:['Concentrated Growth Stocks','ARK-style Innovation ETFs','Venture / Angel','Thematic ETFs (AI, Biotech, Space)','Crypto HODL','Single-stock conviction','Crowdfunding'],
+      fr:['Actions de Croissance Concentrées','ETF Innovation type ARK','Capital-Risque / Angel','ETF Thématiques','Crypto HODL','Conviction sur un titre','Financement Participatif'],
+      ja:['成長株集中投資','ARK型革新ETF','ベンチャー/エンジェル','テーマ型ETF','暗号資産HODL','テスラ型単一銘柄長期','クラウドファンディング']
+    },
+    allocation: [
+      {label:{ko:'성장주 ETF',en:'Growth ETFs',fr:'ETF Croissance',ja:'成長株ETF'}, pct:45, color:'#d4af37'},
+      {label:{ko:'개별 성장주',en:'Single Growth Stocks',fr:'Actions de Croissance',ja:'個別成長株'}, pct:25, color:'#b8941f'},
+      {label:{ko:'대체투자/크립토',en:'Alt / Crypto',fr:'Alternatif / Crypto',ja:'代替投資/暗号資産'}, pct:15, color:'#8b6914'},
+      {label:{ko:'채권/현금',en:'Bonds/Cash',fr:'Obligations/Liquidités',ja:'債券/現金'}, pct:10, color:'#5a4410'},
+      {label:{ko:'금/원자재',en:'Gold/Commodities',fr:'Or/Matières premières',ja:'金/商品'}, pct:5, color:'#3a2c0a'}
+    ],
+    checkup: {ko:'분기',en:'Quarterly',fr:'Trimestriel',ja:'四半期'},
+    complement: 'SPVL', opposite: 'SAVH'
+  },
+  RAVH: {
+    name: {ko:'역발상 단타러',en:'Contrarian Swinger',fr:'Swinger à Contre-Courant',ja:'逆張りスイングトレーダー'},
+    tagline: {ko:'군중을 거스르는 손',en:'The Hand Against the Crowd',fr:'La Main Contre la Foule',ja:'群衆に逆らう手'},
+    master: 'Howard Marks',
+    bg: 'linear-gradient(135deg, #2a2018 0%, #1a1410 100%)',
+    profile: {
+      ko:'당신은 시장 심리를 읽고 군중과 반대로 움직이는 역발상 트레이더입니다. 단기 평균 회귀와 사이클을 이용해 수익을 추구합니다.',
+      en:'You read market psychology and move against the crowd, profiting from mean reversion and cycles.',
+      fr:'Vous lisez la psychologie du marché et allez à contre-courant, profitant du retour à la moyenne.',
+      ja:'あなたは市場心理を読み群衆と逆に動く逆張りトレーダーです。'
+    },
+    strengths: {
+      ko:['시장 심리에 대한 깊은 이해','과열/공포 구간을 잘 포착','감정에 휘둘리지 않는 냉정함'],
+      en:['Deep grasp of market psychology','Spots euphoria and panic well','Cool head, immune to emotion'],
+      fr:['Compréhension fine de la psychologie','Repère euphorie et panique','Tête froide'],
+      ja:['市場心理への深い理解','過熱・恐怖の局面を捉える','感情に流されない冷静さ']
+    },
+    cautions: {
+      ko:['추세가 강할 때 너무 일찍 진입','너무 자주 반대 베팅하면 손실 누적','확증편향 위험'],
+      en:['Entering too early in strong trends','Losses pile up from constant contrarian bets','Confirmation bias risk'],
+      fr:['Entrée trop précoce','Accumulation de pertes','Risque de biais de confirmation'],
+      ja:['強いトレンド中の早すぎる進入','逆ベットの損失累積','確証バイアスのリスク']
+    },
+    methods: {
+      ko:['컨트래리언 스윙 트레이딩','페어 트레이딩','통계적 차익거래','VIX 매매','M&A 차익거래','단기 옵션 스프레드','평균 회귀 전략'],
+      en:['Contrarian Swing Trading','Pair Trading','Statistical Arbitrage','VIX Trading','M&A Arbitrage','Short Option Spreads','Mean Reversion'],
+      fr:['Swing Trading Contrariant','Trading par Paires','Arbitrage Statistique','Trading VIX','Arbitrage M&A','Spreads d\'Options','Retour à la Moyenne'],
+      ja:['逆張りスイング取引','ペア取引','統計的裁定','VIX取引','M&A裁定','短期オプションスプレッド','平均回帰戦略']
+    },
+    allocation: [
+      {label:{ko:'스윙 트레이딩',en:'Swing Trading',fr:'Swing Trading',ja:'スイング取引'}, pct:40, color:'#d4af37'},
+      {label:{ko:'헤지/옵션',en:'Hedging/Options',fr:'Couverture/Options',ja:'ヘッジ/オプション'}, pct:20, color:'#b8941f'},
+      {label:{ko:'코어 ETF',en:'Core ETFs',fr:'ETF Cœur',ja:'コアETF'}, pct:20, color:'#8b6914'},
+      {label:{ko:'현금 (기회 자금)',en:'Cash (Dry Powder)',fr:'Liquidités',ja:'現金(待機資金)'}, pct:20, color:'#5a4410'}
+    ],
+    checkup: {ko:'주간',en:'Weekly',fr:'Hebdomadaire',ja:'週次'},
+    complement: 'SPGL', opposite: 'RPGH'
+  },
+  RAVL: {
+    name: {ko:'행동주의 가치투자자',en:'Activist Value Investor',fr:'Investisseur Activiste',ja:'アクティビスト価値投資家'},
+    tagline: {ko:'기업에 직접 손을 대는 자',en:'The One Who Reshapes Companies',fr:'Celui Qui Transforme',ja:'企業に直接手を入れる者'},
+    master: 'Bill Ackman',
+    bg: 'linear-gradient(135deg, #1a2820 0%, #0d1812 100%)',
+    profile: {
+      ko:'당신은 저평가 자산을 발굴하되 단순히 기다리지 않고 적극적인 입장으로 가치를 끌어내는 투자자입니다. 깊은 리서치와 확신이 강점입니다.',
+      en:'You find undervalued assets and actively unlock their value rather than waiting passively. Deep research and conviction define you.',
+      fr:'Vous trouvez des actifs sous-évalués et débloquez activement leur valeur. Recherche profonde et conviction.',
+      ja:'あなたは過小評価資産を発掘し受動的に待つのではなく積極的に価値を引き出す投資家です。'
+    },
+    strengths: {
+      ko:['깊이 있는 리서치 능력','확신 있는 집중 투자','촉매(catalyst)를 발견하는 안목'],
+      en:['Deep research capability','Conviction-driven concentration','Eye for catalysts'],
+      fr:['Capacité de recherche profonde','Concentration par conviction','Œil pour les catalyseurs'],
+      ja:['深いリサーチ能力','確信ある集中投資','カタリストを見抜く目']
+    },
+    cautions: {
+      ko:['집중도 높아 변동성에 노출','매니지먼트 리스크','단일 종목 실패 시 큰 타격'],
+      en:['Concentration exposes to volatility','Management risk','Major hit if single name fails'],
+      fr:['Concentration et volatilité','Risque managérial','Choc majeur si échec'],
+      ja:['集中度が高くボラに晒される','経営陣リスク','単一銘柄失敗時の大打撃']
+    },
+    methods: {
+      ko:['스페셜 시추에이션 투자','턴어라운드 투자','스핀오프 투자','집중 가치투자','M&A 차익거래','정크본드','PEF / 사모펀드'],
+      en:['Special Situations','Turnaround Investing','Spinoffs','Concentrated Value','M&A Arbitrage','High-Yield Bonds','Private Equity'],
+      fr:['Situations Spéciales','Redressements','Spin-offs','Valeur Concentrée','Arbitrage M&A','Obligations à Haut Rendement','Private Equity'],
+      ja:['スペシャルシチュエーション','ターンアラウンド投資','スピンオフ投資','集中価値投資','M&A裁定','ハイイールド債','プライベートエクイティ']
+    },
+    allocation: [
+      {label:{ko:'집중 가치주 (3-7종목)',en:'Concentrated Value',fr:'Valeur Concentrée',ja:'集中価値株'}, pct:50, color:'#d4af37'},
+      {label:{ko:'스페셜 시추에이션',en:'Special Situations',fr:'Situations Spéciales',ja:'スペシャル状況'}, pct:20, color:'#b8941f'},
+      {label:{ko:'채권/하이일드',en:'Bonds/HY',fr:'Obligations/HY',ja:'債券/ハイイールド'}, pct:15, color:'#8b6914'},
+      {label:{ko:'현금 (기회 자금)',en:'Cash',fr:'Liquidités',ja:'現金'}, pct:15, color:'#5a4410'}
+    ],
+    checkup: {ko:'월간',en:'Monthly',fr:'Mensuel',ja:'月次'},
+    complement: 'SPGL', opposite: 'RPGH'
+  },
+  RPGH: {
+    name: {ko:'테마 추종자',en:'Theme Surfer',fr:'Surfeur de Tendances',ja:'テーマ追随者'},
+    tagline: {ko:'파도를 타는 자',en:'The One Who Rides Waves',fr:'Celui Qui Surfe les Vagues',ja:'波に乗る者'},
+    master: 'WallStreetBets-era retail',
+    bg: 'linear-gradient(135deg, #2a1a2a 0%, #1a0e1a 100%)',
+    profile: {
+      ko:'당신은 시장의 뜨거운 테마와 모멘텀에 빠르게 올라타는 투자자입니다. 깊은 분석보다 흐름을 읽고 합류하는 능력이 강점입니다.',
+      en:'You jump onto hot themes and momentum quickly. Reading flow matters more than deep analysis.',
+      fr:'Vous sautez rapidement sur les thèmes brûlants. Lire le flux compte plus que l\'analyse profonde.',
+      ja:'あなたは市場のホットなテーマとモメンタムに素早く乗る投資家です。'
+    },
+    strengths: {
+      ko:['빠른 정보 수집과 합류','시장 분위기 감지','네트워크와 소셜에 강함'],
+      en:['Fast info gathering','Mood sensing','Strong in social/networks'],
+      fr:['Collecte d\'info rapide','Détection d\'humeur','Fort sur les réseaux'],
+      ja:['素早い情報収集と合流','市場ムード察知','ネットワークとSNSに強い']
+    },
+    cautions: {
+      ko:['고점 매수 위험','테마 변질 시 빠른 손실','분석 없이 추종하는 함정'],
+      en:['Top-buying risk','Rapid losses when themes flip','Trap of following without analysis'],
+      fr:['Risque d\'achat au sommet','Pertes rapides','Piège du suivi aveugle'],
+      ja:['高値掴みリスク','テーマ変質時の急速な損失','分析なき追随の罠']
+    },
+    methods: {
+      ko:['테마주 매매','밈주식 / 밈코인','카피 트레이딩','소셜 시그널 매매','신규 상장 (IPO/공모주)','김치프리미엄 차익','로보어드바이저'],
+      en:['Theme Trading','Meme Stocks/Coins','Copy Trading','Social Signal Trading','IPOs','Kimchi Premium Arb','Robo-advisors'],
+      fr:['Trading Thématique','Meme Stocks/Coins','Copy Trading','Trading Signal Social','IPOs','Arb Kimchi Premium','Robo-conseillers'],
+      ja:['テーマ株取引','ミーム株/コイン','コピートレード','ソーシャルシグナル取引','IPO/公募株','キムチプレミアム裁定','ロボアドバイザー']
+    },
+    allocation: [
+      {label:{ko:'테마 ETF',en:'Theme ETFs',fr:'ETF Thématiques',ja:'テーマETF'}, pct:40, color:'#d4af37'},
+      {label:{ko:'개별 모멘텀주',en:'Momentum Stocks',fr:'Actions Momentum',ja:'モメンタム株'}, pct:25, color:'#b8941f'},
+      {label:{ko:'크립토',en:'Crypto',fr:'Crypto',ja:'暗号資産'}, pct:20, color:'#8b6914'},
+      {label:{ko:'현금/안전 자산',en:'Cash/Safe',fr:'Liquidités/Sûr',ja:'現金/安全資産'}, pct:15, color:'#5a4410'}
+    ],
+    checkup: {ko:'주간',en:'Weekly',fr:'Hebdomadaire',ja:'週次'},
+    complement: 'SPVL', opposite: 'SPVL'
+  },
+  RPGL: {
+    name: {ko:'혁신 신봉자',en:'Innovation Believer',fr:'Croyant de l\'Innovation',ja:'革新信奉者'},
+    tagline: {ko:'미래를 지키는 자',en:'Keeper of Tomorrow',fr:'Gardien de Demain',ja:'未来を守る者'},
+    master: 'Chamath Palihapitiya',
+    bg: 'linear-gradient(135deg, #1a1f3a 0%, #0d1120 100%)',
+    profile: {
+      ko:'당신은 혁신 기술과 패러다임 전환에 강한 믿음을 가지고 장기 보유하는 신봉자입니다. 단기 변동은 신경 쓰지 않고 비전을 지킵니다.',
+      en:'You believe deeply in innovation and paradigm shifts, holding long-term without caring about volatility.',
+      fr:'Vous croyez profondément en l\'innovation et tenez sur le long terme.',
+      ja:'あなたは革新技術とパラダイムシフトに強い信念を持ち長期保有する信奉者です。'
+    },
+    strengths: {
+      ko:['장기 비전과 인내심','노이즈를 무시하는 능력','혁신에 대한 깊은 이해'],
+      en:['Long vision and patience','Ability to ignore noise','Deep grasp of innovation'],
+      fr:['Vision et patience','Capacité à ignorer le bruit','Compréhension de l\'innovation'],
+      ja:['長期ビジョンと忍耐力','ノイズを無視する能力','革新への深い理解']
+    },
+    cautions: {
+      ko:['확증편향에 빠지기 쉬움','기술 변화로 비전이 폐기될 위험','위험 분산 부족'],
+      en:['Confirmation bias','Tech shifts can obsolete vision','Insufficient diversification'],
+      fr:['Biais de confirmation','Shifts technologiques','Diversification insuffisante'],
+      ja:['確証バイアスに陥りやすい','技術変化でビジョン廃棄','分散不足']
+    },
+    methods: {
+      ko:['크립토 HODL','테슬라형 단일 종목 장기 보유','혁신 ETF 적립식','벤처/엔젤 (소액)','테마 ETF 장기','SPAC','NFT / 디파이 스테이킹'],
+      en:['Crypto HODL','Single Stock Long Hold','Innovation ETF DCA','Venture / Angel (small)','Long Thematic ETFs','SPACs','NFT / DeFi Staking'],
+      fr:['Crypto HODL','Conviction sur une action','DCA ETF Innovation','VC / Angel petits','ETF Thématiques Long','SPACs','NFT / DeFi Staking'],
+      ja:['暗号資産HODL','テスラ型単一銘柄長期保有','革新ETF積立','ベンチャー/エンジェル(少額)','テーマETF長期','SPAC','NFT/DeFiステーキング']
+    },
+    allocation: [
+      {label:{ko:'혁신/성장 ETF',en:'Innovation ETFs',fr:'ETF Innovation',ja:'革新/成長ETF'}, pct:40, color:'#d4af37'},
+      {label:{ko:'크립토 코어 (BTC/ETH)',en:'Crypto Core',fr:'Crypto Cœur',ja:'暗号資産コア'}, pct:25, color:'#b8941f'},
+      {label:{ko:'개별 성장주',en:'Single Growth',fr:'Croissance Unique',ja:'個別成長株'}, pct:20, color:'#8b6914'},
+      {label:{ko:'대체투자',en:'Alternatives',fr:'Alternatifs',ja:'代替投資'}, pct:10, color:'#5a4410'},
+      {label:{ko:'현금',en:'Cash',fr:'Liquidités',ja:'現金'}, pct:5, color:'#3a2c0a'}
+    ],
+    checkup: {ko:'분기',en:'Quarterly',fr:'Trimestriel',ja:'四半期'},
+    complement: 'SAVL', opposite: 'SAVH'
+  },
+  RPVH: {
+    name: {ko:'사이클 헌터',en:'Cycle Hunter',fr:'Chasseur de Cycles',ja:'サイクルハンター'},
+    tagline: {ko:'경기의 파도를 사냥',en:'Hunter of Economic Waves',fr:'Chasseur de Vagues Économiques',ja:'景気の波を狩る者'},
+    master: 'Stanley Druckenmiller',
+    bg: 'linear-gradient(135deg, #2a2218 0%, #1a1610 100%)',
+    profile: {
+      ko:'당신은 경기 사이클을 읽고 그에 맞춰 자산군을 회전시키는 매크로 헌터입니다. 원자재, 사이클 주식, 금리 등에 민감합니다.',
+      en:'You read economic cycles and rotate assets accordingly. Sensitive to commodities, cyclicals, and rates.',
+      fr:'Vous lisez les cycles économiques et faites tourner les actifs en conséquence.',
+      ja:'あなたは景気サイクルを読みそれに合わせて資産群を回転させるマクロハンターです。'
+    },
+    strengths: {
+      ko:['거시 흐름에 대한 통찰','자산 회전에 능숙','국제 정세에 밝음'],
+      en:['Macro insight','Skilled at asset rotation','Knowledgeable on geopolitics'],
+      fr:['Vision macro','Habile en rotation','Sensibilisé à la géopolitique'],
+      ja:['マクロ流れへの洞察','資産回転に長ける','国際情勢に明るい']
+    },
+    cautions: {
+      ko:['사이클 예측 실패 시 큰 손실','과한 베팅 위험','마이크로 분석 소홀'],
+      en:['Big losses on wrong cycle calls','Risk of oversizing bets','Neglect of micro analysis'],
+      fr:['Grosses pertes si mauvais cycle','Risque de surdimensionner','Négligence micro'],
+      ja:['サイクル予測失敗時の大損失','過大ベット','ミクロ分析の軽視']
+    },
+    methods: {
+      ko:['경기순환주 매매','원자재 (금, 원유, 구리)','외환 (FX) 매매','매크로 ETF 로테이션','선물 / 옵션','글로벌 매크로','이머징 마켓'],
+      en:['Cyclical Stocks','Commodities','FX Trading','Macro ETF Rotation','Futures / Options','Global Macro','Emerging Markets'],
+      fr:['Actions Cycliques','Matières Premières','Forex','Rotation ETF Macro','Futures / Options','Macro Global','Marchés Émergents'],
+      ja:['景気循環株','商品(金/原油/銅)','外国為替','マクロETFローテーション','先物/オプション','グローバルマクロ','新興市場']
+    },
+    allocation: [
+      {label:{ko:'사이클 주식/ETF',en:'Cyclical Equities',fr:'Actions Cycliques',ja:'サイクル株/ETF'}, pct:35, color:'#d4af37'},
+      {label:{ko:'원자재 / 금',en:'Commodities / Gold',fr:'Matières / Or',ja:'商品/金'}, pct:25, color:'#b8941f'},
+      {label:{ko:'채권 (전술적)',en:'Bonds (Tactical)',fr:'Obligations (Tactique)',ja:'債券(戦術的)'}, pct:15, color:'#8b6914'},
+      {label:{ko:'외환/매크로',en:'FX/Macro',fr:'FX/Macro',ja:'外為/マクロ'}, pct:15, color:'#6b5012'},
+      {label:{ko:'현금',en:'Cash',fr:'Liquidités',ja:'現金'}, pct:10, color:'#3a2c0a'}
+    ],
+    checkup: {ko:'월간',en:'Monthly',fr:'Mensuel',ja:'月次'},
+    complement: 'SAGL', opposite: 'SPGL'
+  },
+  RPVL: {
+    name: {ko:'인내심 깊은 사냥꾼',en:'The Patient Hunter',fr:'Le Chasseur Patient',ja:'忍耐深きハンター'},
+    tagline: {ko:'기다림의 미학',en:'The Art of Waiting',fr:'L\'Art d\'Attendre',ja:'待ちの美学'},
+    master: 'Warren Buffett',
+    bg: 'linear-gradient(135deg, #1a2a1c 0%, #0d1810 100%)',
+    profile: {
+      ko:'당신은 \'미스터 마켓\'을 활용해 위기 때 저평가 우량주를 사들이는 사냥꾼입니다. 인내와 분석이 결합된 워런 버핏형 투자자입니다.',
+      en:'You exploit "Mr. Market" to buy quality undervalued stocks during crises. The Buffett archetype: patience plus analysis.',
+      fr:'Vous exploitez "Mr. Market" pour acheter du qualité sous-évalué en crise. L\'archétype Buffett.',
+      ja:'あなたは「ミスター・マーケット」を活用し危機の時に過小評価の優良株を買い集めるハンターです。'
+    },
+    strengths: {
+      ko:['압도적 인내심','위기를 기회로 보는 시야','내재가치 평가 능력'],
+      en:['Towering patience','Seeing crisis as opportunity','Skill in intrinsic valuation'],
+      fr:['Patience exceptionnelle','Crise comme opportunité','Évaluation intrinsèque'],
+      ja:['圧倒的忍耐力','危機を機会と見る視野','内在価値評価能力']
+    },
+    cautions: {
+      ko:['기다리다가 기회를 놓침','가치 함정에 빠질 위험','과거 패러다임에 갇히기'],
+      en:['Missing opportunities while waiting','Value trap risk','Stuck in old paradigms'],
+      fr:['Manquer en attendant','Piège de la valeur','Bloqué dans l\'ancien'],
+      ja:['待ちすぎて機会逸失','バリュートラップ','過去パラダイムに囚われる']
+    },
+    methods: {
+      ko:['가치투자 (Graham/Buffett)','배당성장주 장기 보유','경제적 해자 보유 기업','위기 매수 (Buy the Dip)','우량주 집중 투자','경기방어주','BRK형 다각화'],
+      en:['Value Investing','Dividend Growth Long','Moat Companies','Buy the Dip','Concentrated Blue-Chips','Defensive Stocks','Berkshire-style Holdings'],
+      fr:['Investissement Valeur','Dividende Croissance Long','Entreprises à Douve','Buy the Dip','Blue-Chips Concentrés','Actions Défensives','Style Berkshire'],
+      ja:['バリュー投資','配当成長株長期保有','経済的堀を持つ企業','危機買い','優良株集中投資','ディフェンシブ株','BRK型多角化']
+    },
+    allocation: [
+      {label:{ko:'우량 가치주',en:'Quality Value',fr:'Valeur de Qualité',ja:'優良価値株'}, pct:50, color:'#d4af37'},
+      {label:{ko:'배당성장주',en:'Dividend Growth',fr:'Dividende Croissance',ja:'配当成長株'}, pct:20, color:'#b8941f'},
+      {label:{ko:'현금 (기회 자금)',en:'Cash (Dry Powder)',fr:'Liquidités',ja:'現金(待機資金)'}, pct:20, color:'#8b6914'},
+      {label:{ko:'채권',en:'Bonds',fr:'Obligations',ja:'債券'}, pct:10, color:'#5a4410'}
+    ],
+    checkup: {ko:'분기',en:'Quarterly',fr:'Trimestriel',ja:'四半期'},
+    complement: 'SAGL', opposite: 'RAGH'
+  },
+  SAGH: {
+    name: {ko:'신중한 트레이더',en:'Cautious Trader',fr:'Trader Prudent',ja:'慎重なトレーダー'},
+    tagline: {ko:'리스크를 재는 손',en:'The Hand That Measures Risk',fr:'La Main Qui Mesure le Risque',ja:'リスクを測る手'},
+    master: 'Paul Tudor Jones',
+    bg: 'linear-gradient(135deg, #1a2030 0%, #0d1018 100%)',
+    profile: {
+      ko:'당신은 능동적으로 매매하되 항상 리스크를 정확히 측정하는 신중한 트레이더입니다. 시스템과 규칙을 중시합니다.',
+      en:'You trade actively but always measure risk precisely. You value systems and rules.',
+      fr:'Vous tradez activement mais mesurez toujours le risque. Vous valorisez les systèmes.',
+      ja:'あなたは能動的に取引しつつ常にリスクを正確に測る慎重なトレーダーです。'
+    },
+    strengths: {
+      ko:['엄격한 손절 규칙','체계적인 리스크 관리','감정 제어 능력'],
+      en:['Strict stop-loss discipline','Systematic risk management','Emotional control'],
+      fr:['Stop-loss strict','Gestion systématique','Contrôle émotionnel'],
+      ja:['厳格な損切りルール','体系的リスク管理','感情制御能力']
+    },
+    cautions: {
+      ko:['지나친 신중함으로 기회 손실','수수료 누적','복잡한 시스템에 갇힘'],
+      en:['Caution leads to missed opportunities','Fee accumulation','Trapped in complex systems'],
+      fr:['Prudence excessive','Frais cumulés','Piégé par la complexité'],
+      ja:['過度な慎重さで機会逸失','手数料累積','複雑なシステムに囚われる']
+    },
+    methods: {
+      ko:['박스권 트레이딩','보수적 옵션 스프레드','커버드콜 / 캐시시큐어드풋','시스템 트레이딩 (룰 베이스)','퀀트 전략','알고리즘 트레이딩','페어 트레이딩'],
+      en:['Range Trading','Conservative Option Spreads','Covered Calls / CSP','Systematic Trading','Quant Strategies','Algorithmic Trading','Pair Trading'],
+      fr:['Trading de Range','Spreads Conservateurs','Covered Calls','Trading Systématique','Quant','Trading Algo','Pair Trading'],
+      ja:['ボックス圏取引','保守的オプションスプレッド','カバードコール/CSP','システム取引','クオンツ戦略','アルゴ取引','ペア取引']
+    },
+    allocation: [
+      {label:{ko:'시스템 트레이딩 자금',en:'Systematic Trading',fr:'Trading Systématique',ja:'システム取引資金'}, pct:35, color:'#d4af37'},
+      {label:{ko:'커버드콜 ETF',en:'Covered Call ETFs',fr:'ETF Covered Call',ja:'カバードコールETF'}, pct:25, color:'#b8941f'},
+      {label:{ko:'배당주',en:'Dividend Stocks',fr:'Actions à Dividende',ja:'配当株'}, pct:20, color:'#8b6914'},
+      {label:{ko:'채권',en:'Bonds',fr:'Obligations',ja:'債券'}, pct:15, color:'#6b5012'},
+      {label:{ko:'현금',en:'Cash',fr:'Liquidités',ja:'現金'}, pct:5, color:'#3a2c0a'}
+    ],
+    checkup: {ko:'주간',en:'Weekly',fr:'Hebdomadaire',ja:'週次'},
+    complement: 'RPVL', opposite: 'RPGH'
+  },
+  SAGL: {
+    name: {ko:'균형 성장 추구자',en:'Balanced Growth Seeker',fr:'Chercheur de Croissance Équilibrée',ja:'バランス成長追求者'},
+    tagline: {ko:'전략으로 무장한 성장가',en:'Growth Backed by Strategy',fr:'Croissance Stratégique',ja:'戦略に武装した成長家'},
+    master: 'David Swensen',
+    bg: 'linear-gradient(135deg, #1c2438 0%, #0e1220 100%)',
+    profile: {
+      ko:'당신은 성장의 기회를 노리면서도 전체 포트폴리오 균형을 잃지 않는 전략가입니다. 코어-새틀라이트 구조를 잘 활용합니다.',
+      en:'You pursue growth without losing portfolio balance. You wield core-satellite structure well.',
+      fr:'Vous poursuivez la croissance sans perdre l\'équilibre. Vous maniez bien la structure cœur-satellite.',
+      ja:'あなたは成長機会を狙いつつ全体ポートフォリオのバランスを保つ戦略家です。'
+    },
+    strengths: {
+      ko:['포트폴리오 설계 능력','다각화와 집중의 균형','전략적 사고'],
+      en:['Portfolio design skill','Balance of diversification and focus','Strategic thinking'],
+      fr:['Conception de portefeuille','Équilibre diversification/focus','Pensée stratégique'],
+      ja:['ポートフォリオ設計能力','分散と集中のバランス','戦略的思考']
+    },
+    cautions: {
+      ko:['리밸런싱 비용 누적','복잡함으로 추적 어려움','시장 격동기에 결정 미루기'],
+      en:['Rebalancing costs','Complexity makes tracking hard','Decision paralysis in volatility'],
+      fr:['Coûts de rééquilibrage','Complexité','Paralysie décisionnelle'],
+      ja:['リバランスコスト累積','複雑さで追跡困難','変動期の意思決定遅延']
+    },
+    methods: {
+      ko:['코어-새틀라이트 전략','스마트베타 / 팩터 투자','글로벌 분산 ETF','테마형 위성 ETF','연금저축/IRP 활용','ISA 절세','리스크 패리티'],
+      en:['Core-Satellite','Smart Beta / Factors','Global Diversified ETFs','Thematic Satellites','Tax-Advantaged Accounts','ISA Optimization','Risk Parity'],
+      fr:['Cœur-Satellite','Smart Beta','ETF Mondiaux','Satellites Thématiques','Comptes Fiscaux','ISA','Risk Parity'],
+      ja:['コア・サテライト戦略','スマートベータ/ファクター','グローバル分散ETF','テーマ型衛星ETF','iDeCo/NISA活用','ISA節税','リスクパリティ']
+    },
+    allocation: [
+      {label:{ko:'글로벌 코어 ETF',en:'Global Core ETF',fr:'ETF Cœur Mondial',ja:'グローバルコアETF'}, pct:45, color:'#d4af37'},
+      {label:{ko:'성장 위성',en:'Growth Satellites',fr:'Satellites Croissance',ja:'成長サテライト'}, pct:25, color:'#b8941f'},
+      {label:{ko:'채권 / 리츠',en:'Bonds / REITs',fr:'Obligations / REITs',ja:'債券/REIT'}, pct:20, color:'#8b6914'},
+      {label:{ko:'대체투자',en:'Alternatives',fr:'Alternatifs',ja:'代替投資'}, pct:5, color:'#6b5012'},
+      {label:{ko:'현금',en:'Cash',fr:'Liquidités',ja:'現金'}, pct:5, color:'#3a2c0a'}
+    ],
+    checkup: {ko:'월간',en:'Monthly',fr:'Mensuel',ja:'月次'},
+    complement: 'RPVL', opposite: 'RPVH'
+  },
+  SAVH: {
+    name: {ko:'절세 단기 운용자',en:'Tax-Smart Trader',fr:'Trader Fiscalement Avisé',ja:'節税短期運用者'},
+    tagline: {ko:'세금까지 계산하는 사람',en:'Counting Even Taxes',fr:'Calcul jusqu\'aux Impôts',ja:'税金まで計算する者'},
+    master: 'Peter Lynch (small-cap era)',
+    bg: 'linear-gradient(135deg, #1f2820 0%, #101810 100%)',
+    profile: {
+      ko:'당신은 능동적이지만 안정 성향이며, 가치 기반 단기 매매와 세제 혜택을 동시에 활용하는 실용주의자입니다.',
+      en:'Active yet stable, you combine value-based short trades with tax efficiency. A pragmatist.',
+      fr:'Actif mais stable, vous combinez trades courts basés sur la valeur et efficacité fiscale.',
+      ja:'あなたは能動的だが安定志向で価値ベースの短期取引と税制優遇を同時に活用する実用主義者です。'
+    },
+    strengths: {
+      ko:['세제 활용 능력','수수료/세금 의식','분석과 매매의 균형'],
+      en:['Tax optimization','Cost-conscious','Balance of analysis and trading'],
+      fr:['Optimisation fiscale','Conscience des coûts','Équilibre analyse/trading'],
+      ja:['税制活用能力','手数料・税金意識','分析と取引のバランス']
+    },
+    cautions: {
+      ko:['세금이 결정을 왜곡할 수 있음','단기 시야로 큰 수익 놓침','지나친 회전율'],
+      en:['Tax tail wags the dog','Short view misses big wins','Excessive turnover'],
+      fr:['Fiscalité qui dicte','Vue courte','Rotation excessive'],
+      ja:['税金が判断を歪める','短期視点で大利益逸失','過剰な回転率']
+    },
+    methods: {
+      ko:['ISA 활용 스윙 매매','연금저축/IRP 절세 운용','중소형 가치주 발굴','배당주 단중기 매매','손익통산 활용','우리사주 활용','공모주 청약'],
+      en:['ISA Swing Trading','Tax-Advantaged Account Optimization','Small-cap Value Hunting','Dividend Short-Mid Trading','Tax-Loss Harvesting','ESOP','IPO Subscription'],
+      fr:['Swing en ISA','Optimisation Comptes Fiscaux','Chasse Small-Cap Valeur','Trading Dividende','Récolte de Pertes Fiscales','ESOP','Souscription IPO'],
+      ja:['NISA活用スイング取引','iDeCo節税運用','中小型バリュー発掘','配当株短中期取引','損益通算活用','従業員持株','IPO申込']
+    },
+    allocation: [
+      {label:{ko:'ISA 코어 ETF',en:'ISA Core ETF',fr:'ETF Cœur ISA',ja:'NISAコアETF'}, pct:35, color:'#d4af37'},
+      {label:{ko:'가치 단중기 매매',en:'Value Swing',fr:'Valeur Swing',ja:'バリュー短中期'}, pct:25, color:'#b8941f'},
+      {label:{ko:'배당주',en:'Dividend Stocks',fr:'Actions à Dividende',ja:'配当株'}, pct:20, color:'#8b6914'},
+      {label:{ko:'채권/예금',en:'Bonds/Deposits',fr:'Obligations/Dépôts',ja:'債券/預金'}, pct:15, color:'#6b5012'},
+      {label:{ko:'현금',en:'Cash',fr:'Liquidités',ja:'現金'}, pct:5, color:'#3a2c0a'}
+    ],
+    checkup: {ko:'월간',en:'Monthly',fr:'Mensuel',ja:'月次'},
+    complement: 'RPGL', opposite: 'RPGL'
+  },
+  SAVL: {
+    name: {ko:'분석파 가치투자자',en:'Analytical Value Investor',fr:'Investisseur Valeur Analytique',ja:'分析派バリュー投資家'},
+    tagline: {ko:'숫자로 진실을 찾다',en:'Truth Through Numbers',fr:'La Vérité par les Chiffres',ja:'数字で真実を探す'},
+    master: 'Benjamin Graham',
+    bg: 'linear-gradient(135deg, #1a2528 0%, #0e1418 100%)',
+    profile: {
+      ko:'당신은 재무제표와 안전마진을 신봉하는 정통 가치투자자입니다. 깊이 있는 분석과 장기 인내가 무기입니다.',
+      en:'You revere financial statements and margin of safety. Deep analysis and long patience are your weapons.',
+      fr:'Vous vénérez les états financiers et la marge de sécurité. Analyse profonde et patience.',
+      ja:'あなたは財務諸表と安全余裕を信奉する正統派バリュー投資家です。'
+    },
+    strengths: {
+      ko:['깊이 있는 펀더멘털 분석','감정 휘둘림 없는 결정','복리 효과 신뢰'],
+      en:['Deep fundamental analysis','Emotion-free decisions','Trust in compounding'],
+      fr:['Analyse fondamentale profonde','Décisions sans émotion','Confiance en la composition'],
+      ja:['深いファンダメンタル分析','感情に流されない決定','複利効果への信頼']
+    },
+    cautions: {
+      ko:['가치 함정 위험','성장 기회 놓침','너무 보수적이라 인플레 패배'],
+      en:['Value trap risk','Missed growth','Too conservative, inflation loses'],
+      fr:['Piège de la valeur','Manque de croissance','Trop prudent face à l\'inflation'],
+      ja:['バリュートラップリスク','成長機会逸失','保守的すぎてインフレ負け']
+    },
+    methods: {
+      ko:['그레이엄식 담배꽁초 투자','배당성장주 매집','퀄리티 팩터 투자','네트넷(Net-Net) 발굴','경제적 해자 기업','TIPS / 인플레 채권','우량 우선주'],
+      en:['Graham Cigar-Butt Investing','Dividend Growth Accumulation','Quality Factor','Net-Net Discovery','Moat Companies','TIPS / Inflation Bonds','Quality Preferreds'],
+      fr:['Investissement Cigare Graham','Accumulation Dividende Croissance','Quality Factor','Net-Net','Entreprises à Douve','TIPS','Préférentielles de Qualité'],
+      ja:['グレアム式シケモク投資','配当成長株積立','クオリティファクター','ネットネット発掘','経済的堀企業','TIPS/インフレ債','優良優先株']
+    },
+    allocation: [
+      {label:{ko:'우량 가치주',en:'Quality Value',fr:'Valeur Qualité',ja:'優良価値株'}, pct:40, color:'#d4af37'},
+      {label:{ko:'배당성장주',en:'Dividend Growth',fr:'Dividende Croissance',ja:'配当成長株'}, pct:25, color:'#b8941f'},
+      {label:{ko:'채권 / TIPS',en:'Bonds / TIPS',fr:'Obligations / TIPS',ja:'債券/TIPS'}, pct:20, color:'#8b6914'},
+      {label:{ko:'금 / 원자재',en:'Gold / Commodities',fr:'Or / Matières',ja:'金/商品'}, pct:10, color:'#6b5012'},
+      {label:{ko:'현금',en:'Cash',fr:'Liquidités',ja:'現金'}, pct:5, color:'#3a2c0a'}
+    ],
+    checkup: {ko:'분기',en:'Quarterly',fr:'Trimestriel',ja:'四半期'},
+    complement: 'RPGL', opposite: 'RAGH'
+  },
+  SPGH: {
+    name: {ko:'적립식 트렌드 추종자',en:'DCA Trend Follower',fr:'Suiveur de Tendance DCA',ja:'積立トレンド追随者'},
+    tagline: {ko:'꾸준히 흐름에 올라타는 자',en:'Riding Waves Steadily',fr:'Sur les Vagues, Régulièrement',ja:'コツコツ流れに乗る者'},
+    master: 'Jack Bogle (with growth tilt)',
+    bg: 'linear-gradient(135deg, #1a2438 0%, #0d1220 100%)',
+    profile: {
+      ko:'당신은 시장 트렌드를 따르되 위험을 줄이기 위해 적립식으로 분할 매수하는 안정 성장형 투자자입니다.',
+      en:'You follow market trends but reduce risk via DCA. A stable growth investor.',
+      fr:'Vous suivez les tendances mais réduisez le risque par DCA. Un investisseur croissance stable.',
+      ja:'あなたは市場トレンドに従いつつリスクを減らすため積立で分割買付する安定成長型投資家です。'
+    },
+    strengths: {
+      ko:['일관된 실행력','감정 휘둘림 적음','시간 분산으로 리스크 완화'],
+      en:['Consistent execution','Low emotional swings','Time diversification'],
+      fr:['Exécution régulière','Faible émotion','Diversification temporelle'],
+      ja:['一貫した実行力','感情変動が少ない','時間分散でリスク緩和']
+    },
+    cautions: {
+      ko:['약세장 장기화 시 평균단가 부담','테마 변경에 둔감','너무 단순한 전략 의존'],
+      en:['Avg cost burden in long bears','Slow to theme shifts','Overly simple strategy'],
+      fr:['Coût moyen pendant longs bear','Lent aux shifts','Stratégie trop simple'],
+      ja:['弱気相場長期化時の平均単価負担','テーマ変更に鈍感','単純すぎる戦略依存']
+    },
+    methods: {
+      ko:['적립식 ETF (DCA)','TDF (타겟데이트 펀드)','글라이드 패스','자동 리밸런싱 로보어드바이저','글로벌 분산 ETF','테마 ETF 적립','연금저축/IRP 적립'],
+      en:['DCA ETFs','Target Date Funds','Glide Path','Robo-advisor Auto-Rebalance','Global Diversified ETFs','Thematic DCA','Tax-Advantaged DCA'],
+      fr:['ETF DCA','Fonds Cible','Glide Path','Robo Auto-Rééquilibrage','ETF Mondial','DCA Thématique','DCA Fiscalement Optimisé'],
+      ja:['ETF積立(DCA)','ターゲットデートファンド','グライドパス','ロボアド自動リバランス','グローバル分散ETF','テーマETF積立','iDeCo/NISA積立']
+    },
+    allocation: [
+      {label:{ko:'성장 ETF 적립',en:'Growth ETF DCA',fr:'DCA ETF Croissance',ja:'成長ETF積立'}, pct:50, color:'#d4af37'},
+      {label:{ko:'글로벌 분산',en:'Global Diversified',fr:'Mondial Diversifié',ja:'グローバル分散'}, pct:25, color:'#b8941f'},
+      {label:{ko:'테마 위성',en:'Thematic Satellites',fr:'Satellites Thématiques',ja:'テーマ衛星'}, pct:10, color:'#8b6914'},
+      {label:{ko:'채권',en:'Bonds',fr:'Obligations',ja:'債券'}, pct:10, color:'#6b5012'},
+      {label:{ko:'현금',en:'Cash',fr:'Liquidités',ja:'現金'}, pct:5, color:'#3a2c0a'}
+    ],
+    checkup: {ko:'월간',en:'Monthly',fr:'Mensuel',ja:'月次'},
+    complement: 'RPVL', opposite: 'RAVH'
+  },
+  SPGL: {
+    name: {ko:'인덱스 신봉자',en:'Index Devotee',fr:'Dévot de l\'Indice',ja:'インデックス信奉者'},
+    tagline: {ko:'단순함의 위대함',en:'The Greatness of Simplicity',fr:'La Grandeur de la Simplicité',ja:'シンプルさの偉大さ'},
+    master: 'John Bogle',
+    bg: 'linear-gradient(135deg, #1a2030 0%, #0d101a 100%)',
+    profile: {
+      ko:'당신은 \'시장을 사라\'는 보글의 가르침을 신봉하는 전형적인 Boglehead입니다. 단순한 전략의 힘을 믿습니다.',
+      en:'You embody the Bogle creed: "buy the market." A classic Boglehead who trusts simplicity.',
+      fr:'Vous incarnez le credo Bogle: "achetez le marché." Un Boglehead classique.',
+      ja:'あなたは「市場を買え」のボーグルの教えを信奉する典型的なBogleheadです。'
+    },
+    strengths: {
+      ko:['낮은 비용과 세금','감정 휘둘림 없음','복리의 힘 극대화'],
+      en:['Low costs and taxes','Emotion-free','Maximized compounding'],
+      fr:['Faibles coûts/taxes','Sans émotion','Composition maximale'],
+      ja:['低コストと税金','感情に流されない','複利効果の最大化']
+    },
+    cautions: {
+      ko:['크게 잘하기 어려움 (시장 평균)','단일 시장 편향 위험','지루함과의 싸움'],
+      en:['Hard to outperform','Single-market bias','Boredom is the enemy'],
+      fr:['Difficile de surperformer','Biais marché unique','Combat contre l\'ennui'],
+      ja:['大きく勝つのは難しい','単一市場バイアス','退屈との戦い']
+    },
+    methods: {
+      ko:['S&P500 적립','전세계 인덱스 ETF (VT)','60/40 포트폴리오','TDF / 라이프사이클 펀드','FIRE 운동','코스트 애버리지','3-fund 포트폴리오'],
+      en:['S&P 500 DCA','Total World ETFs','60/40 Portfolio','Target Date Funds','FIRE Movement','Cost Averaging','3-Fund Portfolio'],
+      fr:['DCA S&P 500','ETF Monde Total','Portefeuille 60/40','Fonds Cible','Mouvement FIRE','Moyenne des Coûts','Portefeuille 3-Fonds'],
+      ja:['S&P500積立','全世界インデックスETF','60/40ポートフォリオ','TDF','FIREムーブメント','コストアベレージ','3ファンドポートフォリオ']
+    },
+    allocation: [
+      {label:{ko:'전세계 주식 인덱스',en:'Global Stock Index',fr:'Indice Actions Mondial',ja:'全世界株式インデックス'}, pct:60, color:'#d4af37'},
+      {label:{ko:'채권 인덱스',en:'Bond Index',fr:'Indice Obligations',ja:'債券インデックス'}, pct:30, color:'#b8941f'},
+      {label:{ko:'리츠 인덱스',en:'REIT Index',fr:'Indice REIT',ja:'REITインデックス'}, pct:7, color:'#8b6914'},
+      {label:{ko:'현금',en:'Cash',fr:'Liquidités',ja:'現金'}, pct:3, color:'#3a2c0a'}
+    ],
+    checkup: {ko:'반기',en:'Semi-annual',fr:'Semestriel',ja:'半期'},
+    complement: 'RAVL', opposite: 'RAGH'
+  },
+  SPVH: {
+    name: {ko:'단기 안전 운용자',en:'Capital Preserver',fr:'Préservateur de Capital',ja:'短期安全運用者'},
+    tagline: {ko:'잠 잘 자는 투자',en:'Sleep-Well Investing',fr:'L\'Investissement Tranquille',ja:'よく眠れる投資'},
+    master: 'Harry Browne (Permanent Portfolio)',
+    bg: 'linear-gradient(135deg, #1f2425 0%, #101415 100%)',
+    profile: {
+      ko:'당신은 원금 보존을 최우선으로 하면서 단기 안전 자산을 회전 운용합니다. 절대 잠 못 자는 투자는 하지 않습니다.',
+      en:'You prioritize capital preservation and rotate short-term safe assets. You never lose sleep.',
+      fr:'Vous priorisez la préservation et faites tourner les actifs sûrs court terme.',
+      ja:'あなたは元本保存を最優先しつつ短期安全資産を回転運用します。'
+    },
+    strengths: {
+      ko:['원금 보존 강박이 무기','금리 변화에 민감','현금흐름 안정성'],
+      en:['Capital preservation obsession is the weapon','Sensitive to rates','Stable cash flow'],
+      fr:['Obsession de préservation','Sensible aux taux','Cash flow stable'],
+      ja:['元本保存の強迫が武器','金利変化に敏感','キャッシュフロー安定性']
+    },
+    cautions: {
+      ko:['인플레이션에 패배','장기 복리 효과 못 누림','지나친 보수성'],
+      en:['Losing to inflation','Missing compounding','Excessive conservatism'],
+      fr:['Perdre face à l\'inflation','Rater la composition','Conservatisme excessif'],
+      ja:['インフレに負ける','長期複利効果を享受できない','過度な保守性']
+    },
+    methods: {
+      ko:['MMF / 단기채','예적금 풍차돌리기','CMA / RP','국채 단기 매매','금 ETF','TIPS','커버드콜로 인컴'],
+      en:['MMF / Short-term Bonds','Deposit Laddering','CMA / Repo','Short-Term Treasury Trading','Gold ETF','TIPS','Covered Call Income'],
+      fr:['MMF / Obligations Court','Échelle de Dépôts','CMA / Repo','Treasury Court','ETF Or','TIPS','Revenu Covered Call'],
+      ja:['MMF/短期債','預貯金ラダー','CMA/RP','国債短期売買','金ETF','TIPS','カバードコール収入']
+    },
+    allocation: [
+      {label:{ko:'단기채 / MMF',en:'ST Bonds / MMF',fr:'Obligations Court / MMF',ja:'短期債/MMF'}, pct:40, color:'#d4af37'},
+      {label:{ko:'예적금',en:'Deposits',fr:'Dépôts',ja:'預貯金'}, pct:25, color:'#b8941f'},
+      {label:{ko:'금 / TIPS',en:'Gold / TIPS',fr:'Or / TIPS',ja:'金/TIPS'}, pct:15, color:'#8b6914'},
+      {label:{ko:'배당 ETF',en:'Dividend ETF',fr:'ETF Dividende',ja:'配当ETF'}, pct:15, color:'#6b5012'},
+      {label:{ko:'현금',en:'Cash',fr:'Liquidités',ja:'現金'}, pct:5, color:'#3a2c0a'}
+    ],
+    checkup: {ko:'월간',en:'Monthly',fr:'Mensuel',ja:'月次'},
+    complement: 'RAGL', opposite: 'RAGL'
+  },
+  SPVL: {
+    name: {ko:'거북이 가치투자자',en:'Tortoise Value Holder',fr:'Tortue de Valeur',ja:'亀のバリュー投資家'},
+    tagline: {ko:'느리지만 멈추지 않는다',en:'Slow But Never Stops',fr:'Lent Mais Jamais à l\'Arrêt',ja:'遅くとも止まらない'},
+    master: 'Warren Buffett (passive side)',
+    bg: 'linear-gradient(135deg, #1a2820 0%, #0d1810 100%)',
+    profile: {
+      ko:'당신은 가장 안정적이고 인내심 깊은 투자자입니다. 단순한 자산 배분과 장기 보유로 복리의 힘을 극대화합니다.',
+      en:'You are the most stable and patient investor. Simple allocation plus long holding maximizes compounding.',
+      fr:'Vous êtes l\'investisseur le plus stable et patient. Allocation simple et long terme.',
+      ja:'あなたは最も安定的で忍耐強い投資家です。シンプルな資産配分と長期保有で複利を最大化します。'
+    },
+    strengths: {
+      ko:['압도적 안정성','감정 변동 거의 없음','시간을 가장 잘 활용'],
+      en:['Overwhelming stability','Minimal emotion','Best use of time'],
+      fr:['Stabilité écrasante','Émotion minimale','Meilleur usage du temps'],
+      ja:['圧倒的安定性','感情変動ほぼなし','時間を最も活用']
+    },
+    cautions: {
+      ko:['혁신 기회 놓침','지루함으로 다른 자산 유혹','과하게 안전해 수익률 저조'],
+      en:['Missing innovation','Temptation from boredom','Too safe, low returns'],
+      fr:['Manquer l\'innovation','Tentation par ennui','Trop sûr, rendements bas'],
+      ja:['革新機会逸失','退屈による他資産への誘惑','安全すぎて低リターン']
+    },
+    methods: {
+      ko:['올웨더 포트폴리오 (Bridgewater)','영구 포트폴리오 (Harry Browne)','60/40 클래식','배당주 장기 보유','우량 가치주 매수 후 보유','TDF','Boglehead 3-fund'],
+      en:['All Weather Portfolio','Permanent Portfolio','Classic 60/40','Dividend Long Hold','Buy & Hold Quality Value','Target Date Funds','Boglehead 3-fund'],
+      fr:['Portefeuille All Weather','Portefeuille Permanent','60/40 Classique','Long Terme Dividende','Buy & Hold Qualité','Fonds Cible','3-Fonds Boglehead'],
+      ja:['オールウェザーポートフォリオ','永久ポートフォリオ','60/40クラシック','配当株長期保有','優良価値株Buy&Hold','TDF','Boglehead 3ファンド']
+    },
+    allocation: [
+      {label:{ko:'주식 인덱스 (장기)',en:'Stock Index (Long)',fr:'Indice Actions Long',ja:'株式インデックス(長期)'}, pct:40, color:'#d4af37'},
+      {label:{ko:'채권 (장단기)',en:'Bonds (Long/Short)',fr:'Obligations',ja:'債券(長短期)'}, pct:30, color:'#b8941f'},
+      {label:{ko:'금',en:'Gold',fr:'Or',ja:'金'}, pct:15, color:'#8b6914'},
+      {label:{ko:'리츠',en:'REITs',fr:'REITs',ja:'REIT'}, pct:10, color:'#6b5012'},
+      {label:{ko:'현금',en:'Cash',fr:'Liquidités',ja:'現金'}, pct:5, color:'#3a2c0a'}
+    ],
+    checkup: {ko:'반기',en:'Semi-annual',fr:'Semestriel',ja:'半期'},
+    complement: 'RAGH', opposite: 'RAGH'
+  }
+};
+
+// Axis labels
+const AXIS_LABELS = {
+  RS: { R:{ko:'위험 감수',en:'Risk-Taking',fr:'Risque',ja:'リスク許容'}, S:{ko:'안정 추구',en:'Stability',fr:'Stabilité',ja:'安定志向'} },
+  AP: { A:{ko:'능동 운용',en:'Active',fr:'Actif',ja:'能動運用'}, P:{ko:'수동 보유',en:'Passive',fr:'Passif',ja:'受動保有'} },
+  GV: { G:{ko:'성장 추구',en:'Growth',fr:'Croissance',ja:'成長志向'}, V:{ko:'가치 추구',en:'Value',fr:'Valeur',ja:'価値志向'} },
+  HL: { H:{ko:'단기 지향',en:'Short-term',fr:'Court Terme',ja:'短期志向'}, L:{ko:'장기 지향',en:'Long-term',fr:'Long Terme',ja:'長期志向'} }
+};
+
+// ============== STATE ==============
+let state = {
+  lang: localStorage.getItem('pdti.lang') || 'ko',
+  answers: JSON.parse(localStorage.getItem('pdti.answers') || '{}'),
+  currentPage: parseInt(localStorage.getItem('pdti.page') || '0'),
+  history: JSON.parse(localStorage.getItem('pdti.history') || '[]')
+};
+
+const QUESTIONS_PER_PAGE = 10;
+const TOTAL_PAGES = 8;
+const TOTAL_QUESTIONS = 80;
+
+// ============== UTILITIES ==============
+function t(key) {
+  const dict = I18N[state.lang] || I18N.ko;
+  return dict[key] || key;
+}
+
+function saveState() {
+  localStorage.setItem('pdti.lang', state.lang);
+  localStorage.setItem('pdti.answers', JSON.stringify(state.answers));
+  localStorage.setItem('pdti.page', state.currentPage.toString());
+  localStorage.setItem('pdti.history', JSON.stringify(state.history));
+}
+
+function applyI18n() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    el.innerHTML = t(key);
+  });
+  document.documentElement.lang = state.lang;
+  const flags = {ko:'🇰🇷',en:'🇺🇸',fr:'🇫🇷',ja:'🇯🇵'};
+  const labels = {ko:'KO',en:'EN',fr:'FR',ja:'JA'};
+  document.getElementById('langFlag').textContent = flags[state.lang];
+  document.getElementById('langLabel').textContent = labels[state.lang];
+  document.querySelectorAll('.lang-option').forEach(o => {
+    o.classList.toggle('active', o.dataset.lang === state.lang);
+  });
+}
+
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2000);
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.getElementById('navFixed').style.display = (id === 'questions') ? 'flex' : 'none';
+  document.getElementById('footer').style.display = (id === 'questions') ? 'none' : 'block';
+  window.scrollTo({ top: 0, behavior: 'instant' });
+  document.documentElement.scrollTop = 0;
+  document.body.scrollTop = 0;
+}
+
+// ============== LANGUAGE ==============
+document.getElementById('langBtn').addEventListener('click', e => {
+  e.stopPropagation();
+  document.getElementById('langDropdown').classList.toggle('open');
+});
+document.addEventListener('click', () => {
+  document.getElementById('langDropdown').classList.remove('open');
+});
+document.querySelectorAll('.lang-option').forEach(opt => {
+  opt.addEventListener('click', e => {
+    state.lang = opt.dataset.lang;
+    saveState();
+    applyI18n();
+    document.getElementById('langDropdown').classList.remove('open');
+    // Re-render current screen contents
+    if (document.getElementById('questions').classList.contains('active')) renderQuestions();
+    if (document.getElementById('result').classList.contains('active')) {
+      const last = state.history[state.history.length - 1];
+      if (last) renderResult(last);
+    }
+  });
+});
+
+// ============== LANDING ==============
+document.getElementById('startBtn').addEventListener('click', () => {
+  // Resume or fresh
+  const answeredCount = Object.keys(state.answers).length;
+  if (answeredCount === 0) {
+    state.currentPage = 0;
+    saveState();
+  }
+  showScreen('questions');
+  renderQuestions();
+});
+
+// ============== QUESTIONS ==============
+function renderQuestions() {
+  // Always scroll to top when page changes
+  window.scrollTo({ top: 0, behavior: 'instant' });
+  document.documentElement.scrollTop = 0;
+  document.body.scrollTop = 0;
+
+  const list = document.getElementById('questionList');
+  list.innerHTML = '';
+  const start = state.currentPage * QUESTIONS_PER_PAGE;
+  const end = start + QUESTIONS_PER_PAGE;
+
+  for (let i = start; i < end; i++) {
+    const q = QUESTIONS[i];
+    const card = document.createElement('div');
+    card.className = 'question-card';
+    const num = String(i + 1).padStart(2, '0');
+    const current = state.answers[i];
+    card.innerHTML = `
+      <div class="q-number">№ ${num}</div>
+      <div class="q-text">${q.text[state.lang]}</div>
+      <div class="q-scale">
+        ${[1,2,3,4,5].map(v => `
+          <button class="q-option ${current === v ? 'selected' : ''}" data-q="${i}" data-val="${v}">${v}</button>
+        `).join('')}
+      </div>
+      <div class="scale-labels">
+        <span class="scale-label">${t('scale.1')}</span>
+        <span class="scale-label"></span>
+        <span class="scale-label">·</span>
+        <span class="scale-label"></span>
+        <span class="scale-label">${t('scale.5')}</span>
+      </div>
+    `;
+    list.appendChild(card);
+  }
+
+  // Bind option clicks
+  document.querySelectorAll('.q-option').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const qIdx = parseInt(btn.dataset.q);
+      const val = parseInt(btn.dataset.val);
+      state.answers[qIdx] = val;
+      // Update UI in this card
+      document.querySelectorAll(`.q-option[data-q="${qIdx}"]`).forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      saveState();
+      updateProgress();
+    });
+  });
+
+  // Update nav
+  document.getElementById('progressPage').textContent = t('progress.page').replace('{n}', state.currentPage + 1);
+  document.getElementById('prevBtn').disabled = state.currentPage === 0;
+  const nextBtn = document.getElementById('nextBtn');
+  nextBtn.textContent = (state.currentPage === TOTAL_PAGES - 1) ? t('nav.submit') : t('nav.next');
+  updateProgress();
+}
+
+function updateProgress() {
+  const answered = Object.keys(state.answers).length;
+  const pct = Math.round((answered / TOTAL_QUESTIONS) * 100);
+  document.getElementById('progressPct').textContent = pct + '%';
+  document.getElementById('progressFill').style.width = pct + '%';
+}
+
+document.getElementById('prevBtn').addEventListener('click', () => {
+  if (state.currentPage > 0) {
+    state.currentPage--;
+    saveState();
+    renderQuestions();
+  }
+});
+
+document.getElementById('nextBtn').addEventListener('click', () => {
+  // Check current page answers
+  const start = state.currentPage * QUESTIONS_PER_PAGE;
+  const end = start + QUESTIONS_PER_PAGE;
+  for (let i = start; i < end; i++) {
+    if (state.answers[i] === undefined) {
+      showToast(t('toast.incomplete'));
+      return;
+    }
+  }
+  if (state.currentPage < TOTAL_PAGES - 1) {
+    state.currentPage++;
+    saveState();
+    renderQuestions();
+  } else {
+    // Submit
+    submitTest();
+  }
+});
+
+// ============== SCORING ==============
+function calculateResult() {
+  const scores = { RS: 0, AP: 0, GV: 0, HL: 0 };
+  const counts = { RS: 0, AP: 0, GV: 0, HL: 0 };
+
+  QUESTIONS.forEach((q, i) => {
+    const raw = state.answers[i] || 3;
+    // dir is the letter that "high score" maps to for that question
+    // axis is e.g. 'RS', so axis[0] = 'R'
+    const directional = (q.dir === q.axis[0]) ? raw : (6 - raw);
+    scores[q.axis] += directional;
+    counts[q.axis]++;
+  });
+
+  // Normalize each axis to 0..100 (where >50 = first letter dominant)
+  const normalized = {};
+  Object.keys(scores).forEach(axis => {
+    const max = counts[axis] * 5;
+    const min = counts[axis] * 1;
+    normalized[axis] = ((scores[axis] - min) / (max - min)) * 100;
+  });
+
+  const code =
+    (normalized.RS >= 50 ? 'R' : 'S') +
+    (normalized.AP >= 50 ? 'A' : 'P') +
+    (normalized.GV >= 50 ? 'G' : 'V') +
+    (normalized.HL >= 50 ? 'H' : 'L');
+
+  return { code, scores: normalized, date: new Date().toISOString() };
+}
+
+function submitTest() {
+  showScreen('loading');
+  setTimeout(() => {
+    const result = calculateResult();
+    state.history.push(result);
+    if (state.history.length > 10) state.history.shift();
+    saveState();
+    renderResult(result);
+    showScreen('result');
+  }, 1800);
+}
+
+// ============== RESULT RENDER ==============
+function renderResult(result) {
+  const type = TYPES[result.code];
+  const lang = state.lang;
+  const container = document.getElementById('result');
+
+  const axes = [
+    { key: 'RS', code: result.code[0], score: result.scores.RS },
+    { key: 'AP', code: result.code[1], score: result.scores.AP },
+    { key: 'GV', code: result.code[2], score: result.scores.GV },
+    { key: 'HL', code: result.code[3], score: result.scores.HL }
+  ];
+
+  container.innerHTML = `
+    <div class="result-hero" id="resultHero" style="background: ${type.bg};">
+      <div class="result-eyebrow">${t('result.eyebrow')}</div>
+      <div class="result-code">${result.code}</div>
+      <div class="result-name">${type.name[lang]}</div>
+      <div class="result-tagline">"${type.tagline[lang]}"</div>
+      <div class="result-master">${t('result.master')} · ${type.master}</div>
+    </div>
+
+    <div class="result-section">
+      <div class="section-title">${t('result.axes')}</div>
+      <div class="axis-list">
+        ${axes.map(a => {
+          const firstLetter = a.key[0];
+          const secondLetter = a.key[1];
+          const dominantFirst = a.code === firstLetter;
+          const score = Math.round(a.score);
+          return `
+            <div class="axis-row">
+              <div class="axis-labels">
+                <span class="axis-name ${dominantFirst ? 'dominant' : ''}">${firstLetter} · ${AXIS_LABELS[a.key][firstLetter][lang]}</span>
+                <span class="axis-name ${!dominantFirst ? 'dominant' : ''}">${AXIS_LABELS[a.key][secondLetter][lang]} · ${secondLetter}</span>
+              </div>
+              <div class="axis-bar">
+                <div class="axis-bar-mid"></div>
+                <div class="axis-bar-fill" style="width: ${score}%"></div>
+              </div>
+              <div class="axis-score">${score} / 100</div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+
+    <div class="result-section">
+      <div class="section-title">${t('result.profile')}</div>
+      <div class="section-desc">${type.profile[lang]}</div>
+    </div>
+
+    <div class="result-section">
+      <div class="section-title">${t('result.strengths')}</div>
+      <div class="point-list">
+        ${type.strengths[lang].map(s => `<div class="point-item">${s}</div>`).join('')}
+      </div>
+    </div>
+
+    <div class="result-section">
+      <div class="section-title">${t('result.cautions')}</div>
+      <div class="point-list">
+        ${type.cautions[lang].map(s => `<div class="point-item caution">${s}</div>`).join('')}
+      </div>
+    </div>
+
+    <div class="result-section">
+      <div class="section-title">${t('result.methods')}</div>
+      <div class="method-grid">
+        ${type.methods[lang].map(m => `<div class="method-tag">${m}</div>`).join('')}
+      </div>
+    </div>
+
+    <div class="result-section">
+      <div class="section-title">${t('result.allocation')}</div>
+      <div class="alloc-wrap">
+        <canvas id="allocChart"></canvas>
+      </div>
+      <div class="alloc-legend">
+        ${type.allocation.map(a => `
+          <div class="alloc-row">
+            <div class="alloc-left">
+              <span class="alloc-dot" style="background:${a.color}"></span>
+              <span>${a.label[lang]}</span>
+            </div>
+            <span class="alloc-pct">${a.pct}%</span>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+
+    <div class="result-section">
+      <div class="section-title">${t('result.meta')}</div>
+      <div class="meta-grid">
+        <div class="meta-card">
+          <div class="meta-label">${t('result.checkup')}</div>
+          <div class="meta-value">${type.checkup[lang]}</div>
+        </div>
+        <div class="meta-card">
+          <div class="meta-label">${t('result.complement')}</div>
+          <div class="meta-value">${type.complement}</div>
+          <div class="meta-sub">${TYPES[type.complement].name[lang]}</div>
+        </div>
+        <div class="meta-card">
+          <div class="meta-label">${t('result.opposite')}</div>
+          <div class="meta-value">${type.opposite}</div>
+          <div class="meta-sub">${TYPES[type.opposite].name[lang]}</div>
+        </div>
+        <div class="meta-card">
+          <div class="meta-label">${t('result.style')}</div>
+          <div class="meta-value">${result.code}</div>
+          <div class="meta-sub">${type.master}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="result-actions">
+      <button class="action-btn primary" id="saveBtn">${t('action.save')}</button>
+      <button class="action-btn" id="shareBtn">${t('action.share')}</button>
+      <button class="action-btn" id="historyBtn">${t('action.history')}</button>
+      <button class="action-btn" id="restartBtn">${t('action.restart')}</button>
+    </div>
+
+    ${state.history.length > 1 ? `
+      <div class="result-section" id="historySection" style="display:none;">
+        <div class="section-title">${t('history.title')}</div>
+        <div class="history-list">
+          ${state.history.slice().reverse().map(h => `
+            <div class="history-item">
+              <span class="history-code">${h.code}</span>
+              <span class="history-date">${new Date(h.date).toLocaleDateString(lang)}</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    ` : ''}
+
+    <div class="disclaimer">${t('disclaimer')}</div>
+  `;
+
+  // Render chart
+  setTimeout(() => {
+    const ctx = document.getElementById('allocChart');
+    if (ctx) {
+      new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: type.allocation.map(a => a.label[lang]),
+          datasets: [{
+            data: type.allocation.map(a => a.pct),
+            backgroundColor: type.allocation.map(a => a.color),
+            borderColor: '#0a0e1a',
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          cutout: '65%',
+          plugins: { legend: { display: false }, tooltip: { enabled: false } },
+          animation: { animateRotate: true, duration: 1200 }
+        }
+      });
+    }
+  }, 100);
+
+  // Bind actions
+  document.getElementById('saveBtn').addEventListener('click', saveAsImage);
+  document.getElementById('shareBtn').addEventListener('click', shareLink);
+  document.getElementById('restartBtn').addEventListener('click', restart);
+  document.getElementById('historyBtn').addEventListener('click', () => {
+    const hs = document.getElementById('historySection');
+    if (hs) hs.style.display = hs.style.display === 'none' ? 'block' : 'none';
+  });
+}
+
+// ============== ACTIONS ==============
+function saveAsImage() {
+  showToast('...');
+  const target = document.getElementById('result');
+  html2canvas(target, {
+    backgroundColor: '#0a0e1a',
+    scale: 2,
+    useCORS: true,
+    logging: false
+  }).then(canvas => {
+    const link = document.createElement('a');
+    const last = state.history[state.history.length - 1];
+    link.download = `PDTI_${last.code}_${new Date().toISOString().slice(0,10)}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    showToast(t('toast.saved'));
+  }).catch(() => {
+    showToast('Error');
+  });
+}
+
+function shareLink() {
+  const last = state.history[state.history.length - 1];
+  const url = `${location.origin}${location.pathname}?type=${last.code}&lang=${state.lang}`;
+  if (navigator.share) {
+    navigator.share({ title: 'PDTI', text: `My PDTI: ${last.code}`, url }).catch(() => {});
+  } else if (navigator.clipboard) {
+    navigator.clipboard.writeText(url).then(() => showToast(t('toast.copied')));
+  } else {
+    prompt('Copy link:', url);
+  }
+}
+
+function restart() {
+  state.answers = {};
+  state.currentPage = 0;
+  saveState();
+  showScreen('landing');
+}
+
+// ============== FULL RESET (any screen) ==============
+function openResetModal() {
+  document.getElementById('resetModalText').textContent = t('reset.confirm');
+  document.getElementById('resetCancel').textContent = t('nav.prev');
+  document.getElementById('resetConfirm').textContent = t('action.restart');
+  document.getElementById('resetModal').classList.add('open');
+}
+function closeResetModal() {
+  document.getElementById('resetModal').classList.remove('open');
+}
+function performFullReset() {
+  state.answers = {};
+  state.currentPage = 0;
+  saveState();
+  // Clean URL params (in case opened from a shared link)
+  if (location.search) {
+    history.replaceState({}, '', location.pathname);
+  }
+  closeResetModal();
+  showScreen('landing');
+  showToast(t('reset.done'));
+}
+
+document.getElementById('resetBtn').addEventListener('click', openResetModal);
+document.getElementById('resetCancel').addEventListener('click', closeResetModal);
+document.getElementById('resetConfirm').addEventListener('click', performFullReset);
+document.getElementById('resetModal').addEventListener('click', e => {
+  if (e.target.id === 'resetModal') closeResetModal();
+});
+
+// ============== INIT ==============
+function init() {
+  applyI18n();
+  // Check URL params for shared result
+  const urlParams = new URLSearchParams(location.search);
+  const sharedType = urlParams.get('type');
+  const sharedLang = urlParams.get('lang');
+  if (sharedLang && I18N[sharedLang]) {
+    state.lang = sharedLang;
+    saveState();
+    applyI18n();
+  }
+  if (sharedType && TYPES[sharedType]) {
+    const fakeResult = { code: sharedType, scores: { RS: 50, AP: 50, GV: 50, HL: 50 }, date: new Date().toISOString() };
+    renderResult(fakeResult);
+    showScreen('result');
+    return;
+  }
+  // Resume in-progress
+  if (Object.keys(state.answers).length > 0 && Object.keys(state.answers).length < TOTAL_QUESTIONS) {
+    showScreen('landing'); // user can click start to resume
+  }
+}
+
+init();
+</script>
+</body>
+</html>
