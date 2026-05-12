@@ -2345,7 +2345,8 @@ function showToast(msg) {
   setTimeout(() => toast.classList.remove('show'), 2000);
 }
 
-function showScreen(id) {
+function showScreen(id, opts) {
+  opts = opts || {};
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   document.getElementById('navFixed').style.display = (id === 'questions') ? 'flex' : 'none';
@@ -2358,7 +2359,42 @@ function showScreen(id) {
   window.scrollTo({ top: 0, behavior: 'instant' });
   document.documentElement.scrollTop = 0;
   document.body.scrollTop = 0;
+
+  // Push to browser history so the device back button stays within the app
+  // Wrapped in try-catch: some sandboxed environments (preview iframes, etc.)
+  // restrict history API and would otherwise break the entire app.
+  if (!opts.skipHistory) {
+    try {
+      const stateObj = { screen: id, detailCode: opts.detailCode || null };
+      const hashPath = '#' + id + (opts.detailCode ? '/' + opts.detailCode : '');
+      if (opts.replace) {
+        history.replaceState(stateObj, '', hashPath);
+      } else {
+        history.pushState(stateObj, '', hashPath);
+      }
+    } catch (e) {
+      // Silently fail in sandboxed contexts; navigation still works via the in-app back button.
+    }
+  }
 }
+
+// Browser back/forward handler — navigate within the app instead of leaving
+window.addEventListener('popstate', function(e) {
+  const s = e.state;
+  if (s && s.screen) {
+    if (s.screen === 'typeDetail' && s.detailCode) {
+      renderTypeDetail(s.detailCode);
+      showScreen('typeDetail', { skipHistory: true });
+    } else {
+      // Re-render gallery if needed
+      if (s.screen === 'gallery') renderGallery();
+      showScreen(s.screen, { skipHistory: true });
+    }
+  } else {
+    // No state → treat as landing
+    showScreen('landing', { skipHistory: true });
+  }
+});
 
 // ============== LANGUAGE ==============
 document.getElementById('langBtn').addEventListener('click', e => {
@@ -2414,7 +2450,7 @@ function renderGallery() {
   grid.querySelectorAll('.gallery-card').forEach(card => {
     card.addEventListener('click', () => {
       renderTypeDetail(card.dataset.code);
-      showScreen('typeDetail');
+      showScreen('typeDetail', { detailCode: card.dataset.code });
     });
   });
 }
@@ -2886,7 +2922,7 @@ function performFullReset() {
   saveState();
   // Clean URL params (in case opened from a shared link)
   if (location.search) {
-    history.replaceState({}, '', location.pathname);
+    try { history.replaceState({}, '', location.pathname); } catch (e) {}
   }
   closeResetModal();
   showScreen('landing');
@@ -2915,13 +2951,29 @@ function init() {
   if (sharedType && TYPES[sharedType]) {
     const fakeResult = { code: sharedType, scores: { RS: 50, AP: 50, GV: 50, HL: 50 }, date: new Date().toISOString() };
     renderResult(fakeResult);
-    showScreen('result');
+    showScreen('result', { replace: true });
     return;
   }
-  // Resume in-progress
-  if (Object.keys(state.answers).length > 0 && Object.keys(state.answers).length < TOTAL_QUESTIONS) {
-    showScreen('landing'); // user can click start to resume
+
+  // Handle initial hash (e.g. when user shares a deep link or lands here)
+  const hash = location.hash.replace('#', '');
+  if (hash) {
+    const [screenName, detailCode] = hash.split('/');
+    if (screenName === 'gallery') {
+      renderGallery();
+      showScreen('gallery', { replace: true });
+      return;
+    } else if (screenName === 'typeDetail' && detailCode && TYPES[detailCode]) {
+      renderTypeDetail(detailCode);
+      // Push landing first so back goes home, then push detail
+      try { history.replaceState({ screen: 'landing' }, '', '#landing'); } catch (e) {}
+      showScreen('typeDetail', { detailCode: detailCode });
+      return;
+    }
   }
+
+  // Default landing — register initial history state so back button works
+  showScreen('landing', { replace: true });
 }
 
 init();
