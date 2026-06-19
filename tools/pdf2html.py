@@ -251,6 +251,7 @@ def convert(pdf_path, title, tag, date):
 <div class="topbar"><div class="topbar-in"><a class="home" href="/">INVEST STORY</a><span class="tag">{esc(tag)} · {esc(date)}</span></div></div>
 <main>
 {body}
+<p class="byline" style="margin:30px 0 4px;padding-top:16px;border-top:1px solid var(--line);font-weight:700;color:var(--ink);font-size:14px">박철웅 기자 <a href="mailto:joshpark.korea@gmail.com" style="font-weight:600">joshpark.korea@gmail.com</a></p>
 </main>
 <footer class="artfoot">
  <a class="kk" href="{KAKAO}" target="_blank" rel="noopener">투자이야기 오픈채팅 바로가기</a><br>
