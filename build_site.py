@@ -1,0 +1,121 @@
+<!DOCTYPE html><html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>코스피 사상 첫 9,000 돌파 — 매파 FOMC도 못 막은 외국인 반도체 매수 · INVEST STORY</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Noto+Serif+KR:wght@600;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+ :root{--navy:#1B3C6E;--gold:#C9A654;--gold-d:#a98731;--ink:#1F2933;--mute:#6B7785;--line:#E2E6EC;
+  --serif:'Noto Serif KR',serif;--latin:'Playfair Display',serif;
+  --sans:'Pretendard','Pretendard Variable',system-ui,-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;}
+ *{box-sizing:border-box}
+ body{margin:0;background:#F7F8FA;color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.72;-webkit-font-smoothing:antialiased}
+ a{color:#1B5588}
+ .topbar{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+ .topbar-in{max-width:820px;margin:0 auto;padding:12px 22px;display:flex;align-items:center;justify-content:space-between}
+ .home{font-family:var(--latin);font-weight:800;color:var(--navy);letter-spacing:.1em;text-decoration:none;font-size:16px}
+ .home:before{content:"← ";color:var(--gold-d);font-family:var(--sans)}
+ .topbar .tag{font-size:11.5px;font-weight:700;color:#fff;background:var(--navy);padding:3px 10px;border-radius:2px}
+ main{max-width:820px;margin:0 auto;padding:6px 22px 60px}
+ .art-hero{background:var(--navy);color:#fff;border-radius:4px;padding:26px 26px 28px;margin:18px 0 22px}
+ .art-hero .ah-k{color:var(--gold);font-weight:800;font-size:12px;letter-spacing:.12em;margin-bottom:8px}
+ .art-hero .ah-t{font-family:var(--serif);font-weight:900;font-size:clamp(22px,4.2vw,30px);line-height:1.32}
+ .art-hero .ah-s{color:#cdd9ea;font-size:13px;margin-top:10px;line-height:1.6}
+ h2.subhead,h3.subhead{font-family:var(--serif);color:var(--navy);font-weight:700;font-size:17px;margin:26px 0 10px;line-height:1.4}
+ .sec{margin:34px 0 14px;border-top:2px solid var(--navy);padding-top:14px}
+ .sec .eyebrow{color:var(--gold-d);font-weight:800;font-size:11.5px;letter-spacing:.1em;margin-bottom:4px}
+ .sec h2{font-family:var(--serif);color:var(--navy);font-weight:900;font-size:clamp(19px,3.6vw,24px);margin:0;line-height:1.35}
+ .eyebrow-solo{color:var(--gold-d);font-weight:800;font-size:12px;letter-spacing:.08em;margin:28px 0 6px}
+ p{margin:0 0 13px}
+ .lead-para{font-size:17px;line-height:1.85}
+ .small{font-size:12.5px;color:var(--mute);line-height:1.6}
+ .disc{font-size:11.5px;color:var(--mute);line-height:1.65}
+ table.grid{width:100%;border-collapse:collapse;margin:6px 0 18px;font-size:13.5px;border:1px solid var(--line);table-layout:fixed}
+ table.grid th{background:var(--navy);color:#fff;font-weight:700;text-align:left;padding:9px 10px;font-size:12.5px;vertical-align:top}
+ table.grid td{padding:9px 10px;border-top:1px solid var(--line);vertical-align:top;word-break:keep-all}
+ table.grid tbody tr:nth-child(even){background:#F4F6F8}
+ table.kv{width:100%;border-collapse:collapse;margin:4px 0 16px;font-size:13.5px;border:1px solid var(--line)}
+ table.kv th{width:34%;text-align:left;background:#F2F4F6;color:var(--ink);font-weight:700;padding:8px 10px;border-top:1px solid var(--line);border-right:1px solid var(--line);vertical-align:top;word-break:keep-all}
+ table.kv td{padding:8px 10px;border-top:1px solid var(--line);vertical-align:top}
+ table.kv.kv-soft th{background:transparent}
+ .scenbar{color:#fff;border-radius:3px;padding:11px 16px;margin:16px 0 12px;display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;align-items:center}
+ .scenbar .sb-l{font-weight:800;font-size:15px}
+ .scenbar .sb-r{font-weight:700;font-size:14px;text-align:right;opacity:.95}
+ .callout{border-left:3px solid;border-radius:3px;padding:13px 16px;margin:14px 0}
+ .callout-h{font-weight:800;font-size:14px;margin-bottom:5px}
+ .callout-b{font-size:14px;line-height:1.72}
+ .gloss-h{font-family:var(--serif);font-weight:700;color:var(--navy);font-size:15px;margin:24px 0 6px}
+ .src-cat{font-weight:800;color:var(--navy);font-size:13.5px;margin:14px 0 4px}
+ .src-link{font-size:13px;margin:0 0 4px}
+ .kakao{margin:22px 0}
+ hr.rule{border:none;border-top:1px solid var(--line);margin:24px 0}
+ .artfoot{max-width:820px;margin:0 auto;padding:22px;border-top:2px solid var(--navy);text-align:center}
+ .artfoot a.kk{display:inline-block;background:#FEE500;color:#191600;font-weight:700;font-size:13.5px;padding:9px 16px;border-radius:3px;text-decoration:none;margin:6px 0 12px}
+ .artfoot .back{display:inline-block;color:var(--navy);font-weight:700;text-decoration:none;font-size:13.5px}
+ .artfoot .dom{color:var(--gold-d);font-weight:700;font-size:12px;letter-spacing:.06em;margin-top:10px}
+ @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+ a:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+</style></head><body>
+<div class="topbar"><div class="topbar-in"><a class="home" href="/">INVEST STORY</a><span class="tag">특집호 · 2026-06-19</span></div></div>
+<main>
+<header class="art-hero"><div class="ah-k">JOSH PARK INVEST · 특집호</div><div class="ah-t">코스피 사상 첫 9,000 돌파 — 매파 FOMC도 못 막은 외국인 반도체 매수</div><div class="ah-s">2026년 6월 19일(금) 오전 09:06 · 코스피 사상 첫 9,000 돌파 — 매파 FOMC도 못 막은 외국인 반도체 매수 (미 준틴스 휴장)</div></header>
+<p class="lead-para">어제(6/18) 코스피가 사상 처음으로 9,000선을 돌파했습니다. 종가는 전 거래일보다 199.60포인트(2.25%) 오른 9,063.84, 장중에는 9,106.07까지 치솟았습니다. 간밤 매파적 FOMC와 원·달러 환율 급등(1,520원대)이라는 악재에도, 외국인이 1조 2,800억 원 넘게 순매수하며 지수를 끌어올렸습니다. 삼성전자(+4.62%)와 SK하이닉스(+6.51%) 등 반도체 대형주가 질주한 결과입니다. 다만 이 상승은 철저히 반도체 쏠림이었습니다 — 코스닥은 오히려 3.01% 급락(1,000.93)했고, 현대차·LG에너지솔루션 등 비반도체 대형주는 약세였습니다. 한편 미국 증시는 전날 FOMC 충격을 딛고 반등했습니다(다우 +0.14% · S&amp;P +1.08% · 나스닥 +1.91% · 러셀2000 +2.12%). 오늘(6/19)은 미국이 준틴스로 휴장하며, 미·이란은 스위스에서 합의에 공식 서명합니다.</p>
+<p class="eyebrow-solo">한눈에 핵심</p>
+<table class="kv"><tr><th>★ 코스피 9,000 돌파 ★</th><td>사상 첫 9,000선 — 종가 9,063.84(+2.25%, +199.60), 장중 9,106.07. 올해 +115% G20 압도적 1위</td></tr><tr><th>★ 외국인 매수 ★</th><td>외국인 +1조2,826억 순매수(반도체 집중) / 기관 -7,775억·개인 -3,806억 순매도</td></tr><tr><th>★ 반도체 쏠림 ★</th><td>삼성전자 +4.62%(362,500) · SK하이닉스 +6.51%(2,685,000) · 삼성전기 +8.27% / 코스닥 -3.01%(1,000.93)</td></tr><tr><th>미국 6/18 마감</th><td>FOMC 충격 회복 반등 — 다우 +0.14%(51,564.70) · S&amp;P +1.08%(7,500.58) · 나스닥 +1.91%(26,517.93) · 러셀 +2.12%</td></tr><tr><th>★ 환율·달러 ★</th><td>원·달러 1,520원대 마감(매파 달러 강세) · 달러인덱스 100.59(+0.72%)로 100 돌파</td></tr><tr><th>★ 한은 금리 ★</th><td>유럽·일본·미국 긴축 전환에 한국은행 인상 초읽기 — 7월 금통위 인상 거론</td></tr><tr><th>미·이란</th><td>6/19 스위스 공식 서명 예정 · MOU 서명에 에너지주 하락 · IEA 2027 공급 과잉 경고</td></tr><tr><th>★ 오늘(6/19) ★</th><td>미국 준틴스 휴장 · 코스피 9,000선 안착 시험 · 변동성 경고(6월 사이드카 7회)</td></tr></table>
+<p class="eyebrow-solo">주요 지표 대시보드 (한국·미국 6/18 종가 / 매크로 표기 시점)</p>
+<table class="grid"><thead><tr><th>지표</th><th>값</th><th>지표</th><th>값</th></tr></thead><tbody><tr><td>★ 코스피 6/18 ★</td><td>9,063.84 (+2.25%)</td><td>★ 다우 6/18 ★</td><td>51,564.70 (+0.14%)</td></tr><tr><td>코스피 장중 고가</td><td>9,106.07 (사상 최고)</td><td>S&amp;P 500 6/18</td><td>7,500.58 (+1.08%)</td></tr><tr><td>코스닥 6/18</td><td>1,000.93 (-3.01%)</td><td>나스닥 6/18</td><td>26,517.93 (+1.91%)</td></tr><tr><td>삼성전자 6/18</td><td>362,500원 (+4.62%)</td><td>러셀 2000 6/18</td><td>2,979.77 (+2.12%)</td></tr><tr><td>SK하이닉스 6/18</td><td>2,685,000원 (+6.51%)</td><td>달러인덱스 6/18</td><td>100.59 (+0.72%)</td></tr><tr><td>삼성전기 6/18</td><td>220만원 (+8.27%)</td><td>미 10년물 6/18</td><td>4.46% 부근</td></tr><tr><td>외국인 순매수</td><td>+1조 2,826억원</td><td>WTI 6/18</td><td>76.60달러 (-0.25%)</td></tr><tr><td>★ USD/KRW 6/18 ★</td><td>1,520원대 (상승)</td><td>VIX 6/18</td><td>16.40 (-11.06%)</td></tr><tr><td>올해 코스피 수익률</td><td>+115.1% (G20 1위)</td><td>금 6/18</td><td>$4,300선 회복</td></tr></tbody></table>
+<div class="sec"><div class="eyebrow">SECTION 00</div><h2>핵심 이벤트</h2></div>
+<table class="grid"><thead><tr><th>일자 내용 관련 자산</th><th></th><th></th></tr></thead><tbody><tr><td>★ 6/18(목)</td><td>코스피 사상 첫 9,000 돌파(9,063.84, +2.25%). 외국인 1.2조 순매수, 반도체 질주. 코스닥은 -3.01%</td><td>코스피·반도체</td></tr><tr><td>6/18(목)</td><td>미국, FOMC 충격 딛고 반등(러셀 +2.12% 주도). 미·이란 MOU 서명에 에너지주 하락</td><td>미 증시·유가</td></tr><tr><td>★ 6/19(금) 오늘</td><td>미국 준틴스 휴장 · 미·이란 스위스 공식 서명 예정 · 코스피 9,000선 안착 시험</td><td>전 자산군</td></tr><tr><td>7월 금통위</td><td>한국은행 기준금리 인상 거론 — 글로벌 긴축 전환 동조 여부</td><td>환율·증시</td></tr><tr><td>6/24(수)</td><td>엔비디아 주주총회 · 7/6경 SpaceX 나스닥100 편입 예상</td><td>NVDA·SPCX</td></tr><tr><td>10월 FOMC</td><td>현재 인상 확률 60%대 — 향후 인플레·고용 지표가 좌우</td><td>전 자산군</td></tr></tbody></table>
+<div class="sec"><div class="eyebrow">★ SECTION 1</div><h2>코스피 9,000 — 어떻게 왔고, 어디로 가나</h2></div>
+<h3 class="subhead">1-1. 9,000까지의 기록</h3>
+<table class="kv"><tr><th>시점 코스피</th><td></td></tr><tr><th>2025/10/27</th><td>4,000 돌파</td></tr><tr><th>2026/01/27</th><td>5,000 돌파</td></tr><tr><th>2026/02/25</th><td>6,000 돌파</td></tr><tr><th>2026/05/06</th><td>7,000 돌파</td></tr><tr><th>2026/05/15</th><td>8,000 돌파</td></tr><tr><th>★ 2026/06/18</th><td>9,000 돌파 (9,063.84) — 8개월간 여섯 번째 앞자리 교체</td></tr></table>
+<p>올해 들어서만 코스피는 115.1% 급등했습니다. 일본(38.9%)·튀르키예(28.1%)·이탈리아(17.0%) 등을 압도하는 G20 단연 1위 상승률입니다. 8,000을 넘은 지 불과 한 달(거래일 22일) 만에 9,000을 밟았습니다.</p>
+<h3 class="subhead">1-2. 왜 올랐나 — 외국인 + 반도체 + 디커플링</h3>
+<table class="kv"><tr><th>동력 내용</th><td></td></tr><tr><th>외국인 매수</th><td>외국인이 1조2,826억 순매수하며 지수를 견인. 대형 반도체주에 집중. 매파 FOMC·환율 급등 악재를 압도</td></tr><tr><th>반도체 질주</th><td>삼성전자 +4.62%·SK하이닉스 +6.51%(장중 273만, &#x27;270만닉스&#x27;). SK스퀘어 +6.52%·삼성전기 +8.27% 신고가</td></tr><tr><th>디커플링</th><td>간밤 매파 FOMC에도 한국은 강세 — AI 메모리(HBM) 슈퍼사이클이 미 금리 우려를 압도하는 흐름 지속</td></tr></table>
+<p class="eyebrow-solo">초보자 용어 풀이</p>
+<table class="kv"><tr><th>쏠림 장세</th><td>소수 업종(여기선 반도체)에만 매수가 몰려 지수는 오르지만 대다수 종목은 소외되는 장세</td></tr><tr><th>디커플링</th><td>함께 움직이던 시장이 갈라지는 현상 — 미 빅테크↓에도 한국 반도체↑</td></tr><tr><th>사이드카</th><td>선물이 급등락하면 프로그램 매매를 5분간 멈추는 안전장치. 6월 들어 7회 발동(변동성 신호)</td></tr><tr><th>매파(긴축)</th><td>금리 인상·높은 금리 유지를 선호하는 성향 (반대는 비둘기=완화)</td></tr><tr><th>달러인덱스</th><td>주요 6개국 통화 대비 달러의 종합 가치. 100 돌파=강달러 국면</td></tr></table>
+<h3 class="subhead">1-3. 리스크 — 잔치 뒤의 그림자</h3>
+<table class="kv"><tr><th>리스크 내용</th><td></td></tr><tr><th>극단적 쏠림</th><td>상승은 반도체 두 종목이 주도. 코스닥 -3.01%, 현대차·LG에너지솔루션·두산에너빌리티 등 약세. 하락 종목 수 &gt; 상승 종목 수</td></tr><tr><th>환율 부담</th><td>원·달러 1,520원대 약세 → 외국인 환차손 요인. 매파 달러 강세가 이어지면 수급 반전 위험</td></tr><tr><th>변동성 경고</th><td>6월 들어 매수 사이드카 4회·매도 3회 등 7차례 발동. 13거래일 중 절반 이상이 급등락 마감</td></tr><tr><th>한은 인상</th><td>글로벌 긴축 동조로 7월 금통위 금리 인상 거론 — 유동성·밸류에이션에 변수</td></tr></table>
+<table class="grid"><thead><tr><th>1-4. 전망 — &#x27;만스피&#x27; vs 숨고르기</th></tr></thead><tbody><tr><td>강세론은 명확합니다. AI 메모리 슈퍼사이클과 외국인 매수가 살아 있는 한 1만 포인트(만스피)도 시야에 들어옵니다. 다만 지수가 두 종목(삼성·SK하이닉스)에 의존하는 구조는 취약합니다. 반도체가 쉬면 지수도 쉽니다. 환율 1,520원대 약세와 7월 한은 인상 가능성, 6월 내내 이어진 극심한 변동성은 단기 숨고르기(조정) 가능성을 높입니다. 추격 매수보다 분할 대응과 비중 관리가 유효한 구간입니다. 지수의 절대 레벨보다 &#x27;외국인 매수 지속&#x27;과 &#x27;반도체 외 업종으로의 온기 확산&#x27; 여부를 지표로 삼는 것이 좋습니다.</td></tr></tbody></table>
+<div class="sec"><div class="eyebrow">SECTION 2</div><h2>미국 — FOMC 충격 딛고 반등</h2></div>
+<p>FOMC 다음 날인 6/18, 미국 증시는 전날의 매파 충격을 상당 부분 되돌렸습니다. 소형주 지수인 러셀2000이 2.12% 오르며 반등을 주도(2,979.77)했고, 나스닥 +1.91%(26,517.93), S&amp;P 500 +1.08%(7,500.58), 다우 +0.14%(51,564.70)로 마감했습니다. 매파 기조에도 국채금리가 소폭 내린 점이 위험선호를 떠받쳤습니다. 한편 미국과 이란이 MOU에 서명하면서 에너지주는 하락했고, IEA는 2027년 글로벌 공급 과잉을 경고했습니다. 오늘(6/19)은 준틴스로 미국 증시가 휴장합니다.</p>
+<div class="sec"><div class="eyebrow">SECTION 3 · 전일(6/18) 핫 종목</div><h2>코스피 9,000을 만든 주역들</h2></div>
+<table class="grid"><thead><tr><th>000660 SK하이닉스 6/18 +6.51% · &#x27;270만닉스&#x27; 터치</th><th></th><th></th></tr></thead><tbody><tr><td>기간</td><td>전망</td><td>해설</td></tr><tr><td>단기</td><td>↑ 강세</td><td>장중 2,738,000원·신고가. 외국인 매수 집중</td></tr><tr><td>중기</td><td>긍정</td><td>엔비디아 루빈 HBM4 점유 우위</td></tr><tr><td>장기</td><td>↗ 긍정</td><td>AI 메모리 슈퍼사이클 핵심</td></tr></tbody></table>
+<p class="gloss-h">지금 시장에서는</p>
+<p>6/18 6.51% 오른 2,685,000원 마감, 장중 2,738,000원 터치. 코스피 9,000 돌파의 일등공신.</p>
+<table class="grid"><thead><tr><th>핵심 근거 AI 데이터센터향 HBM 수요가 매파 FOMC·환율 악재를 압도. 외국인 순매수의 최선호주.</th></tr></thead><tbody><tr><td>오늘 흐름·예상 디커플링 상징주. 단 단기 급등 부담·환율·미 반도체 변동성은 체크 포인트.</td></tr></tbody></table>
+<table class="grid"><thead><tr><th>005930 삼성전자 6/18 +4.62% · 362,500원</th><th></th><th></th></tr></thead><tbody><tr><td>기간</td><td>전망</td><td>해설</td></tr><tr><td>단기</td><td>↑ 강세</td><td>외국인 매수에 36만원대 안착</td></tr><tr><td>중기</td><td>긍정</td><td>HBM4·메모리 업황 개선</td></tr><tr><td>장기</td><td>↗ 중립~긍정</td><td>HBM 경쟁력 회복 여부 관건</td></tr></tbody></table>
+<table class="grid"><thead><tr><th>지금 시장에서는 6/18 4.62% 오른 362,500원 마감(시총 1위). 지수 9,000 돌파의 무게중심.</th></tr></thead><tbody><tr><td>핵심 근거 메모리 업황 개선 + 외국인 수급. 시총 1위로 지수 영향력 절대적.</td></tr><tr><td>오늘 흐름·예상 FOMC 매파에도 메모리 모멘텀 우위. 환율·외국인 흐름이 단기 변수.</td></tr></tbody></table>
+<table class="grid"><thead><tr><th>009150 삼성전기 6/18 +8.27% · 사상 최고가</th><th></th><th></th></tr></thead><tbody><tr><td>기간</td><td>전망</td><td>해설</td></tr><tr><td>단기</td><td>↑ 급등</td><td>MLCC·FC-BGA 겹호황에 신고가</td></tr><tr><td>중기</td><td>긍정</td><td>자율주행차용 MLCC 양산 모멘텀</td></tr><tr><td>장기</td><td>↗ 긍정</td><td>AI·전장 부품 수요 확대</td></tr></tbody></table>
+<table class="grid"><thead><tr><th>지금 시장에서는 6/18 8.27% 급등한 220만원에 사상 최고가 마감. 자율주행차용 MLCC 양산 돌입 소식.</th></tr></thead><tbody><tr><td>핵심 근거 MLCC(적층세라믹커패시터)와 FC-BGA(반도체 기판) 동시 호황. AI·전장 수혜.</td></tr><tr><td>오늘 흐름·예상 반도체 외 부품주로 온기 확산의 사례. 단 급등 후 변동성 유의.</td></tr></tbody></table>
+<table class="grid"><thead><tr><th>402340 SK스퀘어 6/18 +6.52% · 신고가</th><th></th><th></th></tr></thead><tbody><tr><td>기간</td><td>전망</td><td>해설</td></tr><tr><td>단기</td><td>↑ 강세</td><td>SK하이닉스 지분가치 부각</td></tr><tr><td>중기</td><td>긍정</td><td>하이닉스 대안 투자처</td></tr><tr><td>장기</td><td>↗ 중립~긍정</td><td>보유 지분·주주환원</td></tr></tbody></table>
+<p class="gloss-h">지금 시장에서는</p>
+<p>6/18 6.52% 오른 170만원 신고가. SK하이닉스 강세에 지분가치 부각.</p>
+<table class="grid"><thead><tr><th>핵심 근거 SK하이닉스 지분을 보유한 지주성 종목. &#x27;하이닉스보다 빠른 상승&#x27; 기대(대신증권).</th></tr></thead><tbody><tr><td>오늘 흐름·예상 하이닉스 연동 고베타주. 하이닉스 조정 시 변동성도 더 클 수 있음.</td></tr></tbody></table>
+<table class="grid"><thead><tr><th>소외주 비반도체 대형주 FOMC·쏠림에 소외 (패자)</th><th></th><th></th></tr></thead><tbody><tr><td>기간</td><td>전망</td><td>해설</td></tr><tr><td>단기</td><td>↓ 약세</td><td>반도체 쏠림에 자금 이탈</td></tr><tr><td>중기</td><td>중립</td><td>개별 업황별 차별화</td></tr><tr><td>장기</td><td>↗ 중립</td><td>순환매 유입 시 반등 여지</td></tr></tbody></table>
+<table class="grid"><thead><tr><th>지금 시장에서는 6/18 현대차 -2.75%, LG에너지솔루션 -3.85%, 두산에너빌리티 -3.49%, HD현대중공업 -3.25% 등 약세.</th></tr></thead><tbody><tr><td>핵심 근거 지수 신고가에도 반도체 외 종목은 소외. 하락 종목 수가 상승 종목 수를 웃돈 &#x27;쏠림 장세&#x27;.</td></tr><tr><td>오늘 흐름·예상 순환매(온기 확산)가 나타날지가 관건. 확산되면 지수 추가 상승 동력, 안 되면 변동성 위험.</td></tr></tbody></table>
+<p>※ 한국 종목 6/18 종가는 한국거래소·언론, 미국 매크로(VIX·WTI·달러인덱스 등)는 investing.com·야후 파이낸스 확인값입니다. 6/19 한국 실시간 현재가는 장중이라 본 호에는 미반영(다음 호 또는 정정본 반영).</p>
+<div class="sec"><div class="eyebrow">SECTION 4 · 대체자산</div><h2>매파 달러 강세 · 한은 인상 변수</h2></div>
+<table class="grid"><thead><tr><th>자산 값 해설</th><th></th><th></th></tr></thead><tbody><tr><td>★ USD/KRW</td><td>6/18 1,520원대 마감</td><td>매파 FOMC발 달러 강세에 원화 약세(+상승). 외국인 환차손 요인</td></tr><tr><td>달러인덱스</td><td>100.59 (+0.72%, 6/18)</td><td>FOMC 후 100 돌파 — 글로벌 강달러 국면 지속</td></tr><tr><td>미 10년물</td><td>4.46% 부근 (6/18)</td><td>매파 이후 안정. 모기지·대출금리 기준</td></tr><tr><td>★ WTI 원유</td><td>76.60달러 (-0.25%, 6/18)</td><td>미·이란 서명에 에너지 약세. 브렌트 79.30달러. IEA 2027 공급 과잉 경고</td></tr><tr><td>금 (XAU) / VIX</td><td>$4,300선 회복 / VIX 16.40</td><td>금은 트럼프 이란 서명에 전일 하락분 되돌림. VIX는 증시 반등에 -11% 급락</td></tr><tr><td>★ 한국은행</td><td>7월 금통위 인상 거론</td><td>글로벌 긴축 동조 — 유동성·증시 밸류에이션 변수</td></tr><tr><td>★ 미·이란</td><td>6/19 스위스 서명 예정</td><td>호르무즈 재개 / 트럼프 &#x27;재폭격 경고&#x27;·합의 불확실성 잔존</td></tr></tbody></table>
+<p>관전 포인트: 코스피 9,000은 분명한 이정표지만, 동력이 반도체 두 종목과 외국인 매수에 집중돼 있다는 점이 양날의 검입니다. 매파 FOMC로 달러가 100을 넘어선 강세 국면에서 원화 약세가 길어지면 외국인 수급이 흔들릴 수 있고, 7월 한은 인상은 유동성 측면의 변수입니다. 단기 분수령은   외국인 매수 지속 여부,   반도체 외 업종으로의 순환매,   환율 안정입니다.</p>
+<p class="src-cat">참고 자료 · Sources &amp; References</p>
+<p>코스피 9,000 돌파</p>
+<p class="src-link">• 한국일보 — 코스피 9,000 돌파·삼전·닉스 질주 (6/18)</p>
+<p class="src-link">• 파이낸셜뉴스 — 9000피 돌파, 반도체 질주 (6/18)</p>
+<p class="src-link">• 글로벌이코노믹 — 외국인 1.2조 순매수 (6/18)</p>
+<p>미국 시장 6/18</p>
+<p class="src-link">• TheStreet — Russell·Nasdaq rise after Fed surprise (6/18)</p>
+<p>환율 · 매크로</p>
+<p class="src-link">• KB의 생각 — 환율 동향(매파 FOMC·달러 100.39) (6/18)</p>
+<p class="src-link">• 이투데이 — 9000 돌파·변동성 경고 (6/18)</p>
+<p class="src-cat">면책 조항</p>
+<p class="disc">본 리포트는 시장 분석 및 정보 제공 목적이며, 특정 종목의 매수·매도 권유가 아닙니다. 모든 투자 결정은 투자자 본인의 판단과 책임 하에 이루어져야 합니다. 가격·지표는 발행 시점에 확인된 값으로, 시장 상황 변화로 이후 정확성이 변할 수 있습니다. 한국·미국 지수·종목·매크로(VIX·WTI·달러인덱스·금)는 6/18 종가 기준입니다. 6/19 한국 장중 실시간 현재가는 본 호에 미반영입니다. 전망은 작성 시점 자료에 근거한 판단으로 결과를 보장하지 않습니다. Josh Park Invest는 본 자료를 활용한 투자 결과에 어떠한 책임도 지지 않습니다.</p>
+
+<p class="byline" style="margin:30px 0 4px;padding-top:16px;border-top:1px solid var(--line);font-weight:700;color:var(--ink);font-size:14px">박철웅 기자 <a href="mailto:joshpark.korea@gmail.com" style="font-weight:600">joshpark.korea@gmail.com</a></p>
+</main>
+<footer class="artfoot">
+ <a class="kk" href="https://open.kakao.com/o/giw7dfAb" target="_blank" rel="noopener">투자이야기 오픈채팅 바로가기</a><br>
+ <a class="back" href="/">← 다른 리포트 보러가기</a>
+ <div class="dom">investstory.co.kr</div>
+</footer>
+</body></html>
