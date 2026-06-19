@@ -1,0 +1,11 @@
+{
+  "asof": "2026-06-18 종가",
+  "items": [
+    { "name": "KOSPI",    "value": "9,063.84",  "change": "+2.25%", "dir": "up" },
+    { "name": "KOSDAQ",   "value": "1,000.93",  "change": "-3.01%", "dir": "down" },
+    { "name": "USD/KRW",  "value": "1,527.1",   "change": "+13.7",  "dir": "up" },
+    { "name": "S&P 500",  "value": "7,500.58",  "change": "+1.08%", "dir": "up" },
+    { "name": "나스닥",    "value": "26,517.93", "change": "+1.91%", "dir": "up" },
+    { "name": "달러인덱스", "value": "100선",      "change": "돌파",   "dir": "up" }
+  ]
+}
