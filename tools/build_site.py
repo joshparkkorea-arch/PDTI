@@ -49,11 +49,12 @@ def main():
         ticker_html = (f'<div class="ticker"><div class="ticker-in">'
                        f'<span class="tk-as">{asof}</span>{"".join(cells)}</div></div>')
 
-    # ----- 리드(최신호) -----
-    lead_html = '<p class="empty">아직 발간된 리포트가 없습니다. 첫 호를 발간해 주세요.</p>'
-    if issues:
-        a = issues[0]
-        lead_html = f'''
+    # 최신 발간일(이 날짜에 올라온 특집·특보는 '당일 업로드'로 보고 New 배지 + 미리보기 제외)
+    newest_date = issues[0]["date"] if issues else None
+
+    # 미리보기 카드(데일리·특집 공용)
+    def card(a):
+        return f'''
         <article class="lead">
           <a class="lead-link" href="{esc(a["file"])}">
             <div class="lead-meta">
@@ -65,10 +66,20 @@ def main():
           </a>
         </article>'''
 
-    # ----- 지난 호 (데일리만 — 특집/특보/창간호는 오른쪽 사이드바로) -----
+    # ----- 상단 미리보기: 항상 '최신 데일리'만 -----
+    dailies = [a for a in issues if a.get("tag") == "데일리"]
+    lead_daily = dailies[0] if dailies else None
+    lead_html = card(lead_daily) if lead_daily else '<p class="empty">아직 발간된 데일리 리포트가 없습니다.</p>'
+
+    # ----- 그 아래 미리보기: '최신 특집호' (단, 당일 업로드분은 미리보기에서 제외 → 사이드바 리스트로) -----
+    spec_pool = [a for a in issues if a.get("tag") == "특집호" and a["date"] != newest_date]
+    lead_special = spec_pool[0] if spec_pool else None
+    special_html = card(lead_special) if lead_special else '<p class="empty">최신 특집·기획 리포트가 곧 이곳에 소개됩니다.</p>'
+
+    # ----- 지난 호 (데일리만 — 상단 미리보기로 쓴 데일리는 제외) -----
     rows = []
-    for a in issues[1:]:
-        if a.get("tag") != "데일리":
+    for a in dailies:
+        if lead_daily and a.get("no") == lead_daily.get("no") and a.get("date") == lead_daily.get("date"):
             continue
         rows.append(f'''
         <a class="row" href="{esc(a["file"])}">
@@ -83,14 +94,15 @@ def main():
         </a>''')
     archive_html = "".join(rows) if rows else '<p class="empty">지난 데일리 리포트가 쌓이면 이곳에 아카이브됩니다.</p>'
 
-    # ----- 특집·기획 사이드바 (데일리 제외 전부: 창간호·특집호·특보) -----
+    # ----- 특집·기획 사이드바 (데일리 제외 전부) · 당일 업로드분은 우측 상단 New 배지 -----
     sp_items = []
     for a in issues:
         if a.get("tag") == "데일리":
             continue
         tagcls = " founder" if a.get("tag") == "창간호" else ""
+        new_badge = '<span class="side-new">NEW</span>' if a["date"] == newest_date else ''
         sp_items.append(f'''<a class="side-item" href="{esc(a["file"])}">
-            <span class="side-tag{tagcls}">{esc(a.get("tag",""))}</span>
+            {new_badge}<span class="side-tag{tagcls}">{esc(a.get("tag",""))}</span>
             <span class="side-title">{esc(a["title"])}</span>
             <span class="side-date">{kdate(a["date"], False)}</span>
           </a>''')
@@ -219,8 +231,10 @@ def main():
   .side-k{{color:var(--gold);font-size:10px;font-weight:800;letter-spacing:.14em}}
   .side-t{{font-family:var(--serif);color:#fff;font-weight:700;font-size:17px;margin-top:2px}}
   .side-list{{padding:2px 16px 10px}}
-  .side-item{{display:block;padding:13px 0;border-bottom:1px solid var(--line)}}
+  .side-item{{display:block;padding:13px 0;border-bottom:1px solid var(--line);position:relative}}
   .side-item:last-child{{border-bottom:none}}
+  .side-new{{position:absolute;top:12px;right:0;background:#E5392E;color:#fff;font-size:9px;font-weight:800;
+    letter-spacing:.06em;line-height:1;padding:3px 5px;border-radius:2px;box-shadow:0 1px 3px rgba(224,57,46,.35)}}
   .side-tag{{display:inline-block;font-size:10px;font-weight:700;color:var(--gold-d);border:1px solid var(--gold);border-radius:2px;padding:1px 7px}}
   .side-tag.founder{{color:#fff;background:var(--navy);border-color:var(--navy)}}
   .side-title{{display:block;font-family:var(--serif);font-weight:700;color:var(--ink);font-size:14px;line-height:1.42;margin:7px 0 3px}}
@@ -269,6 +283,9 @@ def main():
       <div class="home-main">
         <div class="eyebrow"><h3>오늘의 리포트</h3></div>
         {lead_html}
+
+        <div class="eyebrow"><h3>특집 · 기획</h3></div>
+        {special_html}
 
         <div class="eyebrow"><h3>지난 호</h3></div>
         <div class="archive">

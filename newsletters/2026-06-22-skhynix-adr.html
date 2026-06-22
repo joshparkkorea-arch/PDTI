@@ -1,0 +1,169 @@
+<!DOCTYPE html><html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SK하이닉스 나스닥 ADR 상장 초읽기 — 리레이팅 기대 vs 신주 희석, 국내 주가·코스피는 어디로 · INVEST STORY</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Noto+Serif+KR:wght@600;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+ :root{--navy:#1B3C6E;--gold:#C9A654;--gold-d:#a98731;--ink:#1F2933;--mute:#6B7785;--line:#E2E6EC;
+  --up:#C0392B;--down:#1B5E9B;
+  --serif:'Noto Serif KR',serif;--latin:'Playfair Display',serif;
+  --sans:'Pretendard','Pretendard Variable',system-ui,-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;}
+ *{box-sizing:border-box}
+ body{margin:0;background:#F7F8FA;color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.72;-webkit-font-smoothing:antialiased}
+ a{color:#1B5588}
+ .topbar{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+ .topbar-in{max-width:820px;margin:0 auto;padding:12px 22px;display:flex;align-items:center;justify-content:space-between}
+ .home{font-family:var(--latin);font-weight:800;color:var(--navy);letter-spacing:.1em;text-decoration:none;font-size:16px}
+ .home:before{content:"← ";color:var(--gold-d);font-family:var(--sans)}
+ .topbar .tag{font-size:11.5px;font-weight:700;color:#fff;background:var(--navy);padding:3px 10px;border-radius:2px}
+ main{max-width:820px;margin:0 auto;padding:6px 22px 60px}
+ .art-hero{background:var(--navy);color:#fff;border-radius:4px;padding:26px 26px 28px;margin:18px 0 22px}
+ .art-hero .ah-k{color:var(--gold);font-weight:800;font-size:12px;letter-spacing:.12em;margin-bottom:8px}
+ .art-hero .ah-t{font-family:var(--serif);font-weight:900;font-size:clamp(22px,4.2vw,30px);line-height:1.32}
+ .art-hero .ah-s{color:#cdd9ea;font-size:13px;margin-top:10px;line-height:1.6}
+ h2.subhead,h3.subhead{font-family:var(--serif);color:var(--navy);font-weight:700;font-size:17px;margin:26px 0 10px;line-height:1.4}
+ .sec{margin:34px 0 14px;border-top:2px solid var(--navy);padding-top:14px}
+ .sec .eyebrow{color:var(--gold-d);font-weight:800;font-size:11.5px;letter-spacing:.1em;margin-bottom:4px}
+ .sec h2{font-family:var(--serif);color:var(--navy);font-weight:900;font-size:clamp(19px,3.6vw,24px);margin:0;line-height:1.35}
+ .eyebrow-solo{color:var(--gold-d);font-weight:800;font-size:12px;letter-spacing:.08em;margin:28px 0 6px}
+ p{margin:0 0 13px}
+ .lead-para{font-size:17px;line-height:1.85}
+ .small{font-size:12.5px;color:var(--mute);line-height:1.6}
+ .disc{font-size:11.5px;color:var(--mute);line-height:1.65}
+ .up{color:var(--up);font-weight:700}
+ .down{color:var(--down);font-weight:700}
+ table.grid{width:100%;border-collapse:collapse;margin:6px 0 18px;font-size:13.5px;border:1px solid var(--line);table-layout:fixed}
+ table.grid th{background:var(--navy);color:#fff;font-weight:700;text-align:left;padding:9px 10px;font-size:12.5px;vertical-align:top}
+ table.grid td{padding:9px 10px;border-top:1px solid var(--line);vertical-align:top;word-break:keep-all}
+ table.grid tbody tr:nth-child(even){background:#F4F6F8}
+ table.kv{width:100%;border-collapse:collapse;margin:4px 0 16px;font-size:13.5px;border:1px solid var(--line)}
+ table.kv th{width:34%;text-align:left;background:#F2F4F6;color:var(--ink);font-weight:700;padding:8px 10px;border-top:1px solid var(--line);border-right:1px solid var(--line);vertical-align:top;word-break:keep-all}
+ table.kv td{padding:8px 10px;border-top:1px solid var(--line);vertical-align:top}
+ table.kv.kv-soft th{background:transparent}
+ .scenbar{color:#fff;border-radius:3px;padding:11px 16px;margin:16px 0 12px;display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;align-items:center}
+ .scenbar .sb-l{font-weight:800;font-size:15px}
+ .scenbar .sb-r{font-weight:700;font-size:14px;text-align:right;opacity:.95}
+ .callout{border-left:3px solid;border-radius:3px;padding:13px 16px;margin:14px 0}
+ .callout-h{font-weight:800;font-size:14px;margin-bottom:5px}
+ .callout-b{font-size:14px;line-height:1.72}
+ .gloss-h{font-family:var(--serif);font-weight:700;color:var(--navy);font-size:15px;margin:24px 0 6px}
+ .src-cat{font-weight:800;color:var(--navy);font-size:13.5px;margin:14px 0 4px}
+ .src-link{font-size:13px;margin:0 0 4px}
+ .kakao{margin:22px 0}
+ hr.rule{border:none;border-top:1px solid var(--line);margin:24px 0}
+ .artfoot{max-width:820px;margin:0 auto;padding:22px;border-top:2px solid var(--navy);text-align:center}
+ .artfoot a.kk{display:inline-block;background:#FEE500;color:#191600;font-weight:700;font-size:13.5px;padding:9px 16px;border-radius:3px;text-decoration:none;margin:6px 0 12px}
+ .artfoot .back{display:inline-block;color:var(--navy);font-weight:700;text-decoration:none;font-size:13.5px}
+ .artfoot .dom{color:var(--gold-d);font-weight:700;font-size:12px;letter-spacing:.06em;margin-top:10px}
+ @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+ a:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+</style></head><body>
+<div class="topbar"><div class="topbar-in"><a class="home" href="/">INVEST STORY</a><span class="tag">특집호 · 2026-06-22</span></div></div>
+<main>
+<header class="art-hero"><div class="ah-k">JOSH PARK INVEST · 특집·기획</div><div class="ah-t">SK하이닉스 나스닥 ADR 상장 초읽기 — 리레이팅 기대 vs 신주 희석, 국내 주가·코스피는 어디로</div><div class="ah-s">2026년 6월 22일(월) · 오늘 밤(현지시간) 미 SEC 심사 결과 발표 임박 · SK하이닉스 6/19 종가 276.4만원 사상 최고 · 발행주식 약 2.5% 신주, 조달규모 추정 10조~40조원 · 6/24 마이크론 실적·MSCI 관찰대상국 판가름</div></header>
+
+<p class="lead-para">메모리 반도체 세계 2위이자 엔비디아 HBM 공급의 핵심인 SK하이닉스가 미국 나스닥 입성 ‘초읽기’에 들어갔습니다. 회사는 지난 3월 24일 미국 증권거래위원회(SEC)에 주식예탁증서(ADR) 상장을 위한 등록신청서(Form F-1)를 비공개로 제출했고, 이르면 오늘 밤(현지시간 6/22 주간) SEC의 심사 결과가 나올 것으로 외신은 보고 있습니다. 시장의 기대는 분명합니다 — ‘코리아 디스카운트’에 묶여 마이크론의 3분의 1 수준 밸류에이션에 거래되던 SK하이닉스가, 글로벌 자본의 비교 테이블에 직접 올라 재평가(리레이팅)받을 수 있다는 것. 다만 신주 발행에 따른 지분 희석과 ‘중복 상장’이라는 그림자도 함께 따라붙습니다. 이번 특집은 ADR 상장의 구조와 일정, 국내 주가 시나리오, 그리고 ‘삼전닉스’ 쏠림이 심해진 코스피에 미칠 영향을 정리했습니다.</p>
+
+<p class="eyebrow-solo">한눈에 핵심</p>
+<table class="kv">
+<tr><th>★ 무엇</th><td>SK하이닉스, 美 나스닥에 ADR(주식예탁증서) 상장 추진. 3/24 SEC에 Form F-1 비공개 제출</td></tr>
+<tr><th>★ 임박 이벤트</th><td>현지시간 6/22 주간 SEC 심사 결과 발표 예정(로이터: 6월 넷째 주 승인 가능성). 승인 시 7월 중순~말 또는 8월 상장 관측</td></tr>
+<tr><th>발행 방식·규모</th><td>전량 신주 발행 유력, 발행주식 수의 약 2.5%. 조달규모 추정치는 10조~15조원부터 최대 40조원(약 270억달러)까지 편차</td></tr>
+<tr><th>주관사</th><td>씨티·JP모건·골드만삭스·뱅크오브아메리카(월가 4대 하우스)</td></tr>
+<tr><th>★ 핵심 논리</th><td>마이크론과 직접 비교되며 밸류에이션 재평가 + 美 반도체 ETF·패시브 자금 유입 기대</td></tr>
+<tr><th>★ 우려</th><td>신주 약 2.5% 희석 · ‘중복 상장’에 따른 국내 거래·수급 분산 가능성</td></tr>
+<tr><th>국내 주가(6/19)</th><td>SK하이닉스 종가 2,764,000원 <span class="up">(+2.94%)</span> 사상 최고가. 장중 시총 2,000조 터치, 삼성전자 시총의 87%대 추격</td></tr>
+<tr><th>이번 주 동반 변수</th><td>6/24 마이크론 실적(메모리 풍향계) · 6/24 새벽(KST) MSCI 선진국 ‘관찰대상국’ 판가름 · 6/25 美 PCE</td></tr>
+</table>
+
+<p class="eyebrow-solo">밸류에이션·일정 대시보드 (작성 시점 확인값)</p>
+<table class="grid"><thead><tr><th>항목</th><th>내용</th><th>항목</th><th>내용</th></tr></thead><tbody>
+<tr><td>SK하이닉스 6/19</td><td>2,764,000원 <span class="up">(+2.94%)</span> 최고</td><td>52주 범위</td><td>245,000~2,891,000원</td></tr>
+<tr><td>12M 평균 목표가</td><td>약 271만원(매수36·매도0)</td><td>증권사 최고 목표가</td><td>380만원(미래에셋·KB·신한·한투 등)</td></tr>
+<tr><td>SK하이닉스 선행 PER</td><td>약 5~7배</td><td>마이크론 선행 PER</td><td>약 8.5~11배(추정 기준차)</td></tr>
+<tr><td>26Q1 매출</td><td>52조5,763억원</td><td>26Q1 영업이익</td><td>37조6,103억원(이익률 72%)</td></tr>
+<tr><td>SEC 심사 결과</td><td>현지 6/22 주간 발표 예정</td><td>예상 상장 시점</td><td>7월 중순~말 또는 8월</td></tr>
+<tr><td>마이크론 실적</td><td>6/24(메모리 풍향계)</td><td>MSCI 관찰대상국</td><td>6/24 새벽(KST) 발표</td></tr>
+<tr><td>코스피 6/22 오전</td><td>8,958.94 <span class="down">(약 -1.0%)</span></td><td>코스피 지난주</td><td>6/15~19 +11.4%(‘9천피’)</td></tr>
+</tbody></table>
+
+<div class="sec"><div class="eyebrow">SECTION 1</div><h2>ADR이 뭐고, 어디까지 왔나</h2></div>
+<p>ADR(American Depositary Receipt)은 미국 투자자가 해외 기업의 주식을 달러로 거래할 수 있도록 미국 예탁은행이 발행하는 증서입니다. 미국 투자자는 한국 증시에서 원주를 직접 사지 않고도 SK하이닉스에 투자할 수 있게 됩니다. SK하이닉스가 추진하는 방식은 새로 주식을 찍어 예탁은행에 배정하는 ‘신주 발행’이 유력한데, 이는 회사로 직접 자금이 들어오는 대신 기존 주주의 지분이 일부 희석되는 구조입니다. 발행 규모는 전체 발행주식 수의 약 2.5% 수준으로 거론됩니다.</p>
+<p class="gloss-h">진행 타임라인</p>
+<table class="grid"><thead><tr><th>시점</th><th>내용</th></tr></thead><tbody>
+<tr><td>2026-03-24</td><td>SEC에 ADR 상장용 Form F-1 등록신청서 비공개 제출. 곽노정 대표, 주총에서 “미국 증시에서 기업가치를 제대로 재평가받겠다”고 공식화</td></tr>
+<tr><td>4월</td><td>주관사로 씨티·JP모건·골드만삭스·BofA 선정. ‘한국 기업 최대 美 딜’로 평가</td></tr>
+<tr><td>6월 초</td><td>해외 기관투자자 대상 설명회(NDR) 마무리. SEC 최종 승인 대기 단계 진입</td></tr>
+<tr><td>6/12</td><td>로이터 — SK하이닉스가 NYSE보다 나스닥 상장을 택할 가능성이 높다고 보도</td></tr>
+<tr><td>★ 6/22(현지)</td><td>SEC 심사 결과 발표 예정. 로이터는 6월 넷째 주 승인 가능성을 거론</td></tr>
+<tr><td>7월 중순~말</td><td>승인 시 상장 가능 시점. 7/29 2분기 실적 발표와 맞물리면 재평가 효과 극대화 관측(8월 관측도 병존)</td></tr>
+</tbody></table>
+<p>요컨대 ‘할지 말지’의 단계는 지났고, 남은 변수는 <strong>승인 타이밍과 발행 조건(규모·가격)</strong>입니다. 그래서 오늘 밤 SEC 결과가 단기 분수령으로 꼽힙니다.</p>
+
+<div class="sec"><div class="eyebrow">★ SECTION 2</div><h2>왜 미국인가 — 코리아 디스카운트와 ‘리레이팅’</h2></div>
+<p>핵심 동기는 미국 시장이 부여하는 밸류에이션 프리미엄입니다. SK하이닉스는 HBM 시장을 사실상 지배하며 26년 1분기 영업이익률 72%라는 기록적 수익성을 냈지만, 12개월 선행 PER은 5~7배 수준에 머물러 왔습니다. 반면 사업 구조가 유사한 미국 마이크론은 현지에서 그보다 높은 배수를 인정받습니다. 실적·기술에서 앞서면서도 밸류에이션에서는 더 낮게 평가되는 ‘구조적 저평가’가 이번 결단의 배경입니다.</p>
+<p>나스닥에 직접 상장해 마이크론과 같은 무대에 서는 것만으로도 재평가의 방아쇠가 될 수 있다는 게 강세론의 골자입니다. 마이크론을 담은 글로벌 펀드들이 SK하이닉스를 즉각 편입하고, 필라델피아반도체지수(SOX)·나스닥 등 패시브 자금의 추종 매수가 더해질 수 있다는 기대입니다. 국내 증권사 다수가 목표주가를 300만~380만원으로 올린 것도 이 논리를 일부 반영합니다.</p>
+<table class="kv">
+<tr><th>저평가 해소</th><td>마이크론과 직접 비교 구도 → PER 격차 축소 시 리레이팅 여지</td></tr>
+<tr><th>패시브 수급</th><td>나스닥·SOX 등 美 반도체 ETF·패시브 펀드의 구조적 편입 기대</td></tr>
+<tr><th>자금 조달</th><td>신주 발행 대금은 HBM 증설·용인 클러스터·차세대 D램/낸드 투자에 투입 예정</td></tr>
+<tr><th>투자자 저변</th><td>미국 투자자가 달러로 직접 접근 → 글로벌 주주 기반 확대</td></tr>
+</table>
+
+<div class="sec"><div class="eyebrow">★ SECTION 3</div><h2>그림자 — 신주 희석과 ‘중복 상장’ 논쟁</h2></div>
+<p>반대편 논리도 분명합니다. 첫째는 <strong>희석</strong>입니다. 전량 신주 발행이면 발행주식이 약 2.5% 늘어 기존 주주 1주의 가치가 그만큼 묽어집니다. 둘째는 <strong>중복 상장에 따른 수급 분산</strong> 우려입니다. 외국인이 굳이 한국 증시의 원주를 살 필요 없이 미국 ADR로 접근할 수 있게 되면, 국내 거래 수요 일부가 미국으로 옮겨갈 수 있다는 것입니다. 해외 물량이 국내로 역유입되는 ‘부메랑’ 가능성도 거론됩니다.</p>
+<p>다만 시장의 다수 의견은 ‘<strong>단기 부담, 중장기 호재</strong>’로 모이는 분위기입니다. 대만 TSMC가 ADR 상장 이후 글로벌 자본을 직접 흡수한 사례가 자주 인용됩니다. 또 주가가 250만~300만원에 안착하면 회사가 액면분할 카드를 꺼낼 명분이 커진다는 전망도 있습니다(현재 회사는 “당장 계획 없음” 입장). 액면분할은 신주 발행 충격을 흡수하고 개인 접근성을 높이는 ‘완충 장치’로 거론됩니다.</p>
+<table class="grid"><thead><tr><th>호재 측</th><th>우려 측</th></tr></thead><tbody>
+<tr><td>마이크론 대비 저평가 해소·리레이팅</td><td>신주 약 2.5% → 지분 희석</td></tr>
+<tr><td>美 ETF·패시브 자금 구조적 유입</td><td>중복 상장에 따른 국내 거래·수급 분산</td></tr>
+<tr><td>HBM 증설 재원 직접 조달</td><td>해외 물량 국내 역유입(부메랑) 가능성</td></tr>
+<tr><td>글로벌 주주 저변 확대(TSMC 선례)</td><td>美 투자자 반응이 약하면 단기 모멘텀 약화</td></tr>
+</tbody></table>
+
+<div class="sec"><div class="eyebrow">★ SECTION 4</div><h2>국내 SK하이닉스 주가 — 3대 시나리오</h2></div>
+<p class="lead-para">6/19 종가 기준 SK하이닉스는 2,764,000원으로 사상 최고가를 다시 썼습니다. 12개월 평균 목표주가는 약 271만원(애널리스트 36명 매수·0명 매도, 적극매수)으로 이미 현주가에 근접해, 추가 상승 동력은 ‘리레이팅이 실제로 붙는지’에 달렸다는 평가입니다. 단기 트리거는 ① 오늘 밤 SEC 결과, ② 6/24 마이크론 실적, ③ 발행 조건(가격·규모) 공개입니다.</p>
+<table class="grid"><thead><tr><th>시나리오</th><th>조건</th><th>국내 주가 영향</th></tr></thead><tbody>
+<tr><td>강세(리레이팅 본격화)</td><td>SEC 승인+마이크론 호실적+발행가 우호적 → 마이크론 대비 PER 격차 축소</td><td>300만원대 재도전·증권사 상단(380만원) 시야. 외국인·패시브 동반 매수</td></tr>
+<tr><td>베이스(기대 선반영·박스)</td><td>승인은 되나 ‘소문에 사고 뉴스에 파는’ 차익실현, 발행 조건 무난</td><td>250만~290만원 박스권 등락. 평균 목표가(약 271만원) 부근에서 수급 균형</td></tr>
+<tr><td>약세(희석·매크로 충돌)</td><td>발행가 할인·물량 부담 부각 또는 마이크론 ‘서프라이즈 쇼크’·지정학 위험 재점화</td><td>희석 우려가 단기 우위. 230만~250만원으로 되돌림 가능, 변동성 확대</td></tr>
+</tbody></table>
+<p>‘소문에 사서 뉴스에 판다’는 격언이 자주 인용되는 국면입니다. 이미 ADR 기대가 주가에 상당 부분 반영된 만큼, 승인 자체보다 <strong>발행가·규모·일정의 디테일</strong>과 마이크론 실적이 방향을 가를 가능성이 큽니다. 고점 부근의 추격 매수보다 분할 대응·비중 관리가 유효한 구간입니다.</p>
+
+<div class="sec"><div class="eyebrow">★ SECTION 5</div><h2>코스피 영향 — ‘삼전닉스’ 쏠림과 수급의 두 얼굴</h2></div>
+<p>SK하이닉스는 코스피 시가총액 2위로 지수 영향력이 절대적입니다. 지난주(6/15~19) 코스피는 +11.4% 급등하며 사상 처음 9,000선에 안착했는데, 이 상승의 상당 부분이 삼성전자·SK하이닉스 등 반도체 대형주에서 나왔습니다. ‘삼전닉스 쏠림’이 심해지면서 코스닥과의 양극화, 반도체 외 업종의 소외가 함께 진행됐습니다. 오늘(6/22) 코스피는 이란 호르무즈 변수에 9,000을 하루 만에 반납(8,958.94, 약 -1.0%)했지만, 중기 방향은 여전히 반도체가 쥐고 있습니다.</p>
+<p>ADR 상장이 코스피에 미치는 영향은 양면적입니다.</p>
+<table class="kv">
+<tr><th>(+) 지수 견인</th><td>리레이팅으로 SK하이닉스가 더 오르면 시총 2위로서 코스피를 끌어올림. ‘만스피(10,000)’ 기대의 핵심 연료</td></tr>
+<tr><th>(+) 외국인 인식 개선</th><td>글로벌 비교·접근성 개선이 한국 대표주 전반의 재평가 분위기로 확산될 여지</td></tr>
+<tr><th>(−) 쏠림 심화</th><td>코스피가 두 반도체 종목 의존도를 더 높이면, 반도체 조정 시 지수 변동성도 커지는 구조</td></tr>
+<tr><th>(−) 수급 분산</th><td>외국인 매수가 미국 ADR로 일부 이동하면, 국내 원주 수급에는 단기 공백 가능성</td></tr>
+</table>
+<p class="gloss-h">별개지만 같이 보는 변수 — MSCI 선진국 ‘관찰대상국’</p>
+<p>6/24 새벽(KST) 발표되는 MSCI 연례 리뷰에서 한국이 선진국지수 편입을 위한 ‘관찰대상국(Watch List)’에 오를지가 또 다른 관전 포인트입니다. 등재되면 이르면 2028년 정식 편입을 노릴 수 있고, 편입 시 대규모 패시브 자금 유입이 기대됩니다. 다만 제도 개선 유예 등을 이유로 올해 등재 문턱이 높다는 신중론도 만만치 않습니다. SK하이닉스 ADR(글로벌 자본의 ‘개별 종목’ 접근)과 MSCI 편입(‘한국 시장 전체’의 자본 접근)은 결이 다르지만, 둘 다 ‘코리아 디스카운트 해소’라는 같은 줄기에 놓여 있습니다.</p>
+
+<div class="sec"><div class="eyebrow">SECTION 6</div><h2>관전 포인트</h2></div>
+<p>이번 주 체크리스트는 넷입니다 — ① 오늘 밤(현지시간) SEC 심사 결과와 후속 발행 조건(가격·규모·일정), ② 6/24 마이크론 실적(메모리 업황 풍향계이자 SK하이닉스 직접 프록시), ③ 6/24 MSCI 관찰대상국 등재 여부, ④ 코스피가 9,000선을 회복하며 반도체 외 업종으로 매기를 넓히는지입니다. ADR은 ‘구조적 저평가 해소’라는 큰 그림에서 분명한 호재의 성격이 강하지만, 기대가 선반영된 만큼 단기 주가는 디테일과 매크로(유가·환율·지정학)에 따라 출렁일 수 있습니다. 추격보다 분할, 쏠림보다 분산의 원칙이 유효한 국면입니다.</p>
+
+<p class="src-cat">참고 자료 · Sources &amp; References</p>
+<p class="src-link">• 디일렉 — SK하이닉스 나스닥 ADR 상장 임박, 이르면 7월·신주 2.5% (6/16)</p>
+<p class="src-link">• 파이낸셜뉴스 — ‘ADR 상장 심사’ 6/22 현지 발표 예정·6/24 MSCI·마이크론 (6/22)</p>
+<p class="src-link">• 이코노미트리뷴 — ADR 7월 나스닥行 관측·신주 2.5%·최대 40조 추산 (6/16)</p>
+<p class="src-link">• 이데일리 — ‘美 상장임박’ 하이닉스, 삼성전자 시총 87% 추격·6/19 최고가 (6/21)</p>
+<p class="src-link">• 한국경제 — 엔비디아 핵심 파트너, 약 140억달러 조달·마이크론 비교 (6/10)</p>
+<p class="src-link">• 머니투데이 — 증권사 목표주가 최고 380만원 상향·메리츠 8월 상장 관측 (6/17)</p>
+<p class="src-link">• 뉴스스페이스 — SK증권 목표가 300만원·액면분할 타이밍 분석 (5/7, 6월)</p>
+<p class="src-link">• 헬프미 블로그(법률) — ADR 구조·신주 제3자 배정·주식 희석 원리 (3/25)</p>
+<p class="src-link">• 로이터/Investing.com — 나스닥 상장지 선택·12M 평균 목표주가·52주 범위 (6월)</p>
+
+<p class="src-cat">면책 조항</p>
+<p class="disc">본 리포트는 시장 분석 및 정보 제공 목적이며, 특정 종목의 매수·매도 권유가 아닙니다. 모든 투자 결정은 투자자 본인의 판단과 책임 하에 이루어져야 합니다. SK하이닉스 ADR 상장의 승인 시점·발행 규모·가격 등 세부 조건은 작성 시점(2026-06-22 KST) 기준 미확정이며, 조달규모(10조~40조원)·목표주가·PER 등 수치는 출처별 추정 기준에 따라 편차가 있습니다. SEC 심사 결과, 마이크론 실적, MSCI 리뷰는 진행형 사안으로 결과가 달라질 수 있습니다. 6/22 코스피·SK하이닉스 수치는 작성 시점 장중·직전 거래일(6/19) 종가 기준입니다. Josh Park Invest는 본 자료를 활용한 투자 결과에 어떠한 책임도 지지 않습니다.</p>
+
+<p class="byline" style="margin:30px 0 4px;padding-top:16px;border-top:1px solid var(--line);font-weight:700;color:var(--ink);font-size:14px">박철웅 기자 <a href="mailto:joshpark.korea@gmail.com" style="font-weight:600">joshpark.korea@gmail.com</a></p>
+</main>
+<footer class="artfoot">
+ <a class="kk" href="https://open.kakao.com/o/giw7dfAb" target="_blank" rel="noopener">투자이야기 오픈채팅 바로가기</a><br>
+ <a class="back" href="/">← 다른 리포트 보러가기</a>
+ <div class="dom">investstory.co.kr</div>
+</footer>
+</body></html>
