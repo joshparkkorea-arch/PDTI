@@ -31,6 +31,8 @@ jobs:
       - name: Update ticker.json
         env:
           TWELVEDATA_API_KEY: ${{ secrets.TWELVEDATA_API_KEY }}
+          KIS_APP_KEY: ${{ secrets.KIS_APP_KEY }}
+          KIS_APP_SECRET: ${{ secrets.KIS_APP_SECRET }}
         run: python tools/update_ticker.py
 
       - name: Commit if changed
