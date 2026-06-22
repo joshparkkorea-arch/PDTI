@@ -1,0 +1,4 @@
+{
+  "_comment": "Twelve Data 무료 API 키를 아래 twelvedata_key에 넣으면 배너 시세가 브라우저에서 직접 갱신됩니다. 키 발급: https://twelvedata.com/apikey (무료 Basic). 비워두면 야후(무키)+시드값으로 동작합니다. 주의: 이 파일은 공개되므로 키도 공개 노출되고, 무료 한도(800회/일)는 방문자 전원이 공유합니다. 트래픽이 있으면 서버측(GitHub Actions secret) 방식을 권장합니다.",
+  "twelvedata_key": ""
+}

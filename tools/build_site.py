@@ -172,6 +172,7 @@ def main():
   @keyframes tkflash{{0%{{background:rgba(201,166,84,0)}}22%{{background:rgba(201,166,84,.34)}}100%{{background:rgba(201,166,84,0)}}}}
   .tk-flash{{animation:tkflash .9s ease-out}}
   .tk-live{{color:#9fe3b0;font-weight:700}}
+  .tk-delay{{color:#e0b96a;font-weight:700}}
 
   /* ---- 섹션 라벨 ---- */
   .eyebrow{{display:flex;align-items:center;gap:12px;margin:34px 0 16px}}
@@ -326,28 +327,34 @@ def main():
     # 배너 실시간 갱신 스크립트(f-string 밖 일반 문자열 — 중괄호 충돌 방지)
     ticker_script = """
   <script>
-  /* 시세 스트립 실시간 갱신
-     - 표시 종목/순서/시드값은 ticker.json이 기준(서버측 GitHub Actions가 갱신).
-     - 브라우저에서 야후 시세를 CORS 프록시 경유로 받아 값을 덮어쓴다(키 불필요).
-     - 라이브 실패 종목은 ticker.json 값을 그대로 유지(폴백) → 절대 빈 화면/오류 없음.
-     - 값이 바뀌면 해당 칸이 잠깐 반짝이고, 우측 상단에 갱신 시각을 표시한다. */
+  /* 시세 스트립 실시간 갱신 (3단 폴백)
+     1) Twelve Data: ticker_config.json의 twelvedata_key가 있으면 우선 사용(KOSPI=KS11 등).
+     2) 야후(무키): CORS 프록시 경유 best-effort.
+     3) ticker.json 시드값: 위가 모두 실패해도 절대 빈 화면 없음.
+     - 탭이 보일 때 + 장중 위주로만 호출(무료 한도 절약).
+     - 값이 바뀌면 칸이 잠깐 반짝이고, 좌측에 LIVE/지연 + 시각 표시. */
   (function(){
     var CFG = {
-      'KOSPI':     {sym:'^KS11',    dec:2, mode:'pct'},
-      'KOSDAQ':    {sym:'^KQ11',    dec:2, mode:'pct'},
-      'USD/KRW':   {sym:'KRW=X',    dec:1, mode:'abs'},
-      'WTI':       {sym:'CL=F',     dec:2, mode:'pct', prefix:'$'},
-      'S&P 500':   {sym:'^GSPC',    dec:2, mode:'pct'},
-      '\\uB098\\uC2A4\\uB2E5':       {sym:'^IXIC',    dec:2, mode:'pct'},
-      '\\uB2EC\\uB7EC\\uC778\\uB371\\uC2A4': {sym:'DX-Y.NYB', dec:2, mode:'pct'}
+      'KOSPI':     {sym:'^KS11',    td:'KS11',    dec:2, mode:'pct', mkt:'kr'},
+      'KOSDAQ':    {sym:'^KQ11',    td:'KQ11',    dec:2, mode:'pct', mkt:'kr'},
+      'USD/KRW':   {sym:'KRW=X',    td:'USD/KRW', dec:1, mode:'abs', mkt:'fx'},
+      'WTI':       {sym:'CL=F',     td:'WTI/USD', dec:2, mode:'pct', prefix:'$', mkt:'us'},
+      'S&P 500':   {sym:'^GSPC',    td:'GSPC',    dec:2, mode:'pct', mkt:'us'},
+      '\\uB098\\uC2A4\\uB2E5':       {sym:'^IXIC', td:'IXIC', dec:2, mode:'pct', mkt:'us'},
+      '\\uB2EC\\uB7EC\\uC778\\uB371\\uC2A4': {sym:'DX-Y.NYB', td:'DXY', dec:2, mode:'pct', mkt:'us'}
     };
     var NBSP = String.fromCharCode(160);
     var PROXY = [
+      function(u){ return u; },                                                              /* 직접 */
+      function(u){ return 'https://api.codetabs.com/v1/proxy/?quest=' + encodeURIComponent(u); },
       function(u){ return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u); },
-      function(u){ return 'https://corsproxy.io/?url=' + encodeURIComponent(u); }
+      function(u){ return 'https://thingproxy.freeboard.io/fetch/' + u; }
     ];
     var baseAsof = '';
     var liveOK = {};
+    var tdKey = '', tdDead = false;
+    var tdByName = {}, tdNames = {};
+    Object.keys(CFG).forEach(function(name){ tdByName[name]=CFG[name].td; tdNames[CFG[name].td]=name; });
 
     function fmt(n, dec){ return Number(n).toLocaleString('en-US',{minimumFractionDigits:dec,maximumFractionDigits:dec}); }
     function arrowOf(d){ return d==='up' ? '\\u25B2' : (d==='down' ? '\\u25BC' : '\\u00B7'); }
@@ -366,7 +373,6 @@ def main():
         w.appendChild(n); w.appendChild(v); w.appendChild(c); el.appendChild(w);
       });
     }
-
     function findCell(name){
       var all=document.querySelectorAll('.ticker-in .tk'); var hit=null;
       all.forEach(function(x){ if(x.getAttribute('data-n')===name) hit=x; });
@@ -380,62 +386,133 @@ def main():
       if(c){ c.className='tk-c '+dir; c.textContent=arrowOf(dir)+NBSP+change; }
       if(changed){ w.classList.remove('tk-flash'); void w.offsetWidth; w.classList.add('tk-flash'); }
     }
+    function applyQuote(name, close, change, pct){
+      var cf=CFG[name]; if(!cf) return;
+      var dir = pct>0?'up':(pct<0?'down':'flat');
+      var val=(cf.prefix||'')+fmt(close, cf.dec);
+      var chg=(cf.mode==='abs') ? ((change>=0?'+':'')+fmt(change,1)) : ((pct>=0?'+':'')+Math.abs(pct).toFixed(2)+'%');
+      patch(name, val, chg, dir); liveOK[name]=Date.now();
+    }
 
-    function getJson(url){
-      var chain=[url].concat(PROXY.map(function(p){return p(url);}));
+    function getJson(url){            /* 프록시 체인(야후/ticker.json용) */
       var i=0;
       function go(){
-        if(i>=chain.length) return Promise.reject();
-        return fetch(chain[i++], {cache:'no-store'})
-          .then(function(r){ if(!r.ok) throw 0; return r.json(); })
-          .catch(go);
+        if(i>=PROXY.length) return Promise.reject();
+        return fetch(PROXY[i++](url), {cache:'no-store'})
+          .then(function(r){ if(!r.ok) throw 0; return r.text(); })
+          .then(function(t){ return JSON.parse(t); }).catch(go);
       }
       return go();
     }
 
-    function liveOne(name){
-      var cf=CFG[name]; if(!cf) return;
-      var url='https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(cf.sym)+'?range=1d&interval=5m';
-      getJson(url).then(function(j){
-        var m=j&&j.chart&&j.chart.result&&j.chart.result[0]&&j.chart.result[0].meta; if(!m) return;
-        var price=(typeof m.regularMarketPrice==='number')?m.regularMarketPrice:null;
-        var prev=(typeof m.chartPreviousClose==='number')?m.chartPreviousClose:((typeof m.previousClose==='number')?m.previousClose:null);
-        if(price===null||prev===null) return;
-        var diff=price-prev, eps=Math.abs(prev)*1e-6;
-        var dir=diff>eps?'up':(diff<-eps?'down':'flat');
-        var val=(cf.prefix||'')+fmt(price, cf.dec);
-        var chg=(cf.mode==='abs') ? ((diff>=0?'+':'')+fmt(diff,1)) : ((diff>=0?'+':'')+(diff/prev*100).toFixed(2)+'%');
-        patch(name, val, chg, dir);
-        liveOK[name]=Date.now();
-      }).catch(function(){});
+    /* ---- 1) Twelve Data (키 있을 때 우선, CORS 지원 → 직접 호출) ---- */
+    function tdFetch(names){
+      if(!tdKey || tdDead || !names.length) return Promise.resolve([]);
+      var syms=names.map(function(n){return tdByName[n];}).join(',');
+      var url='https://api.twelvedata.com/quote?symbol='+encodeURIComponent(syms)+'&apikey='+encodeURIComponent(tdKey);
+      return fetch(url,{cache:'no-store'}).then(function(r){ if(!r.ok) throw 0; return r.json(); }).then(function(j){
+        if(!j) return [];
+        if(j.status==='error' || j.code===401 || j.code===429){ tdDead=true; return []; }
+        var filled=[];
+        function handle(sym, q){
+          if(!q || q.status==='error') return;
+          var name=tdNames[sym] || (q.symbol && tdNames[q.symbol]); if(!name) return;
+          var close=parseFloat(q.close), pct=parseFloat(q.percent_change), chg=parseFloat(q.change);
+          if(isNaN(close)) return;
+          if(isNaN(pct)) pct=0; if(isNaN(chg)) chg=0;
+          applyQuote(name, close, chg, pct); filled.push(name);
+        }
+        if(names.length===1){ handle(tdByName[names[0]], j); }
+        else { Object.keys(j).forEach(function(sym){ handle(sym, j[sym]); }); }
+        return filled;
+      }).catch(function(){ return []; });
     }
 
-    function stampTime(){
+    /* ---- 2) 야후(무키) 폴백 ---- */
+    function yahooOne(name){
+      var cf=CFG[name]; if(!cf) return Promise.resolve(false);
+      var hosts=['query1.finance.yahoo.com','query2.finance.yahoo.com'];
+      function tryHost(hi){
+        if(hi>=hosts.length) return Promise.resolve(false);
+        var url='https://'+hosts[hi]+'/v8/finance/chart/'+encodeURIComponent(cf.sym)+'?range=1d&interval=5m';
+        return getJson(url).then(function(j){
+          var m=j&&j.chart&&j.chart.result&&j.chart.result[0]&&j.chart.result[0].meta; if(!m) return tryHost(hi+1);
+          var price=(typeof m.regularMarketPrice==='number')?m.regularMarketPrice:null;
+          var prev=(typeof m.chartPreviousClose==='number')?m.chartPreviousClose:((typeof m.previousClose==='number')?m.previousClose:null);
+          if(price===null||prev===null) return tryHost(hi+1);
+          var diff=price-prev; applyQuote(name, price, diff, (prev?diff/prev*100:0)); return true;
+        }).catch(function(){ return tryHost(hi+1); });
+      }
+      return tryHost(0);
+    }
+
+    function setStatus(live){
       var as=document.querySelector('.tk-as'); if(!as) return;
       var t=new Date(), p=function(x){return ('0'+x).slice(-2);};
-      as.innerHTML=(baseAsof?baseAsof+'  \\u00B7  ':'')+'<span class="tk-live">\\u27F3 '+p(t.getHours())+':'+p(t.getMinutes())+':'+p(t.getSeconds())+'</span>';
+      var hhmmss=p(t.getHours())+':'+p(t.getMinutes())+':'+p(t.getSeconds());
+      var cls=live?'tk-live':'tk-delay';
+      var label=live?('\\u27F3 LIVE '+hhmmss):('\\u27F3 \\uC9C0\\uC5F0 '+hhmmss);  /* 지연 */
+      as.innerHTML=(baseAsof?baseAsof+'  \\u00B7  ':'')+'<span class="'+cls+'">'+label+'</span>';
+    }
+
+    /* ---- 시장 개장(KST) 판단 ---- */
+    function marketState(){
+      var t=new Date(), u=t.getTime()+t.getTimezoneOffset()*60000, k=new Date(u+9*3600000);
+      var day=k.getDay(), hm=k.getHours()*60+k.getMinutes(), weekday=(day>=1&&day<=5);
+      var isKR=weekday && hm>=540 && hm<945;             /* 09:00~15:45 KST */
+      var isUS=weekday && (hm>=1350 || hm<360);          /* 22:30~익일 06:00 KST (서머타임 포함) */
+      var names=[];
+      Object.keys(CFG).forEach(function(name){
+        var m=CFG[name].mkt;
+        if((m==='kr'&&isKR)||(m==='us'&&isUS)||(m==='fx'&&(isKR||isUS))) names.push(name);
+      });
+      return {names:names, anyOpen:(isKR||isUS)};
+    }
+
+    function liveRound(names){
+      return tdFetch(names).then(function(filled){
+        var need=names.filter(function(n){ return filled.indexOf(n)<0; });
+        var jobs=need.map(function(name, idx){
+          return new Promise(function(res){ setTimeout(function(){ yahooOne(name).then(res).catch(function(){res(false);}); }, idx*250); });
+        });
+        return Promise.all(jobs).then(function(rs){ return (filled.length>0) || rs.some(function(x){return x===true;}); });
+      });
     }
 
     function cycle(){
       getJson('ticker.json?t='+Date.now()).then(function(tk){
         if(tk&&tk.items){
           if(!document.querySelector('.ticker-in .tk')){ renderSeed(tk); }
-          else {
-            baseAsof = tk.asof || baseAsof;
+          else { baseAsof=tk.asof||baseAsof;
             tk.items.forEach(function(it){
-              if(liveOK[it.name] && (Date.now()-liveOK[it.name] < 300000)) return; /* 라이브 살아있으면 시드로 되돌리지 않음 */
+              if(liveOK[it.name] && (Date.now()-liveOK[it.name]<300000)) return;
               patch(it.name, it.value, it.change||'', it.dir||'flat');
             });
           }
         }
       }).catch(function(){}).then(function(){
-        Object.keys(CFG).forEach(function(name, idx){ setTimeout(function(){ liveOne(name); }, idx*200); });
-        stampTime();
+        if(document.hidden) return;                 /* 라이브 API는 보일 때만(한도 절약) */
+        var s=marketState();
+        var names = s.names.length ? s.names : Object.keys(CFG);
+        liveRound(names).then(function(any){ setStatus(any); });
       });
     }
 
-    cycle();
-    setInterval(cycle, 60000);
+    var timer=null;
+    function schedule(){
+      if(timer) clearTimeout(timer);
+      var ms = marketState().anyOpen ? 180000 : 1200000;   /* 장중 3분 · 폐장 20분 */
+      timer=setTimeout(function(){ cycle(); schedule(); }, ms);
+    }
+    function start(){ cycle(); schedule(); }
+
+    fetch('ticker_config.json?t='+Date.now(),{cache:'no-store'})
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(cfg){ if(cfg && typeof cfg.twelvedata_key==='string') tdKey=cfg.twelvedata_key.trim(); })
+      .catch(function(){})
+      .then(start);
+
+    document.addEventListener('visibilitychange', function(){ if(!document.hidden){ cycle(); } });
   })();
   </script>
 """
