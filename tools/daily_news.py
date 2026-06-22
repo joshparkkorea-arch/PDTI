@@ -56,13 +56,28 @@ def esc(s):
 
 # ----------------------------- KIS -----------------------------
 def kis_token(app_key, app_secret):
+    """접근토큰 발급. KIS는 토큰 발급이 '1분당 1회' 제한이라, 같은 워크플로에서
+    update_ticker가 직전에 토큰을 받았으면 충돌할 수 있다. 막히면 65초 쉬고 1회 재시도."""
     body = json.dumps({"grant_type": "client_credentials",
                        "appkey": app_key, "appsecret": app_secret}).encode()
-    req = urllib.request.Request(KIS_BASE + "/oauth2/tokenP", data=body,
-                                 headers={"Content-Type": "application/json", "User-Agent": UA},
-                                 method="POST")
-    with urllib.request.urlopen(req, timeout=20) as r:
-        return json.load(r)["access_token"]
+    last = None
+    for attempt in range(2):
+        try:
+            req = urllib.request.Request(KIS_BASE + "/oauth2/tokenP", data=body,
+                                         headers={"Content-Type": "application/json", "User-Agent": UA},
+                                         method="POST")
+            with urllib.request.urlopen(req, timeout=20) as r:
+                data = json.load(r)
+            tok = data.get("access_token")
+            if tok:
+                return tok
+            raise RuntimeError(data.get("error_description") or data.get("msg1") or "no access_token")
+        except Exception as e:
+            last = e
+            if attempt == 0:
+                sys.stderr.write(f"[kis] 토큰 1차 실패({e}) — 65초 후 재시도(1분당 1회 제한 회피)\n")
+                time.sleep(65)
+    raise last
 
 
 def kis_get(path, tr_id, params, token, app_key, app_secret):
@@ -170,6 +185,166 @@ def fetch_investors(token, app_key, app_secret):
     except Exception as e:
         sys.stderr.write(f"[flow] 수급 실패: {e}\n")
         return None
+
+
+def fetch_volume_rank(token, app_key, app_secret, n=5):
+    """국내 거래량 상위 종목 — best-effort. 실패 시 None."""
+    try:
+        params = {
+            "fid_cond_mrkt_div_code": "J", "fid_cond_scr_div_code": "20171",
+            "fid_input_iscd": "0000", "fid_div_cls_code": "0", "fid_blng_cls_code": "0",
+            "fid_trgt_cls_code": "111111111", "fid_trgt_exls_cls_code": "0000000000",
+            "fid_input_price_1": "", "fid_input_price_2": "", "fid_vol_cnt": "",
+            "fid_input_date_1": "",
+        }
+        data = kis_get("/uapi/domestic-stock/v1/quotations/volume-rank", "FHPST01710000",
+                       params, token, app_key, app_secret)
+        if data.get("rt_cd") != "0":
+            return None
+        out = []
+        for o in data.get("output", [])[:n]:
+            out.append({
+                "name": o.get("hts_kor_isnm", "—"),
+                "price": o.get("stck_prpr", "—"),
+                "ctrt": o.get("prdy_ctrt", "—"),
+                "vol": o.get("acml_vol", "—"),
+                "sign": o.get("prdy_vrss_sign", "3"),
+            })
+        return out or None
+    except Exception as e:
+        sys.stderr.write(f"[vol] 거래량순위 실패: {e}\n")
+        return None
+
+
+# ----------------------------- Claude API 작성 -----------------------------
+ANTHROPIC_MODEL = "claude-sonnet-4-6"
+
+AI_CLASSES = (
+    "사용 가능한 HTML 클래스(이 클래스들만 사용):\n"
+    " - <p class=\"lead-para\">…</p> : 첫 리드 문단\n"
+    " - <section class=\"sec\"><div class=\"eyebrow\">SECTION</div><h2>제목</h2></section> : 섹션 헤더(섹션마다 본문 <p>가 뒤따름)\n"
+    " - <div class=\"src-cat\">소제목</div> : 표/블록 위 작은 소제목\n"
+    " - <table class=\"grid\"><thead><tr><th>…</th></tr></thead><tbody><tr><td>…</td></tr></tbody></table> : 데이터 표\n"
+    " - 등락은 <span class=\"up\">+1.2%</span> / <span class=\"down\">-0.8%</span> (한국식: 상승=빨강 up, 하락=파랑 down)\n"
+    " - <p class=\"small\">…</p> : 작은 보조설명·출처\n"
+    " - <hr class=\"rule\"> : 구분선\n"
+    " - 출처 링크: <a href=\"URL\" target=\"_blank\" rel=\"noopener\">매체명</a>\n"
+)
+
+
+def _ai_user_prompt(mode, date_kst, items, asof, vol, rank_up, rank_dn, flows):
+    d = date_kst
+    dstr = f'{d.year}년 {d.month}월 {d.day}일({WEEKDAY_KR[d.weekday()]})'
+    lines = [f'[확정 데이터 — 아래 숫자는 그대로 사용, 추가 사실은 web_search로 확인]',
+             f'작성시각(KST): {asof or dstr}', f'발행일: {dstr}', f'모드: {mode}']
+    idx = []
+    for nm in ["KOSPI", "KOSDAQ", "USD/KRW", "WTI", "S&P 500", "나스닥", "달러인덱스"]:
+        it = items.get(nm)
+        if it:
+            idx.append(f'{nm} {it.get("value","")}({it.get("change","")})')
+    if idx:
+        lines.append("지수/지표: " + ", ".join(idx))
+    if vol:
+        lines.append("거래량 상위(한국): " + "; ".join(
+            f'{x["name"]} 현재가 {x["price"]} 등락 {x["ctrt"]}% 거래량 {x["vol"]}' for x in vol))
+    if rank_up:
+        lines.append("등락률 상위: " + ", ".join(f'{x["name"]} {x["ctrt"]}%' for x in rank_up))
+    if rank_dn:
+        lines.append("등락률 하위: " + ", ".join(f'{x["name"]} {x["ctrt"]}%' for x in rank_dn))
+    if flows:
+        lines.append("수급(외국인/기관/개인 순매수): " + "; ".join(
+            f'{m} 외 {v.get("frgn")} 기 {v.get("orgn")} 개 {v.get("indv")}' for m, v in flows.items()))
+
+    if mode == "close":
+        focus = (
+            "이번은 '한국 증시 마감 시황'입니다. 한국 뉴스 위주로 구성하되, 밤사이/장중 한국 증시에 "
+            "영향을 준 해외(특히 미국) 이슈가 있으면 반드시 포함하세요. 거래량 상위 5종목(한국)은 각각 "
+            "오늘 주가 흐름 + 관련 뉴스 + 수급(외국인·기관)을 엮어 분석하고, 근거를 댄 향후 주가 시나리오를 제시하세요.")
+        sections = ("마감 요약(lead-para) → 지수 마감표(table.grid) → 오늘의 주요 뉴스(출처 명시) → "
+                    "거래량 상위 5종목 분석(종목별 흐름·뉴스·수급·향후 시나리오) → 외국인·기관 수급 분석 → "
+                    "내일 관전 포인트·전망(근거 명시)")
+    else:
+        focus = (
+            "이번은 '개장 브리핑'입니다. 간밤 미국 증시·주요 미국 뉴스 위주로 구성하되, 한국 장에 큰 영향을 "
+            "줄 이슈가 있으면 포함하세요. 미국 거래량/주목 상위 5종목을 web_search로 확인해 흐름·뉴스를 분석하고 "
+            "전망을 제시하세요. 한국 코스피·코스닥은 전 거래일 종가 기준으로 출발 환경을 짚어주세요.")
+        sections = ("개장 요약(lead-para) → 간밤 미국 지수·지표표(table.grid) → 간밤 주요 뉴스(출처 명시) → "
+                    "미국 주목 5종목 분석 → 오늘 한국 증시 관전 포인트·전망(근거 명시)")
+
+    body = "\n".join(lines)
+    return (
+        f"{body}\n\n"
+        f"[작성 지침]\n{focus}\n\n"
+        f"구성 순서: {sections}\n\n"
+        "요구사항:\n"
+        "1) 모든 수치·뉴스·주장에 출처를 명시하세요(web_search로 확인한 매체명+가능하면 링크). 확인 안 된 사실은 쓰지 마세요.\n"
+        "2) 전망/주가 예상은 반드시 '근거 → 결론' 순서로, 시나리오(상승/하락/횡보 등)와 트리거를 함께. 단정적 매수·매도 권유는 금지.\n"
+        "3) 뉴스는 직접 인용 대신 자신의 말로 요약(저작권). 출처만 표기.\n"
+        "4) 분량은 충실하게(읽을거리 있는 데일리 뉴스레터 수준). 과장·미확인 추측 금지.\n"
+        "5) 한국 증시 색상 관례: 상승=빨강(class=\"up\"), 하락=파랑(class=\"down\").\n\n"
+        f"{AI_CLASSES}\n"
+        "[출력 형식] 아래 JSON '하나만' 출력하세요. 마크다운 코드펜스(```)나 다른 텍스트 금지:\n"
+        '{\n'
+        '  "title": "기사 제목(20~45자, 핵심 수치 포함)",\n'
+        '  "subtitle": "부제 한 줄(히어로용, 60~110자)",\n'
+        '  "summary": "홈 미리보기용 요약(120~180자)",\n'
+        '  "body_html": "<p class=\\"lead-para\\">…</p> 이하 본문 HTML 전체(위 클래스만 사용)"\n'
+        '}'
+    )
+
+
+def call_anthropic(api_key, system, user, max_tokens=8000, max_searches=7):
+    body = {
+        "model": ANTHROPIC_MODEL,
+        "max_tokens": max_tokens,
+        "system": system,
+        "messages": [{"role": "user", "content": user}],
+        "tools": [{"type": "web_search_20250305", "name": "web_search", "max_uses": max_searches}],
+    }
+    req = urllib.request.Request("https://api.anthropic.com/v1/messages",
+                                 data=json.dumps(body).encode("utf-8"),
+                                 headers={"content-type": "application/json",
+                                          "x-api-key": api_key,
+                                          "anthropic-version": "2023-06-01",
+                                          "User-Agent": UA}, method="POST")
+    with urllib.request.urlopen(req, timeout=240) as r:
+        data = json.load(r)
+    texts = [b.get("text", "") for b in data.get("content", []) if b.get("type") == "text"]
+    return "\n".join(t for t in texts if t).strip()
+
+
+def parse_article_json(txt):
+    t = (txt or "").strip()
+    if t.startswith("```"):
+        t = t.lstrip("`")
+        if t[:4].lower() == "json":
+            t = t[4:]
+        t = t.strip("`").strip()
+    i, j = t.find("{"), t.rfind("}")
+    if i >= 0 and j > i:
+        t = t[i:j + 1]
+    obj = json.loads(t)
+    for k in ("title", "summary", "body_html"):
+        if not obj.get(k):
+            raise ValueError(f"필수 필드 누락: {k}")
+    obj.setdefault("subtitle", "")
+    return obj
+
+
+def compose_with_claude(api_key, mode, date_kst, items, asof, vol, rank_up, rank_dn, flows):
+    system = (
+        "당신은 한국의 데일리 투자 뉴스레터 '투자이야기(INVEST STORY)'의 증시 전문 기자입니다. "
+        "기사는 '박철웅 기자' 명의로 공개 발행됩니다. 정확성과 출처 표기를 최우선으로 하며, 확인되지 않은 "
+        "사실이나 과장된 추측은 쓰지 않습니다. 제공된 확정 수치는 그대로 쓰고, 그 외 사실·뉴스·종목 동향은 "
+        "web_search로 직접 확인해 출처를 답니다. 한국 증시 색상 관례(상승=빨강, 하락=파랑)를 따릅니다. "
+        "출력은 지정된 JSON 형식만 사용합니다."
+    )
+    user = _ai_user_prompt(mode, date_kst, items, asof, vol, rank_up, rank_dn, flows)
+    raw = call_anthropic(api_key, system, user)
+    return parse_article_json(raw)
+
+
+
 
 
 # ----------------------------- 데이터 -----------------------------
@@ -385,6 +560,37 @@ def build_html(mode, date_kst, items, asof, rank_up, rank_dn, flows):
     return "".join(parts), title, summary
 
 
+def render_ai(mode, date_kst, meta):
+    """Claude가 쓴 {title, subtitle, summary, body_html}을 기존 디자인에 입힌다."""
+    d = date_kst
+    dstr = f'{d.year}년 {d.month}월 {d.day}일({WEEKDAY_KR[d.weekday()]})'
+    tag = "마감" if mode == "close" else "개장"
+    eyebrow = "JOSH PARK INVEST · 데일리 " + ("마감 시황" if mode == "close" else "개장 브리핑")
+    title = str(meta["title"]).strip()
+    subtitle = str(meta.get("subtitle", "")).strip()
+    body_html = str(meta["body_html"])
+    disc = ('본 리포트는 시장 정보 제공 및 분석 목적이며 특정 종목의 매수·매도 권유가 아닙니다. 본문의 뉴스·수치는 '
+            '작성 시점 web 검색 및 공개 데이터를 근거로 하며 출처를 표기했으나, 속보성 사안은 이후 정정될 수 있습니다. '
+            '전망·시나리오는 작성 시점 판단으로 실제와 다를 수 있습니다. 모든 투자 결정은 투자자 본인의 판단과 책임 '
+            '하에 이루어져야 하며, Josh Park Invest는 본 자료를 활용한 투자 결과에 어떠한 책임도 지지 않습니다.')
+    parts = [head_html(esc(title))]
+    parts.append(f'<div class="topbar"><div class="topbar-in"><a class="home" href="/">INVEST STORY</a>'
+                 f'<span class="tag">데일리 · {tag} · {d.strftime("%Y-%m-%d")}</span></div></div>\n')
+    parts.append('<main>\n')
+    parts.append(f'<header class="art-hero"><div class="ah-k">{esc(eyebrow)}</div>'
+                 f'<div class="ah-t">{esc(title)}</div>'
+                 f'<div class="ah-s">{esc(dstr)}{(" · " + esc(subtitle)) if subtitle else ""}</div></header>\n')
+    parts.append(body_html)
+    parts.append(f'<hr class="rule"><p class="disc">{disc}</p>')
+    parts.append('<p class="byline" style="margin:30px 0 4px;padding-top:16px;border-top:1px solid var(--line);'
+                 'font-weight:700;color:var(--ink);font-size:14px">박철웅 기자 '
+                 '<a href="mailto:joshpark.korea@gmail.com" style="font-weight:600">joshpark.korea@gmail.com</a></p>\n')
+    parts.append('</main>\n')
+    parts.append(FOOT)
+    summary = str(meta.get("summary") or subtitle)[:180]
+    return "".join(parts), title, summary
+
+
 # ----------------------------- manifest / build -----------------------------
 def update_manifest(date_str, mode, title, summary, relfile):
     with open(MANIFEST, encoding="utf-8") as f:
@@ -417,6 +623,7 @@ def rebuild_site():
 def selftest(token, key, sec):
     print("=== daily_news 자가진단 ===")
     print("KIS 키:", "있음" if (key and sec) else "없음")
+    print("ANTHROPIC_API_KEY:", "있음" if os.environ.get("ANTHROPIC_API_KEY", "").strip() else "없음(→템플릿 모드)")
     print("토큰:", "발급 성공" if token else "발급 실패/없음")
     items, asof = load_ticker()
     print("ticker.json:", f"{len(items)}종 수신" if items else "없음/실패", "| asof:", asof)
@@ -427,6 +634,8 @@ def selftest(token, key, sec):
         print("등락률 상위:", "OK " + ", ".join(x["name"] for x in up) if up else "실패(섹션 생략됨)")
         dn = fetch_fluctuation(token, key, sec, "1", 3)
         print("등락률 하위:", "OK" if dn else "실패(섹션 생략됨)")
+        vol = fetch_volume_rank(token, key, sec, 3)
+        print("거래량 상위:", "OK " + ", ".join(x["name"] for x in vol) if vol else "실패(섹션 생략됨)")
         fl = fetch_investors(token, key, sec)
         print("수급(외국인/기관):", "OK" if fl else "실패(섹션 생략됨)")
     print("=== 끝 (파일은 만들지 않았습니다) ===")
@@ -467,14 +676,30 @@ def main():
         sys.stderr.write("[daily_news] ticker.json 비어있음 — update_ticker.py를 먼저 실행하세요\n")
         return 1
 
-    rank_up = rank_dn = flows = None
-    if mode == "close" and token:
-        rank_up = fetch_fluctuation(token, key, sec, "0", 5)
-        rank_dn = fetch_fluctuation(token, key, sec, "1", 5)
-        flows = fetch_investors(token, key, sec)
-        print(f"[daily_news] 등락상위={'O' if rank_up else 'X'} 등락하위={'O' if rank_dn else 'X'} 수급={'O' if flows else 'X'}")
+    rank_up = rank_dn = flows = vol = None
+    if token:
+        if mode == "close":
+            rank_up = fetch_fluctuation(token, key, sec, "0", 5)
+            rank_dn = fetch_fluctuation(token, key, sec, "1", 5)
+            vol = fetch_volume_rank(token, key, sec, 5)
+            flows = fetch_investors(token, key, sec)
+            print(f"[daily_news] 거래량상위={'O' if vol else 'X'} 등락상위={'O' if rank_up else 'X'} "
+                  f"등락하위={'O' if rank_dn else 'X'} 수급={'O' if flows else 'X'}")
 
-    htmlstr, title, summary = build_html(mode, now, items, asof, rank_up, rank_dn, flows)
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "").strip()
+    htmlstr = title = summary = None
+    if api_key:
+        try:
+            meta = compose_with_claude(api_key, mode, now, items, asof, vol, rank_up, rank_dn, flows)
+            htmlstr, title, summary = render_ai(mode, now, meta)
+            print(f"[daily_news] Claude API 작성 완료 · 제목: {title}")
+        except Exception as e:
+            sys.stderr.write(f"[ai] Claude 작성 실패 — 템플릿으로 폴백: {e}\n")
+    else:
+        print("[daily_news] ANTHROPIC_API_KEY 없음 — 템플릿 모드(숫자 위주)")
+
+    if htmlstr is None:
+        htmlstr, title, summary = build_html(mode, now, items, asof, rank_up, rank_dn, flows)
 
     os.makedirs(NEWS_DIR, exist_ok=True)
     fname = f'{now:%Y-%m-%d}-{mode}.html'
