@@ -66,20 +66,21 @@ def main():
           </a>
         </article>'''
 
-    # ----- 상단 미리보기: 항상 '최신 데일리'만 -----
+    # ----- 상단 미리보기: 가장 최근 '뉴스 리포트'(데일리 또는 특보) -----
     dailies = [a for a in issues if a.get("tag") == "데일리"]
-    lead_daily = dailies[0] if dailies else None
-    lead_html = card(lead_daily) if lead_daily else '<p class="empty">아직 발간된 데일리 리포트가 없습니다.</p>'
+    news_pool = [a for a in issues if a.get("tag") in ("데일리", "특보")]
+    lead_top = news_pool[0] if news_pool else None
+    lead_html = card(lead_top) if lead_top else '<p class="empty">아직 발간된 리포트가 없습니다.</p>'
 
     # ----- 그 아래 미리보기: '가장 최근 특집호' (당일 업로드분 포함) -----
     spec_pool = [a for a in issues if a.get("tag") == "특집호"]
     lead_special = spec_pool[0] if spec_pool else None
     special_html = card(lead_special) if lead_special else '<p class="empty">최신 특집·기획 리포트가 곧 이곳에 소개됩니다.</p>'
 
-    # ----- 지난 호 (데일리만 — 상단 미리보기로 쓴 데일리는 제외) -----
+    # ----- 지난 호 (데일리만 — 상단 미리보기로 쓴 호는 제외) -----
     rows = []
     for a in dailies:
-        if lead_daily and a.get("no") == lead_daily.get("no") and a.get("date") == lead_daily.get("date"):
+        if lead_top and a.get("no") == lead_top.get("no") and a.get("date") == lead_top.get("date"):
             continue
         rows.append(f'''
         <a class="row" href="{esc(a["file"])}">
