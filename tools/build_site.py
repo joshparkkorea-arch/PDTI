@@ -47,12 +47,12 @@ def main():
               f'<span class="tk-c {esc(it.get("dir","flat"))}">{arrow}&nbsp;{esc(it["change"])}</span></span>')
         asof = esc(tk.get("asof",""))
         cells_html = "".join(cells)
-        # 좌측 고정 라벨(asof/상태) + 우측 마퀴(동일한 종목 그룹 2벌을 이어붙여 무한 스크롤)
-        ticker_html = (f'<div class="ticker">'
-                       f'<span class="tk-as">{asof}</span>'
-                       f'<div class="tk-mq"><div class="tk-track">'
-                       f'<div class="tk-grp" id="tkmain">{cells_html}</div>'
-                       f'<div class="tk-grp tk-clone" aria-hidden="true">{cells_html}</div>'
+        # 전체가 하나의 가로 스크롤러: [asof + 종목들] 그룹을 2벌 이어붙여 무한 순환.
+        # 자동으로 좌측으로 천천히 흐르고, 마우스로 좌우 드래그 가능(아무것도 잘리지 않음).
+        grp = f'<span class="tk-as">{asof}</span>{cells_html}'
+        ticker_html = (f'<div class="ticker"><div class="tk-scroll" id="tkscroll"><div class="tk-track">'
+                       f'<div class="tk-grp" id="tkmain">{grp}</div>'
+                       f'<div class="tk-grp tk-clone" aria-hidden="true">{grp}</div>'
                        f'</div></div></div>')
 
     # 최신 발간일(이 날짜에 올라온 특집·특보는 '당일 업로드'로 보고 New 배지 + 미리보기 제외)
@@ -158,23 +158,22 @@ def main():
   .mast-in{{padding:30px 22px 20px;text-align:center}}
   .rule{{height:2px;background:var(--gold);max-width:980px;margin:0 auto}}
   .rule.thin{{height:1px;background:var(--line-2)}}
-  .wordmark{{font-family:var(--latin);font-weight:900;color:var(--navy);
-    font-size:clamp(40px,8vw,76px);letter-spacing:.14em;line-height:1;margin:16px 0 8px;text-indent:.14em}}
+  .wordmark{{display:inline-block;text-decoration:none;cursor:pointer;font-family:var(--latin);font-weight:900;color:var(--navy);
+    font-size:clamp(40px,8vw,76px);letter-spacing:.14em;line-height:1;margin:16px 0 8px;text-indent:.14em;transition:opacity .15s}}
+  .wordmark:hover{{opacity:.82}}
   .submast{{font-family:var(--serif);font-weight:600;color:var(--ink);font-size:clamp(13px,2.4vw,16px);letter-spacing:.02em}}
   .issueline{{margin-top:7px;color:var(--mute);font-size:12.5px;letter-spacing:.08em;text-transform:none}}
   .issueline b{{color:var(--gold-d);font-weight:700}}
 
   /* ---- 티커 ---- */
-  .ticker{{background:var(--navy);color:#eaf0f7;display:flex;align-items:center;overflow:hidden}}
+  .ticker{{background:var(--navy);color:#eaf0f7;overflow:hidden}}
   .ticker::-webkit-scrollbar{{display:none}}
-  .tk-as{{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#9fb4d0;font-size:11.5px;letter-spacing:.04em;padding:9px 16px 9px 22px;border-right:1px solid #34507e}}
-  .tk-mq{{flex:1 1 auto;overflow:hidden}}
-  .tk-track{{display:flex;width:max-content;animation:tkscroll 40s linear infinite;will-change:transform}}
-  .tk-grp{{display:flex;gap:22px;align-items:center;white-space:nowrap;font-size:13px;padding-left:22px}}
-  @keyframes tkscroll{{from{{transform:translateX(0)}}to{{transform:translateX(-50%)}}}}
-  .ticker:hover .tk-track{{animation-play-state:paused}}
-  @media (prefers-reduced-motion:reduce){{.tk-track{{animation:none}}}}
-  @media (max-width:640px){{.tk-as{{max-width:44vw}}}}
+  .tk-scroll{{overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-ms-overflow-style:none;cursor:grab;-webkit-overflow-scrolling:touch}}
+  .tk-scroll::-webkit-scrollbar{{display:none}}
+  .tk-scroll.tk-drag{{cursor:grabbing}}
+  .tk-track{{display:flex;width:max-content}}
+  .tk-grp{{display:flex;gap:22px;align-items:center;white-space:nowrap;font-size:13px;padding:9px 0 9px 22px}}
+  .tk-as{{flex:0 0 auto;color:#9fb4d0;font-size:11.5px;letter-spacing:.04em;padding-right:14px;border-right:1px solid #34507e}}
   .tk{{display:inline-flex;gap:7px;align-items:baseline}}
   .tk-n{{color:#c7d6ea;font-weight:600;letter-spacing:.02em}}
   .tk-v{{font-weight:700;color:#fff;font-variant-numeric:tabular-nums}}
@@ -287,7 +286,7 @@ def main():
   <header class="masthead">
     <div class="rule"></div>
     <div class="mast-in">
-      <div class="wordmark">INVEST&nbsp;STORY</div>
+      <a class="wordmark" href="/">INVEST&nbsp;STORY</a>
       <div class="submast">{esc(tagline)}</div>
       <div class="issueline">{today} &nbsp;·&nbsp; <b>제 {cur_no}호</b> &nbsp;·&nbsp; 발행 Josh Park Invest</div>
     </div>
@@ -375,11 +374,43 @@ def main():
       var m=document.querySelector('#tkmain'), c=document.querySelector('.tk-clone');
       if(m&&c) c.innerHTML=m.innerHTML;        /* 보이지 않는 두번째 그룹을 항상 동일하게 유지 → 끊김 없는 무한 스크롤 */
     }
+
+    /* ---- 시세판: 좌측 자동 스크롤 + 마우스 좌우 드래그 (끊김 없는 순환) ---- */
+    (function(){
+      var sc=document.querySelector('#tkscroll'); if(!sc) return;
+      var AUTO_PXPS=28;                           /* 자동 속도(px/초) — 작을수록 천천히 */
+      var autoOn=true, dragging=false, hovering=false, lastT=0, startX=0, startScroll=0;
+      try{ if(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) autoOn=false; }catch(e){}
+      function grpW(){ var g=document.querySelector('#tkmain'); return g?g.getBoundingClientRect().width:0; }
+      function wrap(){ var w=grpW(); if(w<=0) return;     /* scrollLeft을 한 그룹폭 안으로 정규화 */
+        if(sc.scrollLeft>=w) sc.scrollLeft-=w; else if(sc.scrollLeft<0) sc.scrollLeft+=w; }
+      function tick(t){
+        if(autoOn && !dragging && !hovering && lastT){ sc.scrollLeft += AUTO_PXPS*((t-lastT)/1000); }
+        wrap(); lastT=t; requestAnimationFrame(tick);
+      }
+      sc.addEventListener('pointerdown', function(e){
+        dragging=true; sc.classList.add('tk-drag'); startX=e.clientX; startScroll=sc.scrollLeft;
+        try{ sc.setPointerCapture(e.pointerId); }catch(_){}
+      });
+      sc.addEventListener('pointermove', function(e){
+        if(!dragging) return; sc.scrollLeft=startScroll-(e.clientX-startX); wrap();
+      });
+      function endDrag(e){ if(!dragging) return; dragging=false; sc.classList.remove('tk-drag');
+        try{ sc.releasePointerCapture(e.pointerId); }catch(_){}
+      }
+      sc.addEventListener('pointerup', endDrag);
+      sc.addEventListener('pointercancel', endDrag);
+      sc.addEventListener('mouseenter', function(){ hovering=true; });   /* 데스크톱: 올리면 잠깐 멈춤 */
+      sc.addEventListener('mouseleave', function(){ hovering=false; });
+      /* 이미지/텍스트 끌림 방지 */
+      sc.addEventListener('dragstart', function(e){ e.preventDefault(); });
+      requestAnimationFrame(tick);
+    })();
     function renderSeed(tk){
       var el=document.querySelector('#tkmain'); if(!el||!tk||!tk.items) return;
       baseAsof = tk.asof || '';
-      var asEl=document.querySelector('.tk-as'); if(asEl) asEl.textContent=baseAsof;
       el.innerHTML='';
+      var as=document.createElement('span'); as.className='tk-as'; as.textContent=baseAsof; el.appendChild(as);
       tk.items.forEach(function(it){
         var dir=it.dir||'flat';
         var w=document.createElement('span'); w.className='tk'; w.setAttribute('data-n', it.name);
@@ -470,12 +501,13 @@ def main():
     }
 
     function setStatus(mode){   /* 'live' | 'auto' | 'delay' */
-      var as=document.querySelector('.tk-as'); if(!as) return;
+      var as=document.querySelector('#tkmain .tk-as'); if(!as) return;
       var t=new Date(), p=function(x){return ('0'+x).slice(-2);};
       var hhmmss=p(t.getHours())+':'+p(t.getMinutes())+':'+p(t.getSeconds());
       var cls=(mode==='delay')?'tk-delay':'tk-live';
       var word=(mode==='live')?'LIVE':((mode==='auto')?'\\uC790\\uB3D9':'\\uC9C0\\uC5F0'); /* 자동 / 지연 */
       as.innerHTML=(baseAsof?baseAsof+'  \\u00B7  ':'')+'<span class="'+cls+'">\\u27F3 '+word+' '+hhmmss+'</span>';
+      syncClone();
     }
 
     /* ---- 시장 개장(KST) 판단 ---- */
