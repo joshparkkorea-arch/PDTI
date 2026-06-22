@@ -102,6 +102,28 @@
     padding:12px 20px;border-radius:3px;white-space:nowrap}
   .banner a:hover .banner-cta{box-shadow:0 4px 16px rgba(201,166,84,.45)}
 
+  /* ---- 홈 2단 레이아웃 + 특집 사이드바 ---- */
+  .home-grid{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:36px;align-items:start;margin-top:6px}
+  .home-solo{margin-top:6px}
+  .home-main{min-width:0}
+  .side{position:sticky;top:18px}
+  .side-card{background:var(--paper);border:1px solid var(--line);border-top:3px solid var(--gold);border-radius:3px;overflow:hidden}
+  .side-head{background:var(--navy);padding:13px 16px}
+  .side-k{color:var(--gold);font-size:10px;font-weight:800;letter-spacing:.14em}
+  .side-t{font-family:var(--serif);color:#fff;font-weight:700;font-size:17px;margin-top:2px}
+  .side-list{padding:2px 16px 10px}
+  .side-item{display:block;padding:13px 0;border-bottom:1px solid var(--line)}
+  .side-item:last-child{border-bottom:none}
+  .side-tag{display:inline-block;font-size:10px;font-weight:700;color:var(--gold-d);border:1px solid var(--gold);border-radius:2px;padding:1px 7px}
+  .side-tag.founder{color:#fff;background:var(--navy);border-color:var(--navy)}
+  .side-title{display:block;font-family:var(--serif);font-weight:700;color:var(--ink);font-size:14px;line-height:1.42;margin:7px 0 3px}
+  .side-item:hover .side-title{text-decoration:underline;text-decoration-color:var(--gold);text-underline-offset:3px;text-decoration-thickness:2px}
+  .side-date{color:var(--mute);font-size:11px;font-variant-numeric:tabular-nums}
+  @media (max-width:860px){
+    .home-grid{grid-template-columns:1fr;gap:24px}
+    .side{position:static}
+  }
+
   /* ---- 푸터 ---- */
   footer{margin-top:46px;border-top:2px solid var(--navy);background:var(--paper)}
   .foot-in{padding:26px 22px 40px;text-align:center}
@@ -136,8 +158,10 @@
   <div class="ticker"><div class="ticker-in"><span class="tk-as">2026-06-22 장중 · 환율·WTI·미국은 직전 확인값</span><span class="tk"><span class="tk-n">KOSPI</span><span class="tk-v">8,958.94</span><span class="tk-c down">▼&nbsp;-1.03%</span></span><span class="tk"><span class="tk-n">KOSDAQ</span><span class="tk-v">971.73</span><span class="tk-c up">▲&nbsp;+0.53%</span></span><span class="tk"><span class="tk-n">USD/KRW</span><span class="tk-v">1,527.0</span><span class="tk-c down">▼&nbsp;-0.1</span></span><span class="tk"><span class="tk-n">WTI</span><span class="tk-v">$78.70</span><span class="tk-c up">▲&nbsp;+3.00%</span></span><span class="tk"><span class="tk-n">S&amp;P 500</span><span class="tk-v">7,500.58</span><span class="tk-c up">▲&nbsp;+1.08%</span></span><span class="tk"><span class="tk-n">나스닥</span><span class="tk-v">26,517.93</span><span class="tk-c up">▲&nbsp;+1.91%</span></span><span class="tk"><span class="tk-n">달러인덱스</span><span class="tk-v">100.59</span><span class="tk-c up">▲&nbsp;+0.72%</span></span></div></div>
 
   <main class="wrap">
-    <div class="eyebrow"><h3>오늘의 리포트</h3></div>
-    
+    <div class="home-grid">
+      <div class="home-main">
+        <div class="eyebrow"><h3>오늘의 리포트</h3></div>
+        
         <article class="lead">
           <a class="lead-link" href="newsletters/2026-06-22.html">
             <div class="lead-meta">
@@ -149,13 +173,13 @@
           </a>
         </article>
 
-    <div class="eyebrow"><h3>지난 호</h3></div>
-    <div class="archive">
-      
+        <div class="eyebrow"><h3>지난 호</h3></div>
+        <div class="archive">
+          
         <a class="row" href="newsletters/2026-06-19.html">
           <span class="row-date">06.19 (금)</span>
           <span class="row-no">제 10호</span>
-          <span class="row-tag">특집호</span>
+          <span class="row-tag">데일리</span>
           <span class="row-body">
             <span class="row-title">코스피 사상 첫 9,000 돌파 — 매파 FOMC도 못 막은 외국인 반도체 매수</span>
             <span class="row-sum">6/18 코스피 9,063.84(+2.25%) 사상 첫 9,000 돌파, 장중 9,106. 외국인 1.28조 순매수(반도체 집중), 삼성 +4.62%·SK하이닉스 +6.51%. 단 코스닥 -3.01% 쏠림. 올해 +115%로 G20 1위. 오늘 미국은 준틴스 휴장.</span>
@@ -212,16 +236,6 @@
           </span>
           <span class="row-pdf">읽기 →</span>
         </a>
-        <a class="row" href="newsletters/2026-06-08.html">
-          <span class="row-date">06.08 (월)</span>
-          <span class="row-no">제 4호</span>
-          <span class="row-tag">특보</span>
-          <span class="row-body">
-            <span class="row-title">코스피 서킷브레이커 발동 — -8.37% 급락, AVGO 도미노의 종착점</span>
-            <span class="row-sum">6/8 09:03 코스피 -8.37%로 9번째 서킷브레이커. 6/3 AVGO 가이드 미스→6/5 나스닥 -4.18%→한국 충격 압축 반영. 삼성 -9.27%·SK하이닉스 -8.02%. 4가지 시나리오와 투자자 행동 가이드를 담았습니다.</span>
-          </span>
-          <span class="row-pdf">읽기 →</span>
-        </a>
         <a class="row" href="newsletters/2026-06-05.html">
           <span class="row-date">06.05 (금)</span>
           <span class="row-no">제 3호</span>
@@ -232,36 +246,39 @@
           </span>
           <span class="row-pdf">읽기 →</span>
         </a>
-        <a class="row" href="newsletters/2026-06-04-2.html">
-          <span class="row-date">06.04 (목)</span>
-          <span class="row-no">제 2호</span>
-          <span class="row-tag">특집호</span>
-          <span class="row-body">
-            <span class="row-title">Google 유상증자 집중 분석 — Alphabet $84.75B 자본 조달의 모든 것</span>
-            <span class="row-sum">빅테크 사상 최대 847.5억 달러 유상증자 호외 분석. 4단 발행 구조 해부, 버크셔 $10B 참여(그렉 아벨 체제 첫 빅테크 베팅), AI 캐펙스 경쟁과 단·중·장기 시나리오까지 정밀 해부.</span>
-          </span>
-          <span class="row-pdf">읽기 →</span>
-        </a>
-        <a class="row" href="newsletters/2026-06-04.html">
-          <span class="row-date">06.04 (목)</span>
-          <span class="row-no">제 1호</span>
-          <span class="row-tag">창간호</span>
-          <span class="row-body">
-            <span class="row-title">브로드컴 실적 폭발 + 이란 긴장에 9일 상승 종료 — 코스피 8,800선 첫 돌파</span>
-            <span class="row-sum">브로드컴(AVGO) Q2 매출 +48%·AI +143% 어닝 서프라이즈로 시간외 강세. 미국 3대 지수는 이란 긴장에 9일 연속 상승 종료. 코스피는 6/2 사상 첫 8,800 돌파 후 차익실현. 6/9 WWDC·6/11 CPI·6/17 FOMC가 줄줄이 대기합니다.</span>
-          </span>
-          <span class="row-pdf">읽기 →</span>
-        </a>
-    </div>
+        </div>
 
-    <div class="banner">
-      <a href="pdti.html">
-        <span class="banner-txt">
-          <div class="banner-k">INVEST STORY · INTERACTIVE</div>
-          <div class="banner-t">나의 투자 성향은? — 16가지 투자 유형 테스트</div>
-        </span>
-        <span class="banner-cta">테스트 시작하기 →</span>
-      </a>
+        <div class="banner">
+          <a href="pdti.html">
+            <span class="banner-txt">
+              <div class="banner-k">INVEST STORY · INTERACTIVE</div>
+              <div class="banner-t">나의 투자 성향은? — 16가지 투자 유형 테스트</div>
+            </span>
+            <span class="banner-cta">테스트 시작하기 →</span>
+          </a>
+        </div>
+      </div>
+      <aside class="side"><div class="side-card"><div class="side-head"><div class="side-k">SPECIAL</div><div class="side-t">특집 · 기획</div></div><div class="side-list"><a class="side-item" href="newsletters/2026-06-22.html">
+            <span class="side-tag">특보</span>
+            <span class="side-title">코스피 9,000 하루 만에 반납 — 이란 호르무즈 &#x27;재봉쇄&#x27;에 유가 반등, 미·이란 스위스 담판은 살얼음</span>
+            <span class="side-date">06.22 (월)</span>
+          </a><a class="side-item" href="newsletters/2026-06-19-special.html">
+            <span class="side-tag">특집호</span>
+            <span class="side-title">코스피 9,000 시대 — 상승·하락·횡보 3대 시나리오 정밀 분석</span>
+            <span class="side-date">06.19 (금)</span>
+          </a><a class="side-item" href="newsletters/2026-06-08.html">
+            <span class="side-tag">특보</span>
+            <span class="side-title">코스피 서킷브레이커 발동 — -8.37% 급락, AVGO 도미노의 종착점</span>
+            <span class="side-date">06.08 (월)</span>
+          </a><a class="side-item" href="newsletters/2026-06-04-2.html">
+            <span class="side-tag">특집호</span>
+            <span class="side-title">Google 유상증자 집중 분석 — Alphabet $84.75B 자본 조달의 모든 것</span>
+            <span class="side-date">06.04 (목)</span>
+          </a><a class="side-item" href="newsletters/2026-06-04.html">
+            <span class="side-tag founder">창간호</span>
+            <span class="side-title">브로드컴 실적 폭발 + 이란 긴장에 9일 상승 종료 — 코스피 8,800선 첫 돌파</span>
+            <span class="side-date">06.04 (목)</span>
+          </a></div></div></aside>
     </div>
   </main>
 

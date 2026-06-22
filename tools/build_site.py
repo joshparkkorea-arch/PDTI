@@ -65,9 +65,11 @@ def main():
           </a>
         </article>'''
 
-    # ----- 지난 호 -----
+    # ----- 지난 호 (데일리만 — 특집/특보/창간호는 오른쪽 사이드바로) -----
     rows = []
     for a in issues[1:]:
+        if a.get("tag") != "데일리":
+            continue
         rows.append(f'''
         <a class="row" href="{esc(a["file"])}">
           <span class="row-date">{kdate(a["date"], False)}</span>
@@ -79,7 +81,26 @@ def main():
           </span>
           <span class="row-pdf">읽기 →</span>
         </a>''')
-    archive_html = "".join(rows) if rows else '<p class="empty">지난 호가 쌓이면 이곳에 아카이브됩니다.</p>'
+    archive_html = "".join(rows) if rows else '<p class="empty">지난 데일리 리포트가 쌓이면 이곳에 아카이브됩니다.</p>'
+
+    # ----- 특집·기획 사이드바 (데일리 제외 전부: 창간호·특집호·특보) -----
+    sp_items = []
+    for a in issues:
+        if a.get("tag") == "데일리":
+            continue
+        tagcls = " founder" if a.get("tag") == "창간호" else ""
+        sp_items.append(f'''<a class="side-item" href="{esc(a["file"])}">
+            <span class="side-tag{tagcls}">{esc(a.get("tag",""))}</span>
+            <span class="side-title">{esc(a["title"])}</span>
+            <span class="side-date">{kdate(a["date"], False)}</span>
+          </a>''')
+    side_html = ""
+    if sp_items:
+        side_html = ('<aside class="side"><div class="side-card">'
+                     '<div class="side-head"><div class="side-k">SPECIAL</div>'
+                     '<div class="side-t">특집 · 기획</div></div>'
+                     '<div class="side-list">' + "".join(sp_items) + '</div></div></aside>')
+    home_open = '<div class="home-grid">' if side_html else '<div class="home-solo">'
 
     today = kdate(issues[0]["date"]) if issues else kdate(datetime.date.today().isoformat())
     cur_no = issues[0].get("no","") if issues else ""
@@ -188,6 +209,28 @@ def main():
     padding:12px 20px;border-radius:3px;white-space:nowrap}}
   .banner a:hover .banner-cta{{box-shadow:0 4px 16px rgba(201,166,84,.45)}}
 
+  /* ---- 홈 2단 레이아웃 + 특집 사이드바 ---- */
+  .home-grid{{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:36px;align-items:start;margin-top:6px}}
+  .home-solo{{margin-top:6px}}
+  .home-main{{min-width:0}}
+  .side{{position:sticky;top:18px}}
+  .side-card{{background:var(--paper);border:1px solid var(--line);border-top:3px solid var(--gold);border-radius:3px;overflow:hidden}}
+  .side-head{{background:var(--navy);padding:13px 16px}}
+  .side-k{{color:var(--gold);font-size:10px;font-weight:800;letter-spacing:.14em}}
+  .side-t{{font-family:var(--serif);color:#fff;font-weight:700;font-size:17px;margin-top:2px}}
+  .side-list{{padding:2px 16px 10px}}
+  .side-item{{display:block;padding:13px 0;border-bottom:1px solid var(--line)}}
+  .side-item:last-child{{border-bottom:none}}
+  .side-tag{{display:inline-block;font-size:10px;font-weight:700;color:var(--gold-d);border:1px solid var(--gold);border-radius:2px;padding:1px 7px}}
+  .side-tag.founder{{color:#fff;background:var(--navy);border-color:var(--navy)}}
+  .side-title{{display:block;font-family:var(--serif);font-weight:700;color:var(--ink);font-size:14px;line-height:1.42;margin:7px 0 3px}}
+  .side-item:hover .side-title{{text-decoration:underline;text-decoration-color:var(--gold);text-underline-offset:3px;text-decoration-thickness:2px}}
+  .side-date{{color:var(--mute);font-size:11px;font-variant-numeric:tabular-nums}}
+  @media (max-width:860px){{
+    .home-grid{{grid-template-columns:1fr;gap:24px}}
+    .side{{position:static}}
+  }}
+
   /* ---- 푸터 ---- */
   footer{{margin-top:46px;border-top:2px solid var(--navy);background:var(--paper)}}
   .foot-in{{padding:26px 22px 40px;text-align:center}}
@@ -222,22 +265,27 @@ def main():
   {ticker_html}
 
   <main class="wrap">
-    <div class="eyebrow"><h3>오늘의 리포트</h3></div>
-    {lead_html}
+    {home_open}
+      <div class="home-main">
+        <div class="eyebrow"><h3>오늘의 리포트</h3></div>
+        {lead_html}
 
-    <div class="eyebrow"><h3>지난 호</h3></div>
-    <div class="archive">
-      {archive_html}
-    </div>
+        <div class="eyebrow"><h3>지난 호</h3></div>
+        <div class="archive">
+          {archive_html}
+        </div>
 
-    <div class="banner">
-      <a href="{PDTI_PATH}">
-        <span class="banner-txt">
-          <div class="banner-k">INVEST STORY · INTERACTIVE</div>
-          <div class="banner-t">나의 투자 성향은? — 16가지 투자 유형 테스트</div>
-        </span>
-        <span class="banner-cta">테스트 시작하기 →</span>
-      </a>
+        <div class="banner">
+          <a href="{PDTI_PATH}">
+            <span class="banner-txt">
+              <div class="banner-k">INVEST STORY · INTERACTIVE</div>
+              <div class="banner-t">나의 투자 성향은? — 16가지 투자 유형 테스트</div>
+            </span>
+            <span class="banner-cta">테스트 시작하기 →</span>
+          </a>
+        </div>
+      </div>
+      {side_html}
     </div>
   </main>
 
