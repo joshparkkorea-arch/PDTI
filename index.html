@@ -356,22 +356,37 @@
     function arrowOf(d){ return d==='up' ? '\u25B2' : (d==='down' ? '\u25BC' : '\u00B7'); }
 
     function syncClone(){
-      var m=document.querySelector('#tkmain'), c=document.querySelector('.tk-clone');
-      if(m&&c) c.innerHTML=m.innerHTML;        /* 보이지 않는 두번째 그룹을 항상 동일하게 유지 → 끊김 없는 무한 스크롤 */
+      var m=document.querySelector('#tkmain'); if(!m) return;
+      var cs=document.querySelectorAll('.tk-clone');        /* 모든 클론 그룹을 #tkmain과 동일하게 유지 */
+      for(var i=0;i<cs.length;i++) cs[i].innerHTML=m.innerHTML;
     }
 
-    /* ---- 시세판: 좌측 자동 스크롤 + 마우스 좌우 드래그 (끊김 없는 순환) ---- */
+    /* ---- 시세판: 좌측 자동 스크롤 + 마우스 좌우 드래그 (어떤 화면폭에서도 끊김 없이 순환) ---- */
     (function(){
       var sc=document.querySelector('#tkscroll'); if(!sc) return;
+      var track=document.querySelector('#tkscroll .tk-track');
       var AUTO_PXPS=28;                           /* 자동 속도(px/초) — 작을수록 천천히 */
-      var autoOn=true, dragging=false, hovering=false, lastT=0, startX=0, startScroll=0;
+      var autoOn=true, dragging=false, hovering=false, lastT=0, startX=0, startScroll=0, fc=0;
       try{ if(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) autoOn=false; }catch(e){}
       function grpW(){ var g=document.querySelector('#tkmain'); return g?g.getBoundingClientRect().width:0; }
+      /* 화면폭보다 콘텐츠가 짧으면 스크롤이 벽에 막혀 멈춤 → 그룹을 충분히 복제해 항상 한 그룹폭 이상 남게 함 */
+      function ensureFill(){
+        if(!track) return; var gw=grpW(), m=document.querySelector('#tkmain'); if(gw<=0||!m) return;
+        var want=Math.ceil((sc.clientWidth + gw + 60)/gw); want=Math.max(2, Math.min(want, 12));
+        var have=track.querySelectorAll('.tk-grp').length, added=false;
+        for(var i=have;i<want;i++){
+          var c=m.cloneNode(true); c.removeAttribute('id'); c.classList.add('tk-clone'); c.setAttribute('aria-hidden','true');
+          track.appendChild(c); added=true;
+        }
+        if(added) syncClone();
+      }
       function wrap(){ var w=grpW(); if(w<=0) return;     /* scrollLeft을 한 그룹폭 안으로 정규화 */
         if(sc.scrollLeft>=w) sc.scrollLeft-=w; else if(sc.scrollLeft<0) sc.scrollLeft+=w; }
       function tick(t){
         if(autoOn && !dragging && !hovering && lastT){ sc.scrollLeft += AUTO_PXPS*((t-lastT)/1000); }
-        wrap(); lastT=t; requestAnimationFrame(tick);
+        wrap();
+        if((fc++ % 60)===0) ensureFill();                /* 약 1초마다 폭 점검(상태표시 길이 변동·리사이즈 대응) */
+        lastT=t; requestAnimationFrame(tick);
       }
       sc.addEventListener('pointerdown', function(e){
         dragging=true; sc.classList.add('tk-drag'); startX=e.clientX; startScroll=sc.scrollLeft;
@@ -387,8 +402,9 @@
       sc.addEventListener('pointercancel', endDrag);
       sc.addEventListener('mouseenter', function(){ hovering=true; });   /* 데스크톱: 올리면 잠깐 멈춤 */
       sc.addEventListener('mouseleave', function(){ hovering=false; });
-      /* 이미지/텍스트 끌림 방지 */
-      sc.addEventListener('dragstart', function(e){ e.preventDefault(); });
+      sc.addEventListener('dragstart', function(e){ e.preventDefault(); });   /* 이미지/텍스트 끌림 방지 */
+      window.addEventListener('resize', ensureFill);
+      ensureFill();
       requestAnimationFrame(tick);
     })();
     function renderSeed(tk){
