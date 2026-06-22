@@ -283,17 +283,20 @@ def _ai_user_prompt(mode, date_kst, items, asof, vol, rank_up, rank_dn, flows):
         "4) 분량은 충실하게(읽을거리 있는 데일리 뉴스레터 수준). 과장·미확인 추측 금지.\n"
         "5) 한국 증시 색상 관례: 상승=빨강(class=\"up\"), 하락=파랑(class=\"down\").\n\n"
         f"{AI_CLASSES}\n"
-        "[출력 형식] 아래 JSON '하나만' 출력하세요. 마크다운 코드펜스(```)나 다른 텍스트 금지:\n"
-        '{\n'
-        '  "title": "기사 제목(20~45자, 핵심 수치 포함)",\n'
-        '  "subtitle": "부제 한 줄(히어로용, 60~110자)",\n'
-        '  "summary": "홈 미리보기용 요약(120~180자)",\n'
-        '  "body_html": "<p class=\\"lead-para\\">…</p> 이하 본문 HTML 전체(위 클래스만 사용)"\n'
-        '}'
+        "[출력 형식] 아래 형식 '그대로' 출력하세요. 각 구분선(===...===)을 정확히 쓰고 그 사이에 내용만 넣으세요. "
+        "마크다운 코드펜스(```)나 형식 밖의 다른 말은 절대 쓰지 마세요. body_html은 위 클래스만 쓴 순수 HTML입니다.\n"
+        "===TITLE===\n"
+        "(기사 제목 20~45자, 핵심 수치 포함)\n"
+        "===SUBTITLE===\n"
+        "(부제 한 줄 60~110자)\n"
+        "===SUMMARY===\n"
+        "(홈 미리보기용 요약 120~180자)\n"
+        "===BODY===\n"
+        "(<p class=\"lead-para\">…</p> 이하 본문 HTML 전체)"
     )
 
 
-def call_anthropic(api_key, system, user, max_tokens=8000, max_searches=7):
+def call_anthropic(api_key, system, user, max_tokens=16000, max_searches=7):
     body = {
         "model": ANTHROPIC_MODEL,
         "max_tokens": max_tokens,
@@ -313,22 +316,32 @@ def call_anthropic(api_key, system, user, max_tokens=8000, max_searches=7):
     return "\n".join(t for t in texts if t).strip()
 
 
-def parse_article_json(txt):
-    t = (txt or "").strip()
-    if t.startswith("```"):
-        t = t.lstrip("`")
-        if t[:4].lower() == "json":
-            t = t[4:]
-        t = t.strip("`").strip()
-    i, j = t.find("{"), t.rfind("}")
-    if i >= 0 and j > i:
-        t = t[i:j + 1]
-    obj = json.loads(t)
-    for k in ("title", "summary", "body_html"):
-        if not obj.get(k):
-            raise ValueError(f"필수 필드 누락: {k}")
-    obj.setdefault("subtitle", "")
-    return obj
+def parse_article(txt):
+    """구분자(===TITLE=== 등) 기반 파서. HTML 따옴표와 충돌하지 않아 견고하다."""
+    t = txt or ""
+    M = ["===TITLE===", "===SUBTITLE===", "===SUMMARY===", "===BODY==="]
+    pos = {m: t.find(m) for m in M}
+    if any(v < 0 for v in pos.values()):
+        raise ValueError("출력 구분자 누락(===TITLE/SUBTITLE/SUMMARY/BODY===)")
+
+    def sect(m, nxt):
+        s = pos[m] + len(m)
+        e = pos[nxt] if nxt else len(t)
+        return t[s:e].strip()
+
+    title = sect("===TITLE===", "===SUBTITLE===")
+    subtitle = sect("===SUBTITLE===", "===SUMMARY===")
+    summary = sect("===SUMMARY===", "===BODY===")
+    body = sect("===BODY===", None)
+    # 혹시 코드펜스가 섞이면 제거
+    if body.startswith("```"):
+        body = body.lstrip("`")
+        if body[:4].lower() == "html":
+            body = body[4:]
+        body = body.rstrip("`").strip()
+    if not title or not body:
+        raise ValueError("title/body 비어있음")
+    return {"title": title, "subtitle": subtitle, "summary": summary, "body_html": body}
 
 
 def compose_with_claude(api_key, mode, date_kst, items, asof, vol, rank_up, rank_dn, flows):
@@ -337,11 +350,16 @@ def compose_with_claude(api_key, mode, date_kst, items, asof, vol, rank_up, rank
         "기사는 '박철웅 기자' 명의로 공개 발행됩니다. 정확성과 출처 표기를 최우선으로 하며, 확인되지 않은 "
         "사실이나 과장된 추측은 쓰지 않습니다. 제공된 확정 수치는 그대로 쓰고, 그 외 사실·뉴스·종목 동향은 "
         "web_search로 직접 확인해 출처를 답니다. 한국 증시 색상 관례(상승=빨강, 하락=파랑)를 따릅니다. "
-        "출력은 지정된 JSON 형식만 사용합니다."
+        "반드시 지정된 구분자 형식으로만 출력합니다."
     )
     user = _ai_user_prompt(mode, date_kst, items, asof, vol, rank_up, rank_dn, flows)
     raw = call_anthropic(api_key, system, user)
-    return parse_article_json(raw)
+    try:
+        return parse_article(raw)
+    except Exception:
+        # 진단을 위해 원문 앞부분을 로그로 남기고 다시 던짐 → main에서 폴백
+        sys.stderr.write("[ai] 응답 파싱 실패. 원문 앞 400자:\n" + (raw[:400] if raw else "(빈 응답)") + "\n")
+        raise
 
 
 
