@@ -437,13 +437,13 @@
       return tryHost(0);
     }
 
-    function setStatus(live){
+    function setStatus(mode){   /* 'live' | 'auto' | 'delay' */
       var as=document.querySelector('.tk-as'); if(!as) return;
       var t=new Date(), p=function(x){return ('0'+x).slice(-2);};
       var hhmmss=p(t.getHours())+':'+p(t.getMinutes())+':'+p(t.getSeconds());
-      var cls=live?'tk-live':'tk-delay';
-      var label=live?('\u27F3 LIVE '+hhmmss):('\u27F3 \uC9C0\uC5F0 '+hhmmss);  /* 지연 */
-      as.innerHTML=(baseAsof?baseAsof+'  \u00B7  ':'')+'<span class="'+cls+'">'+label+'</span>';
+      var cls=(mode==='delay')?'tk-delay':'tk-live';
+      var word=(mode==='live')?'LIVE':((mode==='auto')?'\uC790\uB3D9':'\uC9C0\uC5F0'); /* 자동 / 지연 */
+      as.innerHTML=(baseAsof?baseAsof+'  \u00B7  ':'')+'<span class="'+cls+'">\u27F3 '+word+' '+hhmmss+'</span>';
     }
 
     /* ---- 시장 개장(KST) 판단 ---- */
@@ -485,7 +485,10 @@
         if(document.hidden) return;                 /* 라이브 API는 보일 때만(한도 절약) */
         var s=marketState();
         var names = s.names.length ? s.names : Object.keys(CFG);
-        liveRound(names).then(function(any){ setStatus(any); });
+        liveRound(names).then(function(any){
+          var serverFresh = /\uC790\uB3D9/.test(baseAsof);   /* ticker.json asof에 '자동' 포함 = 서버 갱신 중 */
+          setStatus(any ? 'live' : (serverFresh ? 'auto' : 'delay'));
+        });
       });
     }
 

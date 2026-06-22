@@ -91,11 +91,26 @@ def fetch_td_all(key):
     iterable = data.items() if any(isinstance(v, dict) for v in data.values()) else [(SYMBOLS[0][2], data)]
     for td, q in iterable:
         if not isinstance(q, dict) or q.get("status") == "error":
+            sys.stderr.write(f"[td] {td} 건너뜀: {q.get('message') if isinstance(q,dict) else q}\n")
             continue
-        try:
-            close = float(q["close"]); prev = float(q["previous_close"])
-        except Exception:
-            continue
+        def num(k):
+            v = q.get(k)
+            try:
+                return float(v) if v not in (None, "") else None
+            except Exception:
+                return None
+        close = num("close")
+        prev = num("previous_close")
+        if close is None:
+            sys.stderr.write(f"[td] {td} close 없음\n"); continue
+        if prev is None:                    # previous_close가 없으면 change/percent로 역산
+            chg = num("change"); pct = num("percent_change")
+            if chg is not None:
+                prev = close - chg
+            elif pct is not None and pct != -100:
+                prev = close / (1 + pct / 100.0)
+            else:
+                prev = close       # 최후수단: 변동 0 처리(값은 표시)
         out[td] = (close, prev)
     return out
 
