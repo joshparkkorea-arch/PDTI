@@ -42,7 +42,7 @@ def main():
         for it in tk["items"]:
             arrow = "▲" if it.get("dir")=="up" else ("▼" if it.get("dir")=="down" else "·")
             cells.append(
-              f'<span class="tk"><span class="tk-n">{esc(it["name"])}</span>'
+              f'<span class="tk" data-n="{esc(it["name"])}"><span class="tk-n">{esc(it["name"])}</span>'
               f'<span class="tk-v">{esc(it["value"])}</span>'
               f'<span class="tk-c {esc(it.get("dir","flat"))}">{arrow}&nbsp;{esc(it["change"])}</span></span>')
         asof = esc(tk.get("asof",""))
@@ -375,7 +375,12 @@ def main():
     }
     function findCell(name){
       var all=document.querySelectorAll('.ticker-in .tk'); var hit=null;
-      all.forEach(function(x){ if(x.getAttribute('data-n')===name) hit=x; });
+      all.forEach(function(x){
+        if(hit) return;
+        if(x.getAttribute('data-n')===name){ hit=x; return; }
+        var n=x.querySelector('.tk-n');               /* data-n 없는 시드 칸도 종목명으로 매칭 */
+        if(n && n.textContent.trim()===name) hit=x;
+      });
       return hit;
     }
     function patch(name, value, change, dir){
