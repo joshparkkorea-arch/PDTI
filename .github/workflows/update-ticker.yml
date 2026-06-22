@@ -1,0 +1,46 @@
+name: update-ticker
+
+# 장중 시세를 받아 ticker.json을 자동 갱신한다.
+# (배너는 ticker.json을 60초마다 읽어 화면을 다시 그림 → index 재빌드 불필요)
+on:
+  schedule:
+    # GitHub cron은 UTC 기준. 표시는 대략값이며 5~15분 지연될 수 있음.
+    - cron: "*/15 0-7 * * 1-5"    # 한국 장중  09:00~16:xx KST (00:00~07:00 UTC)
+    - cron: "*/15 13-20 * * 1-5"  # 미국 장중  09:30~16:00 ET  (13:30~20:00 UTC)
+  workflow_dispatch:               # 수동 실행 버튼
+
+permissions:
+  contents: write                  # ticker.json 커밋용
+
+concurrency:
+  group: update-ticker
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Update ticker.json
+        env:
+          TWELVEDATA_API_KEY: ${{ secrets.TWELVEDATA_API_KEY }}
+        run: python tools/update_ticker.py
+
+      - name: Commit if changed
+        run: |
+          if git diff --quiet -- ticker.json; then
+            echo "변경 없음 — 커밋 생략"
+          else
+            git config user.name  "invest-story-bot"
+            git config user.email "actions@users.noreply.github.com"
+            git add ticker.json
+            git commit -m "chore(ticker): 시세 자동 갱신 [skip ci]"
+            git push
+          fi
