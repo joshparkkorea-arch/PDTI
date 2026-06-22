@@ -1,31 +1,46 @@
 # -*- coding: utf-8 -*-
 """
-build_site.py — INVEST STORY 홈페이지 생성기
+build_site.py — INVEST STORY 홈페이지 생성기 (v11 · 1면 재설계)
 manifest.json(발간 호 목록)과 ticker.json(시세 스트립)을 읽어 index.html을 만든다.
-publish.py가 자동 호출한다. 단독 실행도 가능: python tools/build_site.py
+- 핵심 지표: 정적 카드 2줄(코스피·코스닥·달러 / WTI·S&P·나스닥) + 달러인덱스 더보기.
+  (마퀴 폐기. 단, 장중 실시간 갱신 엔진 Twelve Data+야후는 그대로 유지 → 정적 카드를 patch.)
+- 카테고리 탭(전체·데일리·특집·기획·특보)으로 카드 그리드 필터(같은 페이지 JS).
+- 오늘의 리포트 = 대표 카드(최신 호). 색: 데일리 네이비 / 특집·기획 골드 / 특보 레드.
+단독 실행: python tools/build_site.py
 """
-import json, os, html, datetime, sys
+import json, os, html, datetime
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # repo root
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MANIFEST = os.path.join(ROOT, "manifest.json")
 TICKER   = os.path.join(ROOT, "ticker.json")
 OUT      = os.path.join(ROOT, "index.html")
-PDTI_PATH = "pdti.html"             # 투자성향 테스트 앱 (루트에 파일로 유지 — 이미지 경로 보존)
+PDTI_PATH = "pdti.html"
 KAKAO = "https://open.kakao.com/o/giw7dfAb"
 DOMAIN = "investstory.co.kr"
 WD = ["월","화","수","목","금","토","일"]
 
+# 지표 표시 순서·한글 라벨 (ticker.json name → 라벨). 마지막 '달러인덱스'는 더보기.
+STAT_ORDER = [
+    ("KOSPI", "코스피"), ("KOSDAQ", "코스닥"), ("USD/KRW", "달러·원"),
+    ("WTI", "WTI 유가"), ("S&P 500", "S&P 500"), ("나스닥", "나스닥"),
+    ("달러인덱스", "달러인덱스"),
+]
+STAT_MORE = {"달러인덱스"}  # 기본 접힘
+
+# 카테고리 버킷·색 (탭 필터 + 태그/악센트 색)
+def cat_of(tag):
+    if tag == "데일리": return "daily"
+    if tag == "특보":   return "flash"
+    return "special"    # 특집호·창간호·기획 등
+CAT_COLOR = {"daily": ("#1B3C6E", "#ffffff"), "flash": ("#C0392B", "#ffffff"), "special": ("#C9A654", "#3d2f08")}
+
 def kdate(s, longfmt=True):
     y,m,d = [int(x) for x in s.split("-")]
     dt = datetime.date(y,m,d)
-    if longfmt:
-        return f"{y}년 {m}월 {d}일 ({WD[dt.weekday()]})"
-    return f"{m:02d}.{d:02d} ({WD[dt.weekday()]})"
+    return f"{y}년 {m}월 {d}일 ({WD[dt.weekday()]})" if longfmt else f"{m:02d}.{d:02d} ({WD[dt.weekday()]})"
 
 def kdatetime(a, longfmt=True):
-    """날짜 + (있으면) 발행 시각. manifest 항목의 'time'(예: '15:35') 사용."""
-    base = kdate(a["date"], longfmt)
-    t = a.get("time")
+    base = kdate(a["date"], longfmt); t = a.get("time")
     return f"{base} {t}" if t else base
 
 def esc(s): return html.escape(str(s), quote=True)
@@ -38,94 +53,57 @@ def main():
     man = load(MANIFEST, {"publication":"INVEST STORY","tagline":"","issues":[]})
     tk  = load(TICKER, None)
     issues = sorted(man.get("issues", []), key=lambda x:(x["date"], x.get("no",0)), reverse=True)
-    pub = man.get("publication","INVEST STORY")
     tagline = man.get("tagline","")
 
-    # ----- 시세 티커 -----
-    ticker_html = ""
+    # ---------- 핵심 지표 카드 ----------
+    by_name = {}
     if tk and tk.get("items"):
-        cells = []
-        for it in tk["items"]:
-            arrow = "▲" if it.get("dir")=="up" else ("▼" if it.get("dir")=="down" else "·")
-            cells.append(
-              f'<span class="tk" data-n="{esc(it["name"])}"><span class="tk-n">{esc(it["name"])}</span>'
-              f'<span class="tk-v">{esc(it["value"])}</span>'
-              f'<span class="tk-c {esc(it.get("dir","flat"))}">{arrow}&nbsp;{esc(it["change"])}</span></span>')
-        asof = esc(tk.get("asof",""))
-        cells_html = "".join(cells)
-        # 전체가 하나의 가로 스크롤러: [asof + 종목들] 그룹을 2벌 이어붙여 무한 순환.
-        # 자동으로 좌측으로 천천히 흐르고, 마우스로 좌우 드래그 가능(아무것도 잘리지 않음).
-        grp = f'<span class="tk-as">{asof}</span>{cells_html}'
-        ticker_html = (f'<div class="ticker"><div class="tk-scroll" id="tkscroll"><div class="tk-track">'
-                       f'<div class="tk-grp" id="tkmain">{grp}</div>'
-                       f'<div class="tk-grp tk-clone" aria-hidden="true">{grp}</div>'
-                       f'</div></div></div>')
+        for it in tk["items"]: by_name[it.get("name")] = it
+    stat_cells = []
+    for name, label in STAT_ORDER:
+        it = by_name.get(name, {})
+        val = esc(it.get("value","—")); chg = esc(it.get("change","")); dr = esc(it.get("dir","flat"))
+        arrow = "▲" if dr=="up" else ("▼" if dr=="down" else "·")
+        more = " more" if name in STAT_MORE else ""
+        stat_cells.append(
+            f'<div class="stat{more}" data-n="{esc(name)}">'
+            f'<span class="stat-n">{esc(label)}</span>'
+            f'<span class="stat-v">{val}</span>'
+            f'<span class="stat-c {dr}">{arrow}&nbsp;{chg}</span></div>')
+    stat_cards_html = "".join(stat_cells)
+    asof = esc(tk.get("asof","")) if tk else ""
 
-    # 최신 발간일(이 날짜에 올라온 특집·특보는 '당일 업로드'로 보고 New 배지 + 미리보기 제외)
-    newest_date = issues[0]["date"] if issues else None
+    # ---------- 카드(공용) ----------
+    def card_html(a, feature=False):
+        c = cat_of(a.get("tag",""))
+        bg, fg = CAT_COLOR[c]
+        tag = esc(a.get("tag","리포트"))
+        meta = f'{kdatetime(a, not feature)} · 제 {a.get("no","")}호'
+        if feature:
+            return f'''<a class="feature cat-{c}" href="{esc(a["file"])}" style="--cat:{bg}">
+  <span class="feat-tag" style="background:{bg};color:{fg}">{tag}</span>
+  <h2 class="feat-title">{esc(a["title"])}</h2>
+  <p class="feat-sum">{esc(a.get("summary",""))}</p>
+  <span class="feat-meta">{esc(meta)}</span>
+  <span class="feat-cta">전문 읽기 →</span>
+</a>'''
+        return f'''<a class="ncard" href="{esc(a["file"])}" data-cat="{c}">
+  <span class="ncard-tag" style="background:{bg};color:{fg}">{tag}</span>
+  <span class="ncard-title">{esc(a["title"])}</span>
+  <span class="ncard-sum">{esc(a.get("summary",""))}</span>
+  <span class="ncard-meta">{esc(meta)}</span>
+</a>'''
 
-    # 미리보기 카드(데일리·특집 공용)
-    def card(a):
-        return f'''
-        <article class="lead">
-          <a class="lead-link" href="{esc(a["file"])}">
-            <div class="lead-meta">
-              <span class="chip">{esc(a.get("tag","리포트"))}</span>
-              <span class="lead-date">{kdatetime(a)} · 제 {a.get("no","")}호</span>
-            </div>
-            <h2 class="lead-title">{esc(a["title"])}</h2>
-            <p class="lead-sum">{esc(a.get("summary",""))}</p>
-          </a>
-        </article>'''
+    feature = issues[0] if issues else None
+    feature_html = card_html(feature, feature=True) if feature else '<p class="empty">아직 발간된 리포트가 없습니다.</p>'
+    rest = issues[1:] if feature else issues
+    cards_html = "".join(card_html(a) for a in rest) if rest else '<p class="empty" data-empty="all">리포트가 쌓이면 이곳에 정리됩니다.</p>'
 
-    # ----- 상단 미리보기: 가장 최근 '뉴스 리포트'(데일리 또는 특보) -----
-    dailies = [a for a in issues if a.get("tag") == "데일리"]
-    news_pool = [a for a in issues if a.get("tag") in ("데일리", "특보")]
-    lead_top = news_pool[0] if news_pool else None
-    lead_html = card(lead_top) if lead_top else '<p class="empty">아직 발간된 리포트가 없습니다.</p>'
-
-    # ----- 그 아래 미리보기: '가장 최근 특집호' (당일 업로드분 포함) -----
-    spec_pool = [a for a in issues if a.get("tag") == "특집호"]
-    lead_special = spec_pool[0] if spec_pool else None
-    special_html = card(lead_special) if lead_special else '<p class="empty">최신 특집·기획 리포트가 곧 이곳에 소개됩니다.</p>'
-
-    # ----- 지난 호 (데일리만 — 상단 미리보기로 쓴 호는 제외) -----
-    rows = []
-    for a in dailies:
-        if lead_top and a.get("no") == lead_top.get("no") and a.get("date") == lead_top.get("date"):
-            continue
-        rows.append(f'''
-        <a class="row" href="{esc(a["file"])}">
-          <span class="row-date">{kdatetime(a, False)}</span>
-          <span class="row-no">제 {a.get("no","")}호</span>
-          <span class="row-tag">{esc(a.get("tag",""))}</span>
-          <span class="row-body">
-            <span class="row-title">{esc(a["title"])}</span>
-            <span class="row-sum">{esc(a.get("summary",""))}</span>
-          </span>
-          <span class="row-pdf">읽기 →</span>
-        </a>''')
-    archive_html = "".join(rows) if rows else '<p class="empty">지난 데일리 리포트가 쌓이면 이곳에 아카이브됩니다.</p>'
-
-    # ----- 특집·기획 사이드바 (데일리 제외 전부) · 당일 업로드분은 우측 상단 New 배지 -----
-    sp_items = []
-    for a in issues:
-        if a.get("tag") == "데일리":
-            continue
-        tagcls = " founder" if a.get("tag") == "창간호" else ""
-        new_badge = '<span class="side-new">NEW</span>' if a["date"] == newest_date else ''
-        sp_items.append(f'''<a class="side-item" href="{esc(a["file"])}">
-            {new_badge}<span class="side-tag{tagcls}">{esc(a.get("tag",""))}</span>
-            <span class="side-title">{esc(a["title"])}</span>
-            <span class="side-date">{kdatetime(a, False)}</span>
-          </a>''')
-    side_html = ""
-    if sp_items:
-        side_html = ('<aside class="side"><div class="side-card">'
-                     '<div class="side-head"><div class="side-k">SPECIAL</div>'
-                     '<div class="side-t">특집 · 기획</div></div>'
-                     '<div class="side-list">' + "".join(sp_items) + '</div></div></aside>')
-    home_open = '<div class="home-grid">' if side_html else '<div class="home-solo">'
+    # 탭(있는 카테고리만 노출 + 전체)
+    present = {cat_of(a.get("tag","")) for a in issues}
+    tab_defs = [("all","전체")] + [(c,l) for c,l in (("daily","데일리"),("special","특집·기획"),("flash","특보")) if c in present]
+    tabs_html = "".join(
+        f'<button class="tab{" on" if c=="all" else ""}" data-tab="{c}">{esc(l)}</button>' for c,l in tab_defs)
 
     today = kdate(issues[0]["date"]) if issues else kdate(datetime.date.today().isoformat())
     cur_no = issues[0].get("no","") if issues else ""
@@ -136,7 +114,7 @@ def main():
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>INVEST STORY · 투자이야기 데일리 리포트</title>
-<meta name="description" content="{esc(tagline)} — 매일 발간되는 투자 리포트 아카이브.">
+<meta name="description" content="{esc(tagline)} — 매일 발간되는 투자 리포트.">
 <meta property="og:title" content="INVEST STORY">
 <meta property="og:description" content="{esc(tagline)}">
 <meta property="og:type" content="website">
@@ -154,138 +132,97 @@ def main():
   }}
   *{{box-sizing:border-box}}
   html{{-webkit-text-size-adjust:100%}}
-  body{{margin:0;background:var(--paper-2);color:var(--ink);font-family:var(--sans);
-    font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}}
+  body{{margin:0;background:var(--paper-2);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}}
   a{{color:inherit;text-decoration:none}}
   .wrap{{max-width:980px;margin:0 auto;padding:0 22px}}
 
   /* ---- 마스트헤드 ---- */
   .masthead{{background:var(--paper);border-bottom:1px solid var(--line)}}
-  .mast-in{{padding:30px 22px 20px;text-align:center}}
   .rule{{height:2px;background:var(--gold);max-width:980px;margin:0 auto}}
-  .rule.thin{{height:1px;background:var(--line-2)}}
-  .wordmark{{display:inline-block;text-decoration:none;cursor:pointer;font-family:var(--latin);font-weight:900;color:var(--navy);
-    font-size:clamp(40px,8vw,76px);letter-spacing:.14em;line-height:1;margin:16px 0 8px;text-indent:.14em;transition:opacity .15s}}
+  .mast-in{{padding:24px 22px 16px;text-align:center}}
+  .wordmark{{display:inline-block;font-family:var(--latin);font-weight:900;color:var(--navy);
+    font-size:clamp(34px,6.6vw,58px);letter-spacing:.14em;line-height:1;margin:6px 0 6px;text-indent:.14em;transition:opacity .15s}}
   .wordmark:hover{{opacity:.82}}
-  .submast{{font-family:var(--serif);font-weight:600;color:var(--ink);font-size:clamp(13px,2.4vw,16px);letter-spacing:.02em}}
-  .issueline{{margin-top:7px;color:var(--mute);font-size:12.5px;letter-spacing:.08em;text-transform:none}}
+  .submast{{font-family:var(--serif);font-weight:600;color:var(--ink);font-size:clamp(12px,2.2vw,15px)}}
+  .issueline{{margin-top:6px;color:var(--mute);font-size:12px;letter-spacing:.06em}}
   .issueline b{{color:var(--gold-d);font-weight:700}}
 
-  /* ---- 티커 ---- */
-  .ticker{{background:var(--navy);color:#eaf0f7;overflow:hidden}}
-  .ticker::-webkit-scrollbar{{display:none}}
-  .tk-scroll{{overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-ms-overflow-style:none;cursor:grab;-webkit-overflow-scrolling:touch}}
-  .tk-scroll::-webkit-scrollbar{{display:none}}
-  .tk-scroll.tk-drag{{cursor:grabbing}}
-  .tk-track{{display:flex;width:max-content}}
-  .tk-grp{{display:flex;gap:22px;align-items:center;white-space:nowrap;font-size:13px;padding:9px 0 9px 22px}}
-  .tk-as{{flex:0 0 auto;color:#9fb4d0;font-size:11.5px;letter-spacing:.04em;padding-right:14px;border-right:1px solid #34507e}}
-  .tk{{display:inline-flex;gap:7px;align-items:baseline}}
-  .tk-n{{color:#c7d6ea;font-weight:600;letter-spacing:.02em}}
-  .tk-v{{font-weight:700;color:#fff;font-variant-numeric:tabular-nums}}
-  .tk-c{{font-weight:700;font-variant-numeric:tabular-nums}}
-  .tk-c.up{{color:#ff8a7a}} .tk-c.down{{color:#7fb6ef}} .tk-c.flat{{color:#c7d6ea}}
-  .tk{{border-radius:3px}}
-  @keyframes tkflash{{0%{{background:rgba(201,166,84,0)}}22%{{background:rgba(201,166,84,.34)}}100%{{background:rgba(201,166,84,0)}}}}
-  .tk-flash{{animation:tkflash .9s ease-out}}
-  .tk-live{{color:#9fe3b0;font-weight:700}}
-  .tk-delay{{color:#e0b96a;font-weight:700}}
+  /* ---- 카테고리 탭(스티키) ---- */
+  .topnav{{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.94);backdrop-filter:saturate(1.2) blur(6px);
+    border-bottom:1px solid var(--line)}}
+  .topnav-in{{max-width:980px;margin:0 auto;padding:0 16px;display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}}
+  .topnav-in::-webkit-scrollbar{{display:none}}
+  .tab{{appearance:none;background:none;border:none;cursor:pointer;font-family:var(--sans);
+    font-size:14px;font-weight:600;color:var(--mute);padding:13px 14px;white-space:nowrap;
+    border-bottom:2.5px solid transparent;transition:color .12s,border-color .12s}}
+  .tab:hover{{color:var(--ink)}}
+  .tab.on{{color:var(--navy);border-bottom-color:var(--gold)}}
 
-  /* ---- 섹션 라벨 ---- */
-  .eyebrow{{display:flex;align-items:center;gap:12px;margin:34px 0 16px}}
-  .eyebrow h3{{font-family:var(--serif);font-weight:700;color:var(--navy);font-size:15px;letter-spacing:.06em;margin:0;white-space:nowrap}}
-  .eyebrow:before{{content:"";width:18px;height:2px;background:var(--gold);flex:0 0 auto}}
-  .eyebrow:after{{content:"";height:1px;background:var(--line);flex:1}}
+  main{{padding-top:6px}}
+  .sec-k{{font-size:11px;font-weight:800;letter-spacing:.12em;color:var(--gold-d);margin:26px 0 11px}}
 
-  /* ---- 리드 ---- */
-  .lead{{background:var(--paper);border:1px solid var(--line);border-top:3px solid var(--navy);
-    border-radius:3px;box-shadow:0 1px 0 rgba(20,41,74,.04)}}
-  .lead-link{{display:block;padding:26px 28px 28px;transition:background .15s}}
-  .lead-link:hover{{background:#fcfcfd}}
-  .lead-link:hover .lead-title{{text-decoration:underline;text-decoration-color:var(--gold);text-underline-offset:4px;text-decoration-thickness:2px}}
-  .lead-meta{{display:flex;align-items:center;gap:12px;margin-bottom:14px}}
-  .chip{{background:var(--navy);color:#fff;font-size:11.5px;font-weight:700;letter-spacing:.05em;
-    padding:3px 10px;border-radius:2px}}
-  .lead-date{{color:var(--mute);font-size:12.5px;letter-spacing:.04em;font-variant-numeric:tabular-nums}}
-  .lead-title{{font-family:var(--serif);font-weight:900;color:var(--ink);
-    font-size:clamp(23px,4.4vw,34px);line-height:1.28;letter-spacing:-.01em;margin:0 0 12px}}
-  .lead-sum{{color:#3c4855;font-size:15.5px;line-height:1.72;margin:0 0 20px;max-width:60ch}}
-  .btn-row{{display:flex;flex-wrap:wrap;gap:10px}}
-  .btn{{display:inline-block;font-weight:700;font-size:14px;letter-spacing:.01em;padding:11px 18px;border-radius:3px;transition:transform .12s,box-shadow .12s}}
-  .btn-primary{{background:var(--gold);color:#241a00}}
-  .btn-ghost{{background:transparent;color:var(--navy);box-shadow:inset 0 0 0 1.5px var(--line-2)}}
-  .lead-link:hover .btn-primary{{box-shadow:0 4px 14px rgba(201,166,84,.4)}}
+  /* ---- 핵심 지표 카드 ---- */
+  .tk-status{{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:22px 0 9px;font-size:11.5px;color:var(--mute)}}
+  .tk-live{{color:#1a8f4a;font-weight:700}} .tk-delay{{color:var(--gold-d);font-weight:700}}
+  .stats{{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}}
+  .stat{{background:var(--paper);border:1px solid var(--line);border-radius:7px;padding:12px 14px;display:flex;flex-direction:column;gap:2px}}
+  .stat.more{{display:none}}
+  .stat.show{{display:flex}}
+  .stat-n{{font-size:11.5px;color:var(--mute)}}
+  .stat-v{{font-size:clamp(17px,3.6vw,21px);font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.01em}}
+  .stat-c{{font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums}}
+  .stat-c.up{{color:var(--up)}} .stat-c.down{{color:var(--down)}} .stat-c.flat{{color:var(--mute)}}
+  @keyframes stflash{{0%{{background:rgba(201,166,84,0)}}25%{{background:rgba(201,166,84,.22)}}100%{{background:rgba(201,166,84,0)}}}}
+  .stat.flash{{animation:stflash 1s ease-out}}
+  .morebtn{{margin:10px 0 2px;appearance:none;background:none;border:1px dashed var(--line-2);border-radius:6px;
+    color:var(--mute);font-family:var(--sans);font-size:12.5px;cursor:pointer;padding:8px 14px}}
+  .morebtn:hover{{color:var(--ink);border-color:var(--gold)}}
 
-  /* ---- 지난 호 ---- */
-  .archive{{display:flex;flex-direction:column;border-top:1px solid var(--line)}}
-  .row{{display:grid;grid-template-columns:74px 56px 64px 1fr auto;gap:14px;align-items:center;
-    padding:16px 6px;border-bottom:1px solid var(--line);transition:background .12s}}
-  .row:hover{{background:#fcfcfd}}
-  .row-date{{color:var(--navy);font-weight:700;font-size:13px;font-variant-numeric:tabular-nums}}
-  .row-no{{color:var(--mute);font-size:12px;font-variant-numeric:tabular-nums}}
-  .row-tag{{font-size:11px;font-weight:700;color:var(--gold-d);border:1px solid var(--gold);
-    border-radius:2px;padding:2px 7px;text-align:center;white-space:nowrap}}
-  .row-title{{display:block;font-family:var(--serif);font-weight:700;color:var(--ink);font-size:16px;line-height:1.4}}
-  .row-sum{{display:block;color:var(--mute);font-size:12.5px;line-height:1.55;margin-top:3px;
-    overflow:hidden;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical}}
-  .row-pdf{{color:var(--down);font-weight:700;font-size:12.5px;white-space:nowrap}}
+  /* ---- 오늘의 리포트(대표 카드) ---- */
+  .feature{{display:block;background:var(--paper);border:1px solid var(--line);border-left:5px solid var(--cat,var(--navy));
+    border-radius:8px;padding:22px 24px 24px;transition:box-shadow .15s}}
+  .feature:hover{{box-shadow:0 6px 22px rgba(20,41,74,.08)}}
+  .feat-tag{{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.04em;padding:3px 10px;border-radius:3px}}
+  .feat-title{{font-family:var(--serif);font-weight:900;color:var(--ink);font-size:clamp(22px,4.2vw,31px);line-height:1.3;letter-spacing:-.01em;margin:12px 0 11px}}
+  .feat-sum{{color:#3c4855;font-size:15px;line-height:1.72;margin:0;max-width:62ch}}
+  .feat-meta{{display:block;color:var(--mute);font-size:12.5px;margin-top:13px;font-variant-numeric:tabular-nums}}
+  .feat-cta{{display:inline-block;margin-top:15px;background:var(--gold);color:#3d2f08;font-weight:800;font-size:14px;padding:11px 22px;border-radius:5px;transition:box-shadow .12s}}
+  .feature:hover .feat-cta{{box-shadow:0 5px 16px rgba(201,166,84,.4)}}
 
-  /* ---- 배너 CTA (투자성향 테스트) ---- */
-  .banner{{margin:40px 0 10px;border-radius:4px;overflow:hidden;
-    background:linear-gradient(100deg,var(--navy) 0%,var(--navy-2) 100%);position:relative}}
-  .banner a{{display:flex;align-items:center;justify-content:space-between;gap:18px;
-    padding:24px 26px;flex-wrap:wrap}}
-  .banner:before{{content:"";position:absolute;inset:0;background:
-    repeating-linear-gradient(135deg,rgba(201,166,84,.0) 0 18px,rgba(201,166,84,.06) 18px 19px)}}
-  .banner-txt{{position:relative}}
-  .banner-k{{color:var(--gold);font-size:12px;font-weight:700;letter-spacing:.14em;margin-bottom:5px}}
-  .banner-t{{color:#fff;font-family:var(--serif);font-weight:700;font-size:clamp(18px,3.4vw,23px);line-height:1.3}}
-  .banner-cta{{position:relative;background:var(--gold);color:#241a00;font-weight:800;font-size:14.5px;
-    padding:12px 20px;border-radius:3px;white-space:nowrap}}
-  .banner a:hover .banner-cta{{box-shadow:0 4px 16px rgba(201,166,84,.45)}}
+  /* ---- 통일 카드 그리드 ---- */
+  .cardgrid{{display:grid;grid-template-columns:1fr 1fr;gap:12px}}
+  .ncard{{display:flex;flex-direction:column;background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:15px 16px;transition:box-shadow .14s,transform .14s}}
+  .ncard:hover{{box-shadow:0 5px 16px rgba(20,41,74,.07);transform:translateY(-1px)}}
+  .ncard-tag{{align-self:flex-start;font-size:10.5px;font-weight:700;letter-spacing:.03em;padding:3px 9px;border-radius:3px}}
+  .ncard-title{{font-family:var(--serif);font-weight:700;color:var(--ink);font-size:15.5px;line-height:1.4;margin:9px 0 5px}}
+  .ncard-sum{{color:var(--mute);font-size:12.5px;line-height:1.55;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}}
+  .ncard-meta{{color:#9aa3ae;font-size:11px;margin-top:auto;padding-top:10px;font-variant-numeric:tabular-nums}}
+  .ncard[hidden]{{display:none}}
+  .grid-empty{{color:var(--mute);font-size:13.5px;padding:26px 4px;text-align:center;border:1px dashed var(--line-2);border-radius:8px}}
 
-  /* ---- 홈 2단 레이아웃 + 특집 사이드바 ---- */
-  .home-grid{{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:36px;align-items:start;margin-top:6px}}
-  .home-solo{{margin-top:6px}}
-  .home-main{{min-width:0}}
-  .side{{position:sticky;top:18px}}
-  .side-card{{background:var(--paper);border:1px solid var(--line);border-top:3px solid var(--gold);border-radius:3px;overflow:hidden}}
-  .side-head{{background:var(--navy);padding:13px 16px}}
-  .side-k{{color:var(--gold);font-size:10px;font-weight:800;letter-spacing:.14em}}
-  .side-t{{font-family:var(--serif);color:#fff;font-weight:700;font-size:17px;margin-top:2px}}
-  .side-list{{padding:2px 16px 10px}}
-  .side-item{{display:block;padding:13px 0;border-bottom:1px solid var(--line);position:relative}}
-  .side-item:last-child{{border-bottom:none}}
-  .side-new{{position:absolute;top:12px;right:0;background:#E5392E;color:#fff;font-size:9px;font-weight:800;
-    letter-spacing:.06em;line-height:1;padding:3px 5px;border-radius:2px;box-shadow:0 1px 3px rgba(224,57,46,.35)}}
-  .side-tag{{display:inline-block;font-size:10px;font-weight:700;color:var(--gold-d);border:1px solid var(--gold);border-radius:2px;padding:1px 7px}}
-  .side-tag.founder{{color:#fff;background:var(--navy);border-color:var(--navy)}}
-  .side-title{{display:block;font-family:var(--serif);font-weight:700;color:var(--ink);font-size:14px;line-height:1.42;margin:7px 0 3px}}
-  .side-item:hover .side-title{{text-decoration:underline;text-decoration-color:var(--gold);text-underline-offset:3px;text-decoration-thickness:2px}}
-  .side-date{{color:var(--mute);font-size:11px;font-variant-numeric:tabular-nums}}
-  @media (max-width:860px){{
-    .home-grid{{grid-template-columns:1fr;gap:24px}}
-    .side{{position:static}}
-  }}
+  /* ---- 배너 CTA ---- */
+  .banner{{margin:34px 0 8px;border-radius:8px;overflow:hidden;background:linear-gradient(100deg,var(--navy) 0%,var(--navy-2) 100%);position:relative}}
+  .banner a{{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:22px 24px;flex-wrap:wrap}}
+  .banner-k{{color:var(--gold);font-size:11.5px;font-weight:700;letter-spacing:.13em;margin-bottom:5px}}
+  .banner-t{{color:#fff;font-family:var(--serif);font-weight:700;font-size:clamp(17px,3.2vw,22px);line-height:1.3}}
+  .banner-cta{{background:var(--gold);color:#241a00;font-weight:800;font-size:14px;padding:11px 19px;border-radius:5px;white-space:nowrap}}
 
   /* ---- 푸터 ---- */
-  footer{{margin-top:46px;border-top:2px solid var(--navy);background:var(--paper)}}
+  footer{{margin-top:42px;border-top:2px solid var(--navy);background:var(--paper)}}
   .foot-in{{padding:26px 22px 40px;text-align:center}}
-  .foot-mark{{font-family:var(--latin);font-weight:800;color:var(--navy);letter-spacing:.12em;font-size:18px;text-indent:.12em}}
-  .foot-pub{{color:var(--mute);font-size:12.5px;margin:8px 0 14px}}
-  .foot-kakao{{display:inline-block;background:#FEE500;color:#191600;font-weight:700;font-size:13.5px;
-    padding:10px 18px;border-radius:3px;margin-bottom:16px}}
-  .foot-kakao:hover{{filter:brightness(.97)}}
+  .foot-mark{{font-family:var(--latin);font-weight:800;color:var(--navy);letter-spacing:.12em;font-size:17px;text-indent:.12em}}
+  .foot-pub{{color:var(--mute);font-size:12px;margin:7px 0 13px}}
+  .foot-kakao{{display:inline-block;background:#FEE500;color:#191600;font-weight:700;font-size:13px;padding:10px 18px;border-radius:4px;margin-bottom:15px}}
   .disclaimer{{color:var(--mute);font-size:11px;line-height:1.7;max-width:70ch;margin:0 auto}}
-  .foot-dom{{color:var(--gold-d);font-weight:700;font-size:12px;letter-spacing:.06em;margin-top:12px}}
+  .foot-dom{{color:var(--gold-d);font-weight:700;font-size:12px;letter-spacing:.06em;margin-top:11px}}
 
   @media (max-width:640px){{
-    .row{{grid-template-columns:64px 1fr auto;row-gap:4px}}
-    .row-no,.row-tag{{display:none}}
+    .stats{{grid-template-columns:1fr 1fr;gap:8px}}
+    .cardgrid{{grid-template-columns:1fr}}
     .banner a{{justify-content:center;text-align:center}}
   }}
-  @media (prefers-reduced-motion:reduce){{*{{transition:none!important}}}}
-  a:focus-visible,.lead-link:focus-visible{{outline:3px solid var(--gold);outline-offset:2px;border-radius:2px}}
+  @media (prefers-reduced-motion:reduce){{*{{transition:none!important;animation:none!important}}}}
+  a:focus-visible,.tab:focus-visible,.morebtn:focus-visible{{outline:3px solid var(--gold);outline-offset:2px;border-radius:3px}}
 </style>
 </head>
 <body>
@@ -296,36 +233,30 @@ def main():
       <div class="submast">{esc(tagline)}</div>
       <div class="issueline">{today} &nbsp;·&nbsp; <b>제 {cur_no}호</b> &nbsp;·&nbsp; 발행 Josh Park Invest</div>
     </div>
-    <div class="rule thin"></div>
   </header>
 
-  {ticker_html}
+  <nav class="topnav"><div class="topnav-in">{tabs_html}</div></nav>
 
   <main class="wrap">
-    {home_open}
-      <div class="home-main">
-        <div class="eyebrow"><h3>오늘의 리포트</h3></div>
-        {lead_html}
+    <div class="tk-status"><span id="tk-asof">{asof}</span><span id="tk-live"></span></div>
+    <div class="stats">{stat_cards_html}</div>
+    <button class="morebtn" id="morebtn" type="button">+ 지표 더보기</button>
 
-        <div class="eyebrow"><h3>특집 · 기획</h3></div>
-        {special_html}
+    <div class="sec-k" id="feat-k">오늘의 리포트</div>
+    {feature_html}
 
-        <div class="eyebrow"><h3>지난 호</h3></div>
-        <div class="archive">
-          {archive_html}
-        </div>
+    <div class="sec-k" id="grid-k">최신 글</div>
+    <div class="cardgrid" id="cardgrid">{cards_html}</div>
+    <div class="grid-empty" id="grid-empty" hidden>이 카테고리의 글이 아직 없어요.</div>
 
-        <div class="banner">
-          <a href="{PDTI_PATH}">
-            <span class="banner-txt">
-              <div class="banner-k">INVEST STORY · INTERACTIVE</div>
-              <div class="banner-t">나의 투자 성향은? — 16가지 투자 유형 테스트</div>
-            </span>
-            <span class="banner-cta">테스트 시작하기 →</span>
-          </a>
-        </div>
-      </div>
-      {side_html}
+    <div class="banner">
+      <a href="{PDTI_PATH}">
+        <span class="banner-txt">
+          <div class="banner-k">INVEST STORY · INTERACTIVE</div>
+          <div class="banner-t">나의 투자 성향은? — 16가지 투자 유형 테스트</div>
+        </span>
+        <span class="banner-cta">테스트 시작하기 →</span>
+      </a>
     </div>
   </main>
 
@@ -341,15 +272,56 @@ def main():
   </footer>
 </body>
 </html>'''
-    # 배너 실시간 갱신 스크립트(f-string 밖 일반 문자열 — 중괄호 충돌 방지)
-    ticker_script = """
+
+    page = page.replace("</body>", SCRIPT + "</body>", 1)
+    with open(OUT, "w", encoding="utf-8") as f:
+        f.write(page)
+    print(f"[build_site] index.html 생성 완료 · 발간 호 {len(issues)}건")
+
+
+# 탭 필터 + 더보기 + 시세 실시간 갱신(엔진 유지, 정적 카드를 patch) — f-string 밖 일반 문자열
+SCRIPT = r"""
   <script>
-  /* 시세 스트립 실시간 갱신 (3단 폴백)
-     1) Twelve Data: ticker_config.json의 twelvedata_key가 있으면 우선 사용(KOSPI=KS11 등).
-     2) 야후(무키): CORS 프록시 경유 best-effort.
-     3) ticker.json 시드값: 위가 모두 실패해도 절대 빈 화면 없음.
-     - 탭이 보일 때 + 장중 위주로만 호출(무료 한도 절약).
-     - 값이 바뀌면 칸이 잠깐 반짝이고, 좌측에 LIVE/지연 + 시각 표시. */
+  /* ===== 1) 카테고리 탭 필터 ===== */
+  (function(){
+    var tabs=document.querySelectorAll('.tab');
+    var cards=document.querySelectorAll('#cardgrid .ncard');
+    var empty=document.getElementById('grid-empty');
+    var gk=document.getElementById('grid-k');
+    var LBL={all:'최신 글',daily:'데일리',special:'특집 · 기획',flash:'특보'};
+    function apply(cat){
+      var shown=0;
+      cards.forEach(function(c){
+        var ok=(cat==='all'||c.getAttribute('data-cat')===cat);
+        if(ok){c.hidden=false;shown++;}else{c.hidden=true;}
+      });
+      if(empty) empty.hidden = (shown>0);
+      if(gk) gk.textContent = LBL[cat]||'최신 글';
+    }
+    tabs.forEach(function(t){
+      t.addEventListener('click',function(){
+        tabs.forEach(function(x){x.classList.remove('on');});
+        t.classList.add('on');
+        apply(t.getAttribute('data-tab'));
+      });
+    });
+  })();
+
+  /* ===== 2) 지표 더보기 ===== */
+  (function(){
+    var btn=document.getElementById('morebtn');
+    if(!btn) return;
+    var more=document.querySelectorAll('.stat.more');
+    if(!more.length){ btn.style.display='none'; return; }
+    var open=false;
+    btn.addEventListener('click',function(){
+      open=!open;
+      more.forEach(function(s){ s.classList.toggle('show',open); });
+      btn.textContent = open ? '− 지표 접기' : '+ 지표 더보기';
+    });
+  })();
+
+  /* ===== 3) 시세 실시간 갱신 (Twelve Data → 야후 → ticker.json) · 정적 카드 patch ===== */
   (function(){
     var CFG = {
       'KOSPI':     {sym:'^KS11',    td:'KS11',    dec:2, mode:'pct', mkt:'kr'},
@@ -357,250 +329,134 @@ def main():
       'USD/KRW':   {sym:'KRW=X',    td:'USD/KRW', dec:1, mode:'abs', mkt:'fx'},
       'WTI':       {sym:'CL=F',     td:'WTI/USD', dec:2, mode:'pct', prefix:'$', mkt:'us'},
       'S&P 500':   {sym:'^GSPC',    td:'GSPC',    dec:2, mode:'pct', mkt:'us'},
-      '\\uB098\\uC2A4\\uB2E5':       {sym:'^IXIC', td:'IXIC', dec:2, mode:'pct', mkt:'us'},
-      '\\uB2EC\\uB7EC\\uC778\\uB371\\uC2A4': {sym:'DX-Y.NYB', td:'DXY', dec:2, mode:'pct', mkt:'us'}
+      '\uB098\uC2A4\uB2E5':       {sym:'^IXIC', td:'IXIC', dec:2, mode:'pct', mkt:'us'},
+      '\uB2EC\uB7EC\uC778\uB371\uC2A4': {sym:'DX-Y.NYB', td:'DXY', dec:2, mode:'pct', mkt:'us'}
     };
-    var NBSP = String.fromCharCode(160);
-    var PROXY = [
-      function(u){ return u; },                                                              /* 직접 */
-      function(u){ return 'https://api.codetabs.com/v1/proxy/?quest=' + encodeURIComponent(u); },
-      function(u){ return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u); },
-      function(u){ return 'https://thingproxy.freeboard.io/fetch/' + u; }
-    ];
-    var baseAsof = '';
-    var liveOK = {};
-    var tdKey = '', tdDead = false;
-    var tdByName = {}, tdNames = {};
-    Object.keys(CFG).forEach(function(name){ tdByName[name]=CFG[name].td; tdNames[CFG[name].td]=name; });
+    var NBSP=String.fromCharCode(160);
+    var PROXY=[function(u){return u;},
+      function(u){return 'https://api.codetabs.com/v1/proxy/?quest='+encodeURIComponent(u);},
+      function(u){return 'https://api.allorigins.win/raw?url='+encodeURIComponent(u);}];
+    var baseAsof=(document.getElementById('tk-asof')||{}).textContent||'';
+    var liveOK={}, tdKey='', tdDead=false, tdByName={}, tdNames={};
+    Object.keys(CFG).forEach(function(n){ tdByName[n]=CFG[n].td; tdNames[CFG[n].td]=n; });
 
-    function fmt(n, dec){ return Number(n).toLocaleString('en-US',{minimumFractionDigits:dec,maximumFractionDigits:dec}); }
-    function arrowOf(d){ return d==='up' ? '\\u25B2' : (d==='down' ? '\\u25BC' : '\\u00B7'); }
-
-    function syncClone(){
-      var m=document.querySelector('#tkmain'); if(!m) return;
-      var cs=document.querySelectorAll('.tk-clone');        /* 모든 클론 그룹을 #tkmain과 동일하게 유지 */
-      for(var i=0;i<cs.length;i++) cs[i].innerHTML=m.innerHTML;
-    }
-
-    /* ---- 시세판: 좌측 자동 스크롤 + 마우스 좌우 드래그 (어떤 화면폭에서도 끊김 없이 순환) ---- */
-    (function(){
-      var sc=document.querySelector('#tkscroll'); if(!sc) return;
-      var track=document.querySelector('#tkscroll .tk-track');
-      var AUTO_PXPS=28;                           /* 자동 속도(px/초) — 작을수록 천천히 */
-      var autoOn=true, dragging=false, hovering=false, lastT=0, startX=0, startScroll=0, fc=0;
-      try{ if(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) autoOn=false; }catch(e){}
-      function grpW(){ var g=document.querySelector('#tkmain'); return g?g.getBoundingClientRect().width:0; }
-      /* 화면폭보다 콘텐츠가 짧으면 스크롤이 벽에 막혀 멈춤 → 그룹을 충분히 복제해 항상 한 그룹폭 이상 남게 함 */
-      function ensureFill(){
-        if(!track) return; var gw=grpW(), m=document.querySelector('#tkmain'); if(gw<=0||!m) return;
-        var want=Math.ceil((sc.clientWidth + gw + 60)/gw); want=Math.max(2, Math.min(want, 12));
-        var have=track.querySelectorAll('.tk-grp').length, added=false;
-        for(var i=have;i<want;i++){
-          var c=m.cloneNode(true); c.removeAttribute('id'); c.classList.add('tk-clone'); c.setAttribute('aria-hidden','true');
-          track.appendChild(c); added=true;
-        }
-        if(added) syncClone();
-      }
-      function wrap(){ var w=grpW(); if(w<=0) return;     /* scrollLeft을 한 그룹폭 안으로 정규화 */
-        if(sc.scrollLeft>=w) sc.scrollLeft-=w; else if(sc.scrollLeft<0) sc.scrollLeft+=w; }
-      function tick(t){
-        if(autoOn && !dragging && !hovering && lastT){ sc.scrollLeft += AUTO_PXPS*((t-lastT)/1000); }
-        wrap();
-        if((fc++ % 60)===0) ensureFill();                /* 약 1초마다 폭 점검(상태표시 길이 변동·리사이즈 대응) */
-        lastT=t; requestAnimationFrame(tick);
-      }
-      sc.addEventListener('pointerdown', function(e){
-        dragging=true; sc.classList.add('tk-drag'); startX=e.clientX; startScroll=sc.scrollLeft;
-        try{ sc.setPointerCapture(e.pointerId); }catch(_){}
-      });
-      sc.addEventListener('pointermove', function(e){
-        if(!dragging) return; sc.scrollLeft=startScroll-(e.clientX-startX); wrap();
-      });
-      function endDrag(e){ if(!dragging) return; dragging=false; sc.classList.remove('tk-drag');
-        try{ sc.releasePointerCapture(e.pointerId); }catch(_){}
-      }
-      sc.addEventListener('pointerup', endDrag);
-      sc.addEventListener('pointercancel', endDrag);
-      sc.addEventListener('mouseenter', function(){ hovering=true; });   /* 데스크톱: 올리면 잠깐 멈춤 */
-      sc.addEventListener('mouseleave', function(){ hovering=false; });
-      sc.addEventListener('dragstart', function(e){ e.preventDefault(); });   /* 이미지/텍스트 끌림 방지 */
-      window.addEventListener('resize', ensureFill);
-      ensureFill();
-      requestAnimationFrame(tick);
-    })();
-    function renderSeed(tk){
-      var el=document.querySelector('#tkmain'); if(!el||!tk||!tk.items) return;
-      baseAsof = tk.asof || '';
-      el.innerHTML='';
-      var as=document.createElement('span'); as.className='tk-as'; as.textContent=baseAsof; el.appendChild(as);
-      tk.items.forEach(function(it){
-        var dir=it.dir||'flat';
-        var w=document.createElement('span'); w.className='tk'; w.setAttribute('data-n', it.name);
-        var n=document.createElement('span'); n.className='tk-n'; n.textContent=it.name;
-        var v=document.createElement('span'); v.className='tk-v'; v.textContent=it.value;
-        var c=document.createElement('span'); c.className='tk-c '+dir; c.textContent=arrowOf(dir)+NBSP+(it.change||'');
-        w.appendChild(n); w.appendChild(v); w.appendChild(c); el.appendChild(w);
-      });
-      syncClone();
-    }
-    function findCell(name){
-      var all=document.querySelectorAll('#tkmain .tk'); var hit=null;
-      all.forEach(function(x){
-        if(hit) return;
-        if(x.getAttribute('data-n')===name){ hit=x; return; }
-        var n=x.querySelector('.tk-n');               /* data-n 없는 시드 칸도 종목명으로 매칭 */
-        if(n && n.textContent.trim()===name) hit=x;
-      });
+    function fmt(n,dec){ return Number(n).toLocaleString('en-US',{minimumFractionDigits:dec,maximumFractionDigits:dec}); }
+    function arrowOf(d){ return d==='up'?'\u25B2':(d==='down'?'\u25BC':'\u00B7'); }
+    function findCard(name){
+      var all=document.querySelectorAll('.stat'); var hit=null;
+      all.forEach(function(x){ if(!hit && x.getAttribute('data-n')===name) hit=x; });
       return hit;
     }
-    function patch(name, value, change, dir){
-      var w=findCell(name); if(!w) return;
-      var v=w.querySelector('.tk-v'), c=w.querySelector('.tk-c');
-      var changed = (v && v.textContent!==value);
+    function patch(name,value,change,dir){
+      var w=findCard(name); if(!w) return;
+      var v=w.querySelector('.stat-v'), c=w.querySelector('.stat-c');
+      var changed=(v && v.textContent!==value);
       if(v) v.textContent=value;
-      if(c){ c.className='tk-c '+dir; c.textContent=arrowOf(dir)+NBSP+change; }
-      if(changed){ w.classList.remove('tk-flash'); void w.offsetWidth; w.classList.add('tk-flash'); }
-      syncClone();
+      if(c){ c.className='stat-c '+dir; c.textContent=arrowOf(dir)+NBSP+change; }
+      if(changed){ w.classList.remove('flash'); void w.offsetWidth; w.classList.add('flash'); }
     }
-    function applyQuote(name, close, change, pct){
+    function applyQuote(name,close,change,pct){
       var cf=CFG[name]; if(!cf) return;
-      var dir = pct>0?'up':(pct<0?'down':'flat');
-      var val=(cf.prefix||'')+fmt(close, cf.dec);
-      var chg=(cf.mode==='abs') ? ((change>=0?'+':'')+fmt(change,1)) : ((pct>=0?'+':'')+Math.abs(pct).toFixed(2)+'%');
-      patch(name, val, chg, dir); liveOK[name]=Date.now();
+      var dir=pct>0?'up':(pct<0?'down':'flat');
+      var val=(cf.prefix||'')+fmt(close,cf.dec);
+      var chg=(cf.mode==='abs')?((change>=0?'+':'')+fmt(change,1)):((pct>=0?'+':'')+Math.abs(pct).toFixed(2)+'%');
+      patch(name,val,chg,dir); liveOK[name]=Date.now();
     }
-
-    function getJson(url){            /* 프록시 체인(야후/ticker.json용) */
+    function getJson(url){
       var i=0;
-      function go(){
-        if(i>=PROXY.length) return Promise.reject();
-        return fetch(PROXY[i++](url), {cache:'no-store'})
-          .then(function(r){ if(!r.ok) throw 0; return r.text(); })
-          .then(function(t){ return JSON.parse(t); }).catch(go);
-      }
+      function go(){ if(i>=PROXY.length) return Promise.reject();
+        return fetch(PROXY[i++](url),{cache:'no-store'}).then(function(r){if(!r.ok)throw 0;return r.text();})
+          .then(function(t){return JSON.parse(t);}).catch(go); }
       return go();
     }
-
-    /* ---- 1) Twelve Data (키 있을 때 우선, CORS 지원 → 직접 호출) ---- */
     function tdFetch(names){
-      if(!tdKey || tdDead || !names.length) return Promise.resolve([]);
+      if(!tdKey||tdDead||!names.length) return Promise.resolve([]);
       var syms=names.map(function(n){return tdByName[n];}).join(',');
       var url='https://api.twelvedata.com/quote?symbol='+encodeURIComponent(syms)+'&apikey='+encodeURIComponent(tdKey);
-      return fetch(url,{cache:'no-store'}).then(function(r){ if(!r.ok) throw 0; return r.json(); }).then(function(j){
+      return fetch(url,{cache:'no-store'}).then(function(r){if(!r.ok)throw 0;return r.json();}).then(function(j){
         if(!j) return [];
-        if(j.status==='error' || j.code===401 || j.code===429){ tdDead=true; return []; }
+        if(j.status==='error'||j.code===401||j.code===429){ tdDead=true; return []; }
         var filled=[];
-        function handle(sym, q){
-          if(!q || q.status==='error') return;
-          var name=tdNames[sym] || (q.symbol && tdNames[q.symbol]); if(!name) return;
-          var close=parseFloat(q.close), pct=parseFloat(q.percent_change), chg=parseFloat(q.change);
-          if(isNaN(close)) return;
-          if(isNaN(pct)) pct=0; if(isNaN(chg)) chg=0;
-          applyQuote(name, close, chg, pct); filled.push(name);
-        }
-        if(names.length===1){ handle(tdByName[names[0]], j); }
-        else { Object.keys(j).forEach(function(sym){ handle(sym, j[sym]); }); }
+        function handle(sym,q){ if(!q||q.status==='error') return;
+          var name=tdNames[sym]||(q.symbol&&tdNames[q.symbol]); if(!name) return;
+          var close=parseFloat(q.close),pct=parseFloat(q.percent_change),chg=parseFloat(q.change);
+          if(isNaN(close)) return; if(isNaN(pct))pct=0; if(isNaN(chg))chg=0;
+          applyQuote(name,close,chg,pct); filled.push(name); }
+        if(names.length===1){ handle(tdByName[names[0]],j); }
+        else { Object.keys(j).forEach(function(sym){ handle(sym,j[sym]); }); }
         return filled;
-      }).catch(function(){ return []; });
+      }).catch(function(){return [];});
     }
-
-    /* ---- 2) 야후(무키) 폴백 ---- */
     function yahooOne(name){
       var cf=CFG[name]; if(!cf) return Promise.resolve(false);
       var hosts=['query1.finance.yahoo.com','query2.finance.yahoo.com'];
-      function tryHost(hi){
-        if(hi>=hosts.length) return Promise.resolve(false);
+      function tryHost(hi){ if(hi>=hosts.length) return Promise.resolve(false);
         var url='https://'+hosts[hi]+'/v8/finance/chart/'+encodeURIComponent(cf.sym)+'?range=1d&interval=5m';
         return getJson(url).then(function(j){
           var m=j&&j.chart&&j.chart.result&&j.chart.result[0]&&j.chart.result[0].meta; if(!m) return tryHost(hi+1);
           var price=(typeof m.regularMarketPrice==='number')?m.regularMarketPrice:null;
           var prev=(typeof m.chartPreviousClose==='number')?m.chartPreviousClose:((typeof m.previousClose==='number')?m.previousClose:null);
           if(price===null||prev===null) return tryHost(hi+1);
-          var diff=price-prev; applyQuote(name, price, diff, (prev?diff/prev*100:0)); return true;
-        }).catch(function(){ return tryHost(hi+1); });
+          var diff=price-prev; applyQuote(name,price,diff,(prev?diff/prev*100:0)); return true;
+        }).catch(function(){return tryHost(hi+1);});
       }
       return tryHost(0);
     }
-
-    function setStatus(mode){   /* 'live' | 'auto' | 'delay' */
-      var as=document.querySelector('#tkmain .tk-as'); if(!as) return;
-      var t=new Date(), p=function(x){return ('0'+x).slice(-2);};
-      var hhmmss=p(t.getHours())+':'+p(t.getMinutes())+':'+p(t.getSeconds());
+    function setStatus(mode){
+      var el=document.getElementById('tk-live'); if(!el) return;
+      var t=new Date(),p=function(x){return ('0'+x).slice(-2);};
+      var hhmm=p(t.getHours())+':'+p(t.getMinutes())+':'+p(t.getSeconds());
       var cls=(mode==='delay')?'tk-delay':'tk-live';
-      var word=(mode==='live')?'LIVE':((mode==='auto')?'\\uC790\\uB3D9':'\\uC9C0\\uC5F0'); /* 자동 / 지연 */
-      as.innerHTML=(baseAsof?baseAsof+'  \\u00B7  ':'')+'<span class="'+cls+'">\\u27F3 '+word+' '+hhmmss+'</span>';
-      syncClone();
+      var word=(mode==='live')?'LIVE':((mode==='auto')?'\uC790\uB3D9':'\uC9C0\uC5F0');
+      el.className=cls; el.textContent='\u00B7 \u27F3 '+word+' '+hhmm;
     }
-
-    /* ---- 시장 개장(KST) 판단 ---- */
     function marketState(){
-      var t=new Date(), u=t.getTime()+t.getTimezoneOffset()*60000, k=new Date(u+9*3600000);
-      var day=k.getDay(), hm=k.getHours()*60+k.getMinutes(), weekday=(day>=1&&day<=5);
-      var isKR=weekday && hm>=540 && hm<945;             /* 09:00~15:45 KST */
-      var isUS=weekday && (hm>=1350 || hm<360);          /* 22:30~익일 06:00 KST (서머타임 포함) */
-      var names=[];
-      Object.keys(CFG).forEach(function(name){
-        var m=CFG[name].mkt;
-        if((m==='kr'&&isKR)||(m==='us'&&isUS)||(m==='fx'&&(isKR||isUS))) names.push(name);
-      });
+      var t=new Date(),u=t.getTime()+t.getTimezoneOffset()*60000,k=new Date(u+9*3600000);
+      var day=k.getDay(),hm=k.getHours()*60+k.getMinutes(),weekday=(day>=1&&day<=5);
+      var isKR=weekday&&hm>=540&&hm<945, isUS=weekday&&(hm>=1350||hm<360);
+      var names=[]; Object.keys(CFG).forEach(function(n){ var m=CFG[n].mkt;
+        if((m==='kr'&&isKR)||(m==='us'&&isUS)||(m==='fx'&&(isKR||isUS))) names.push(n); });
       return {names:names, anyOpen:(isKR||isUS)};
     }
-
     function liveRound(names){
       return tdFetch(names).then(function(filled){
-        var need=names.filter(function(n){ return filled.indexOf(n)<0; });
-        var jobs=need.map(function(name, idx){
-          return new Promise(function(res){ setTimeout(function(){ yahooOne(name).then(res).catch(function(){res(false);}); }, idx*250); });
-        });
-        return Promise.all(jobs).then(function(rs){ return (filled.length>0) || rs.some(function(x){return x===true;}); });
+        var need=names.filter(function(n){return filled.indexOf(n)<0;});
+        var jobs=need.map(function(name,idx){ return new Promise(function(res){
+          setTimeout(function(){ yahooOne(name).then(res).catch(function(){res(false);}); }, idx*250); }); });
+        return Promise.all(jobs).then(function(rs){ return (filled.length>0)||rs.some(function(x){return x===true;}); });
       });
     }
-
     function cycle(){
       getJson('ticker.json?t='+Date.now()).then(function(tk){
-        if(tk&&tk.items){
-          if(!document.querySelector('#tkmain .tk')){ renderSeed(tk); }
-          else { baseAsof=tk.asof||baseAsof;
-            tk.items.forEach(function(it){
-              if(liveOK[it.name] && (Date.now()-liveOK[it.name]<300000)) return;
-              patch(it.name, it.value, it.change||'', it.dir||'flat');
-            });
-          }
+        if(tk&&tk.items){ baseAsof=tk.asof||baseAsof;
+          var a=document.getElementById('tk-asof'); if(a) a.textContent=baseAsof;
+          tk.items.forEach(function(it){
+            if(liveOK[it.name]&&(Date.now()-liveOK[it.name]<300000)) return;
+            patch(it.name,it.value,it.change||'',it.dir||'flat');
+          });
         }
       }).catch(function(){}).then(function(){
-        if(document.hidden) return;                 /* 라이브 API는 보일 때만(한도 절약) */
-        var s=marketState();
-        var names = s.names.length ? s.names : Object.keys(CFG);
+        if(document.hidden) return;
+        var s=marketState(); var names=s.names.length?s.names:Object.keys(CFG);
         liveRound(names).then(function(any){
-          var serverFresh = /\\uC790\\uB3D9/.test(baseAsof);   /* ticker.json asof에 '자동' 포함 = 서버 갱신 중 */
-          setStatus(any ? 'live' : (serverFresh ? 'auto' : 'delay'));
+          var serverFresh=/\uC790\uB3D9/.test(baseAsof);
+          setStatus(any?'live':(serverFresh?'auto':'delay'));
         });
       });
     }
-
     var timer=null;
-    function schedule(){
-      if(timer) clearTimeout(timer);
-      var ms = marketState().anyOpen ? 180000 : 1200000;   /* 장중 3분 · 폐장 20분 */
-      timer=setTimeout(function(){ cycle(); schedule(); }, ms);
-    }
+    function schedule(){ if(timer) clearTimeout(timer);
+      var ms=marketState().anyOpen?180000:1200000;
+      timer=setTimeout(function(){ cycle(); schedule(); }, ms); }
     function start(){ cycle(); schedule(); }
-
     fetch('ticker_config.json?t='+Date.now(),{cache:'no-store'})
-      .then(function(r){ return r.ok ? r.json() : null; })
-      .then(function(cfg){ if(cfg && typeof cfg.twelvedata_key==='string') tdKey=cfg.twelvedata_key.trim(); })
-      .catch(function(){})
-      .then(start);
-
-    document.addEventListener('visibilitychange', function(){ if(!document.hidden){ cycle(); } });
+      .then(function(r){return r.ok?r.json():null;})
+      .then(function(cfg){ if(cfg&&typeof cfg.twelvedata_key==='string') tdKey=cfg.twelvedata_key.trim(); })
+      .catch(function(){}).then(start);
+    document.addEventListener('visibilitychange',function(){ if(!document.hidden){ cycle(); } });
   })();
   </script>
 """
-    if "</body>" in page:
-        page = page.replace("</body>", ticker_script + "</body>", 1)
-    with open(OUT, "w", encoding="utf-8") as f:
-        f.write(page)
-    print(f"[build_site] index.html 생성 완료 · 발간 호 {len(issues)}건")
 
 if __name__ == "__main__":
     main()

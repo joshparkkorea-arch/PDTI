@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>INVEST STORY · 투자이야기 데일리 리포트</title>
-<meta name="description" content="투자이야기 · 데일리 인베스트먼트 리포트 — 매일 발간되는 투자 리포트 아카이브.">
+<meta name="description" content="투자이야기 · 데일리 인베스트먼트 리포트 — 매일 발간되는 투자 리포트.">
 <meta property="og:title" content="INVEST STORY">
 <meta property="og:description" content="투자이야기 · 데일리 인베스트먼트 리포트">
 <meta property="og:type" content="website">
@@ -22,138 +22,97 @@
   }
   *{box-sizing:border-box}
   html{-webkit-text-size-adjust:100%}
-  body{margin:0;background:var(--paper-2);color:var(--ink);font-family:var(--sans);
-    font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+  body{margin:0;background:var(--paper-2);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
   a{color:inherit;text-decoration:none}
   .wrap{max-width:980px;margin:0 auto;padding:0 22px}
 
   /* ---- 마스트헤드 ---- */
   .masthead{background:var(--paper);border-bottom:1px solid var(--line)}
-  .mast-in{padding:30px 22px 20px;text-align:center}
   .rule{height:2px;background:var(--gold);max-width:980px;margin:0 auto}
-  .rule.thin{height:1px;background:var(--line-2)}
-  .wordmark{display:inline-block;text-decoration:none;cursor:pointer;font-family:var(--latin);font-weight:900;color:var(--navy);
-    font-size:clamp(40px,8vw,76px);letter-spacing:.14em;line-height:1;margin:16px 0 8px;text-indent:.14em;transition:opacity .15s}
+  .mast-in{padding:24px 22px 16px;text-align:center}
+  .wordmark{display:inline-block;font-family:var(--latin);font-weight:900;color:var(--navy);
+    font-size:clamp(34px,6.6vw,58px);letter-spacing:.14em;line-height:1;margin:6px 0 6px;text-indent:.14em;transition:opacity .15s}
   .wordmark:hover{opacity:.82}
-  .submast{font-family:var(--serif);font-weight:600;color:var(--ink);font-size:clamp(13px,2.4vw,16px);letter-spacing:.02em}
-  .issueline{margin-top:7px;color:var(--mute);font-size:12.5px;letter-spacing:.08em;text-transform:none}
+  .submast{font-family:var(--serif);font-weight:600;color:var(--ink);font-size:clamp(12px,2.2vw,15px)}
+  .issueline{margin-top:6px;color:var(--mute);font-size:12px;letter-spacing:.06em}
   .issueline b{color:var(--gold-d);font-weight:700}
 
-  /* ---- 티커 ---- */
-  .ticker{background:var(--navy);color:#eaf0f7;overflow:hidden}
-  .ticker::-webkit-scrollbar{display:none}
-  .tk-scroll{overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-ms-overflow-style:none;cursor:grab;-webkit-overflow-scrolling:touch}
-  .tk-scroll::-webkit-scrollbar{display:none}
-  .tk-scroll.tk-drag{cursor:grabbing}
-  .tk-track{display:flex;width:max-content}
-  .tk-grp{display:flex;gap:22px;align-items:center;white-space:nowrap;font-size:13px;padding:9px 0 9px 22px}
-  .tk-as{flex:0 0 auto;color:#9fb4d0;font-size:11.5px;letter-spacing:.04em;padding-right:14px;border-right:1px solid #34507e}
-  .tk{display:inline-flex;gap:7px;align-items:baseline}
-  .tk-n{color:#c7d6ea;font-weight:600;letter-spacing:.02em}
-  .tk-v{font-weight:700;color:#fff;font-variant-numeric:tabular-nums}
-  .tk-c{font-weight:700;font-variant-numeric:tabular-nums}
-  .tk-c.up{color:#ff8a7a} .tk-c.down{color:#7fb6ef} .tk-c.flat{color:#c7d6ea}
-  .tk{border-radius:3px}
-  @keyframes tkflash{0%{background:rgba(201,166,84,0)}22%{background:rgba(201,166,84,.34)}100%{background:rgba(201,166,84,0)}}
-  .tk-flash{animation:tkflash .9s ease-out}
-  .tk-live{color:#9fe3b0;font-weight:700}
-  .tk-delay{color:#e0b96a;font-weight:700}
+  /* ---- 카테고리 탭(스티키) ---- */
+  .topnav{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.94);backdrop-filter:saturate(1.2) blur(6px);
+    border-bottom:1px solid var(--line)}
+  .topnav-in{max-width:980px;margin:0 auto;padding:0 16px;display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
+  .topnav-in::-webkit-scrollbar{display:none}
+  .tab{appearance:none;background:none;border:none;cursor:pointer;font-family:var(--sans);
+    font-size:14px;font-weight:600;color:var(--mute);padding:13px 14px;white-space:nowrap;
+    border-bottom:2.5px solid transparent;transition:color .12s,border-color .12s}
+  .tab:hover{color:var(--ink)}
+  .tab.on{color:var(--navy);border-bottom-color:var(--gold)}
 
-  /* ---- 섹션 라벨 ---- */
-  .eyebrow{display:flex;align-items:center;gap:12px;margin:34px 0 16px}
-  .eyebrow h3{font-family:var(--serif);font-weight:700;color:var(--navy);font-size:15px;letter-spacing:.06em;margin:0;white-space:nowrap}
-  .eyebrow:before{content:"";width:18px;height:2px;background:var(--gold);flex:0 0 auto}
-  .eyebrow:after{content:"";height:1px;background:var(--line);flex:1}
+  main{padding-top:6px}
+  .sec-k{font-size:11px;font-weight:800;letter-spacing:.12em;color:var(--gold-d);margin:26px 0 11px}
 
-  /* ---- 리드 ---- */
-  .lead{background:var(--paper);border:1px solid var(--line);border-top:3px solid var(--navy);
-    border-radius:3px;box-shadow:0 1px 0 rgba(20,41,74,.04)}
-  .lead-link{display:block;padding:26px 28px 28px;transition:background .15s}
-  .lead-link:hover{background:#fcfcfd}
-  .lead-link:hover .lead-title{text-decoration:underline;text-decoration-color:var(--gold);text-underline-offset:4px;text-decoration-thickness:2px}
-  .lead-meta{display:flex;align-items:center;gap:12px;margin-bottom:14px}
-  .chip{background:var(--navy);color:#fff;font-size:11.5px;font-weight:700;letter-spacing:.05em;
-    padding:3px 10px;border-radius:2px}
-  .lead-date{color:var(--mute);font-size:12.5px;letter-spacing:.04em;font-variant-numeric:tabular-nums}
-  .lead-title{font-family:var(--serif);font-weight:900;color:var(--ink);
-    font-size:clamp(23px,4.4vw,34px);line-height:1.28;letter-spacing:-.01em;margin:0 0 12px}
-  .lead-sum{color:#3c4855;font-size:15.5px;line-height:1.72;margin:0 0 20px;max-width:60ch}
-  .btn-row{display:flex;flex-wrap:wrap;gap:10px}
-  .btn{display:inline-block;font-weight:700;font-size:14px;letter-spacing:.01em;padding:11px 18px;border-radius:3px;transition:transform .12s,box-shadow .12s}
-  .btn-primary{background:var(--gold);color:#241a00}
-  .btn-ghost{background:transparent;color:var(--navy);box-shadow:inset 0 0 0 1.5px var(--line-2)}
-  .lead-link:hover .btn-primary{box-shadow:0 4px 14px rgba(201,166,84,.4)}
+  /* ---- 핵심 지표 카드 ---- */
+  .tk-status{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:22px 0 9px;font-size:11.5px;color:var(--mute)}
+  .tk-live{color:#1a8f4a;font-weight:700} .tk-delay{color:var(--gold-d);font-weight:700}
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .stat{background:var(--paper);border:1px solid var(--line);border-radius:7px;padding:12px 14px;display:flex;flex-direction:column;gap:2px}
+  .stat.more{display:none}
+  .stat.show{display:flex}
+  .stat-n{font-size:11.5px;color:var(--mute)}
+  .stat-v{font-size:clamp(17px,3.6vw,21px);font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+  .stat-c{font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums}
+  .stat-c.up{color:var(--up)} .stat-c.down{color:var(--down)} .stat-c.flat{color:var(--mute)}
+  @keyframes stflash{0%{background:rgba(201,166,84,0)}25%{background:rgba(201,166,84,.22)}100%{background:rgba(201,166,84,0)}}
+  .stat.flash{animation:stflash 1s ease-out}
+  .morebtn{margin:10px 0 2px;appearance:none;background:none;border:1px dashed var(--line-2);border-radius:6px;
+    color:var(--mute);font-family:var(--sans);font-size:12.5px;cursor:pointer;padding:8px 14px}
+  .morebtn:hover{color:var(--ink);border-color:var(--gold)}
 
-  /* ---- 지난 호 ---- */
-  .archive{display:flex;flex-direction:column;border-top:1px solid var(--line)}
-  .row{display:grid;grid-template-columns:74px 56px 64px 1fr auto;gap:14px;align-items:center;
-    padding:16px 6px;border-bottom:1px solid var(--line);transition:background .12s}
-  .row:hover{background:#fcfcfd}
-  .row-date{color:var(--navy);font-weight:700;font-size:13px;font-variant-numeric:tabular-nums}
-  .row-no{color:var(--mute);font-size:12px;font-variant-numeric:tabular-nums}
-  .row-tag{font-size:11px;font-weight:700;color:var(--gold-d);border:1px solid var(--gold);
-    border-radius:2px;padding:2px 7px;text-align:center;white-space:nowrap}
-  .row-title{display:block;font-family:var(--serif);font-weight:700;color:var(--ink);font-size:16px;line-height:1.4}
-  .row-sum{display:block;color:var(--mute);font-size:12.5px;line-height:1.55;margin-top:3px;
-    overflow:hidden;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical}
-  .row-pdf{color:var(--down);font-weight:700;font-size:12.5px;white-space:nowrap}
+  /* ---- 오늘의 리포트(대표 카드) ---- */
+  .feature{display:block;background:var(--paper);border:1px solid var(--line);border-left:5px solid var(--cat,var(--navy));
+    border-radius:8px;padding:22px 24px 24px;transition:box-shadow .15s}
+  .feature:hover{box-shadow:0 6px 22px rgba(20,41,74,.08)}
+  .feat-tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.04em;padding:3px 10px;border-radius:3px}
+  .feat-title{font-family:var(--serif);font-weight:900;color:var(--ink);font-size:clamp(22px,4.2vw,31px);line-height:1.3;letter-spacing:-.01em;margin:12px 0 11px}
+  .feat-sum{color:#3c4855;font-size:15px;line-height:1.72;margin:0;max-width:62ch}
+  .feat-meta{display:block;color:var(--mute);font-size:12.5px;margin-top:13px;font-variant-numeric:tabular-nums}
+  .feat-cta{display:inline-block;margin-top:15px;background:var(--gold);color:#3d2f08;font-weight:800;font-size:14px;padding:11px 22px;border-radius:5px;transition:box-shadow .12s}
+  .feature:hover .feat-cta{box-shadow:0 5px 16px rgba(201,166,84,.4)}
 
-  /* ---- 배너 CTA (투자성향 테스트) ---- */
-  .banner{margin:40px 0 10px;border-radius:4px;overflow:hidden;
-    background:linear-gradient(100deg,var(--navy) 0%,var(--navy-2) 100%);position:relative}
-  .banner a{display:flex;align-items:center;justify-content:space-between;gap:18px;
-    padding:24px 26px;flex-wrap:wrap}
-  .banner:before{content:"";position:absolute;inset:0;background:
-    repeating-linear-gradient(135deg,rgba(201,166,84,.0) 0 18px,rgba(201,166,84,.06) 18px 19px)}
-  .banner-txt{position:relative}
-  .banner-k{color:var(--gold);font-size:12px;font-weight:700;letter-spacing:.14em;margin-bottom:5px}
-  .banner-t{color:#fff;font-family:var(--serif);font-weight:700;font-size:clamp(18px,3.4vw,23px);line-height:1.3}
-  .banner-cta{position:relative;background:var(--gold);color:#241a00;font-weight:800;font-size:14.5px;
-    padding:12px 20px;border-radius:3px;white-space:nowrap}
-  .banner a:hover .banner-cta{box-shadow:0 4px 16px rgba(201,166,84,.45)}
+  /* ---- 통일 카드 그리드 ---- */
+  .cardgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .ncard{display:flex;flex-direction:column;background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:15px 16px;transition:box-shadow .14s,transform .14s}
+  .ncard:hover{box-shadow:0 5px 16px rgba(20,41,74,.07);transform:translateY(-1px)}
+  .ncard-tag{align-self:flex-start;font-size:10.5px;font-weight:700;letter-spacing:.03em;padding:3px 9px;border-radius:3px}
+  .ncard-title{font-family:var(--serif);font-weight:700;color:var(--ink);font-size:15.5px;line-height:1.4;margin:9px 0 5px}
+  .ncard-sum{color:var(--mute);font-size:12.5px;line-height:1.55;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+  .ncard-meta{color:#9aa3ae;font-size:11px;margin-top:auto;padding-top:10px;font-variant-numeric:tabular-nums}
+  .ncard[hidden]{display:none}
+  .grid-empty{color:var(--mute);font-size:13.5px;padding:26px 4px;text-align:center;border:1px dashed var(--line-2);border-radius:8px}
 
-  /* ---- 홈 2단 레이아웃 + 특집 사이드바 ---- */
-  .home-grid{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:36px;align-items:start;margin-top:6px}
-  .home-solo{margin-top:6px}
-  .home-main{min-width:0}
-  .side{position:sticky;top:18px}
-  .side-card{background:var(--paper);border:1px solid var(--line);border-top:3px solid var(--gold);border-radius:3px;overflow:hidden}
-  .side-head{background:var(--navy);padding:13px 16px}
-  .side-k{color:var(--gold);font-size:10px;font-weight:800;letter-spacing:.14em}
-  .side-t{font-family:var(--serif);color:#fff;font-weight:700;font-size:17px;margin-top:2px}
-  .side-list{padding:2px 16px 10px}
-  .side-item{display:block;padding:13px 0;border-bottom:1px solid var(--line);position:relative}
-  .side-item:last-child{border-bottom:none}
-  .side-new{position:absolute;top:12px;right:0;background:#E5392E;color:#fff;font-size:9px;font-weight:800;
-    letter-spacing:.06em;line-height:1;padding:3px 5px;border-radius:2px;box-shadow:0 1px 3px rgba(224,57,46,.35)}
-  .side-tag{display:inline-block;font-size:10px;font-weight:700;color:var(--gold-d);border:1px solid var(--gold);border-radius:2px;padding:1px 7px}
-  .side-tag.founder{color:#fff;background:var(--navy);border-color:var(--navy)}
-  .side-title{display:block;font-family:var(--serif);font-weight:700;color:var(--ink);font-size:14px;line-height:1.42;margin:7px 0 3px}
-  .side-item:hover .side-title{text-decoration:underline;text-decoration-color:var(--gold);text-underline-offset:3px;text-decoration-thickness:2px}
-  .side-date{color:var(--mute);font-size:11px;font-variant-numeric:tabular-nums}
-  @media (max-width:860px){
-    .home-grid{grid-template-columns:1fr;gap:24px}
-    .side{position:static}
-  }
+  /* ---- 배너 CTA ---- */
+  .banner{margin:34px 0 8px;border-radius:8px;overflow:hidden;background:linear-gradient(100deg,var(--navy) 0%,var(--navy-2) 100%);position:relative}
+  .banner a{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:22px 24px;flex-wrap:wrap}
+  .banner-k{color:var(--gold);font-size:11.5px;font-weight:700;letter-spacing:.13em;margin-bottom:5px}
+  .banner-t{color:#fff;font-family:var(--serif);font-weight:700;font-size:clamp(17px,3.2vw,22px);line-height:1.3}
+  .banner-cta{background:var(--gold);color:#241a00;font-weight:800;font-size:14px;padding:11px 19px;border-radius:5px;white-space:nowrap}
 
   /* ---- 푸터 ---- */
-  footer{margin-top:46px;border-top:2px solid var(--navy);background:var(--paper)}
+  footer{margin-top:42px;border-top:2px solid var(--navy);background:var(--paper)}
   .foot-in{padding:26px 22px 40px;text-align:center}
-  .foot-mark{font-family:var(--latin);font-weight:800;color:var(--navy);letter-spacing:.12em;font-size:18px;text-indent:.12em}
-  .foot-pub{color:var(--mute);font-size:12.5px;margin:8px 0 14px}
-  .foot-kakao{display:inline-block;background:#FEE500;color:#191600;font-weight:700;font-size:13.5px;
-    padding:10px 18px;border-radius:3px;margin-bottom:16px}
-  .foot-kakao:hover{filter:brightness(.97)}
+  .foot-mark{font-family:var(--latin);font-weight:800;color:var(--navy);letter-spacing:.12em;font-size:17px;text-indent:.12em}
+  .foot-pub{color:var(--mute);font-size:12px;margin:7px 0 13px}
+  .foot-kakao{display:inline-block;background:#FEE500;color:#191600;font-weight:700;font-size:13px;padding:10px 18px;border-radius:4px;margin-bottom:15px}
   .disclaimer{color:var(--mute);font-size:11px;line-height:1.7;max-width:70ch;margin:0 auto}
-  .foot-dom{color:var(--gold-d);font-weight:700;font-size:12px;letter-spacing:.06em;margin-top:12px}
+  .foot-dom{color:var(--gold-d);font-weight:700;font-size:12px;letter-spacing:.06em;margin-top:11px}
 
   @media (max-width:640px){
-    .row{grid-template-columns:64px 1fr auto;row-gap:4px}
-    .row-no,.row-tag{display:none}
+    .stats{grid-template-columns:1fr 1fr;gap:8px}
+    .cardgrid{grid-template-columns:1fr}
     .banner a{justify-content:center;text-align:center}
   }
-  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
-  a:focus-visible,.lead-link:focus-visible{outline:3px solid var(--gold);outline-offset:2px;border-radius:2px}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+  a:focus-visible,.tab:focus-visible,.morebtn:focus-visible{outline:3px solid var(--gold);outline-offset:2px;border-radius:3px}
 </style>
 </head>
 <body>
@@ -164,156 +123,101 @@
       <div class="submast">투자이야기 · 데일리 인베스트먼트 리포트</div>
       <div class="issueline">2026년 6월 22일 (월) &nbsp;·&nbsp; <b>제 14호</b> &nbsp;·&nbsp; 발행 Josh Park Invest</div>
     </div>
-    <div class="rule thin"></div>
   </header>
 
-  <div class="ticker"><div class="tk-scroll" id="tkscroll"><div class="tk-track"><div class="tk-grp" id="tkmain"><span class="tk-as">2026-06-22 16:49 KST (자동·Twelve Data)</span><span class="tk" data-n="KOSPI"><span class="tk-n">KOSPI</span><span class="tk-v">9,114.55</span><span class="tk-c up">▲&nbsp;+0.69%</span></span><span class="tk" data-n="KOSDAQ"><span class="tk-n">KOSDAQ</span><span class="tk-v">968.40</span><span class="tk-c up">▲&nbsp;+0.19%</span></span><span class="tk" data-n="USD/KRW"><span class="tk-n">USD/KRW</span><span class="tk-v">1,541.1</span><span class="tk-c up">▲&nbsp;+13.4</span></span><span class="tk" data-n="WTI"><span class="tk-n">WTI</span><span class="tk-v">$75.63</span><span class="tk-c down">▼&nbsp;-0.29%</span></span><span class="tk" data-n="S&amp;P 500"><span class="tk-n">S&amp;P 500</span><span class="tk-v">7,500.58</span><span class="tk-c up">▲&nbsp;+1.08%</span></span><span class="tk" data-n="나스닥"><span class="tk-n">나스닥</span><span class="tk-v">26,517.93</span><span class="tk-c up">▲&nbsp;+1.91%</span></span><span class="tk" data-n="달러인덱스"><span class="tk-n">달러인덱스</span><span class="tk-v">100.98</span><span class="tk-c up">▲&nbsp;+0.13%</span></span></div><div class="tk-grp tk-clone" aria-hidden="true"><span class="tk-as">2026-06-22 16:49 KST (자동·Twelve Data)</span><span class="tk" data-n="KOSPI"><span class="tk-n">KOSPI</span><span class="tk-v">9,114.55</span><span class="tk-c up">▲&nbsp;+0.69%</span></span><span class="tk" data-n="KOSDAQ"><span class="tk-n">KOSDAQ</span><span class="tk-v">968.40</span><span class="tk-c up">▲&nbsp;+0.19%</span></span><span class="tk" data-n="USD/KRW"><span class="tk-n">USD/KRW</span><span class="tk-v">1,541.1</span><span class="tk-c up">▲&nbsp;+13.4</span></span><span class="tk" data-n="WTI"><span class="tk-n">WTI</span><span class="tk-v">$75.63</span><span class="tk-c down">▼&nbsp;-0.29%</span></span><span class="tk" data-n="S&amp;P 500"><span class="tk-n">S&amp;P 500</span><span class="tk-v">7,500.58</span><span class="tk-c up">▲&nbsp;+1.08%</span></span><span class="tk" data-n="나스닥"><span class="tk-n">나스닥</span><span class="tk-v">26,517.93</span><span class="tk-c up">▲&nbsp;+1.91%</span></span><span class="tk" data-n="달러인덱스"><span class="tk-n">달러인덱스</span><span class="tk-v">100.98</span><span class="tk-c up">▲&nbsp;+0.13%</span></span></div></div></div></div>
+  <nav class="topnav"><div class="topnav-in"><button class="tab on" data-tab="all">전체</button><button class="tab" data-tab="daily">데일리</button><button class="tab" data-tab="special">특집·기획</button><button class="tab" data-tab="flash">특보</button></div></nav>
 
   <main class="wrap">
-    <div class="home-grid">
-      <div class="home-main">
-        <div class="eyebrow"><h3>오늘의 리포트</h3></div>
-        
-        <article class="lead">
-          <a class="lead-link" href="newsletters/2026-06-22-close.html">
-            <div class="lead-meta">
-              <span class="chip">데일리</span>
-              <span class="lead-date">2026년 6월 22일 (월) 16:50 · 제 14호</span>
-            </div>
-            <h2 class="lead-title">코스피 9,114 또 신고가… 반도체·MLCC·2차전지 3각 랠리</h2>
-            <p class="lead-sum">2026년 6월 22일 코스피가 9,114.55(+0.69%)로 장을 마치며 다시 사상 최고 영역을 밟았다. 미국 증시가 준틴스데이 휴장으로 방향 부재였지만 반도체·MLCC·2차전지 테마가 지수를 받쳤다. 코스닥은 968.40(+0.19%)로 소폭 강세. 원/달러 환율은 1,541원대로 급등해 수입물가 부담 우려가 부각됐</p>
-          </a>
-        </article>
+    <div class="tk-status"><span id="tk-asof">2026-06-22 17:15 KST (자동·KIS+Twelve Data)</span><span id="tk-live"></span></div>
+    <div class="stats"><div class="stat" data-n="KOSPI"><span class="stat-n">코스피</span><span class="stat-v">9,114.55</span><span class="stat-c up">▲&nbsp;+0.69%</span></div><div class="stat" data-n="KOSDAQ"><span class="stat-n">코스닥</span><span class="stat-v">968.40</span><span class="stat-c up">▲&nbsp;+0.19%</span></div><div class="stat" data-n="USD/KRW"><span class="stat-n">달러·원</span><span class="stat-v">1,539.6</span><span class="stat-c up">▲&nbsp;+11.9</span></div><div class="stat" data-n="WTI"><span class="stat-n">WTI 유가</span><span class="stat-v">$75.77</span><span class="stat-c down">▼&nbsp;-0.11%</span></div><div class="stat" data-n="S&amp;P 500"><span class="stat-n">S&amp;P 500</span><span class="stat-v">7,500.58</span><span class="stat-c up">▲&nbsp;+1.08%</span></div><div class="stat" data-n="나스닥"><span class="stat-n">나스닥</span><span class="stat-v">26,517.93</span><span class="stat-c up">▲&nbsp;+1.91%</span></div><div class="stat more" data-n="달러인덱스"><span class="stat-n">달러인덱스</span><span class="stat-v">100.97</span><span class="stat-c up">▲&nbsp;+0.12%</span></div></div>
+    <button class="morebtn" id="morebtn" type="button">+ 지표 더보기</button>
 
-        <div class="eyebrow"><h3>특집 · 기획</h3></div>
-        
-        <article class="lead">
-          <a class="lead-link" href="newsletters/2026-06-22-skhynix-adr.html">
-            <div class="lead-meta">
-              <span class="chip">특집호</span>
-              <span class="lead-date">2026년 6월 22일 (월) · 제 13호</span>
-            </div>
-            <h2 class="lead-title">SK하이닉스 나스닥 ADR 상장 초읽기 — 리레이팅 기대 vs 신주 희석, 국내 주가·코스피는 어디로</h2>
-            <p class="lead-sum">메모리 2위·엔비디아 HBM 핵심 파트너 SK하이닉스가 미 나스닥 ADR 상장 초읽기에 들어갔습니다. 3/24 SEC에 Form F-1 비공개 제출, 이르면 현지 6/22 주간 심사 결과 발표 예정. 발행주식 약 2.5% 신주(추정 조달 10조~40조원)로 마이크론 대비 저평가 해소가 기대되지만 희석·중복상장 우려도 공존합니다. 6/19 종가 276.4만원 사상 최고. 국내 주가 3대 시나리오와 ‘삼전닉스’ 쏠림 속 코스피 영향, 6/24 마이크론·MSCI 변수까지 정리했습니다.</p>
-          </a>
-        </article>
+    <div class="sec-k" id="feat-k">오늘의 리포트</div>
+    <a class="feature cat-daily" href="newsletters/2026-06-22-close.html" style="--cat:#1B3C6E">
+  <span class="feat-tag" style="background:#1B3C6E;color:#ffffff">데일리</span>
+  <h2 class="feat-title">코스피 9,114 또 신고가… 반도체·MLCC·2차전지 3각 랠리</h2>
+  <p class="feat-sum">2026년 6월 22일 코스피가 9,114.55(+0.69%)로 장을 마치며 다시 사상 최고 영역을 밟았다. 미국 증시가 준틴스데이 휴장으로 방향 부재였지만 반도체·MLCC·2차전지 테마가 지수를 받쳤다. 코스닥은 968.40(+0.19%)로 소폭 강세. 원/달러 환율은 1,541원대로 급등해 수입물가 부담 우려가 부각됐</p>
+  <span class="feat-meta">06.22 (월) 16:50 · 제 14호</span>
+  <span class="feat-cta">전문 읽기 →</span>
+</a>
 
-        <div class="eyebrow"><h3>지난 호</h3></div>
-        <div class="archive">
-          
-        <a class="row" href="newsletters/2026-06-22.html">
-          <span class="row-date">06.22 (월)</span>
-          <span class="row-no">제 11호</span>
-          <span class="row-tag">데일리</span>
-          <span class="row-body">
-            <span class="row-title">코스피 9,000 하루 만에 반납 — 이란 호르무즈 &#x27;재봉쇄&#x27;에 유가 반등, 미·이란 스위스 담판은 살얼음</span>
-            <span class="row-sum">6/19 장중 사상 첫 9,300을 밟았던 코스피가 주말 이란의 호르무즈 재봉쇄·유가 반등에 6/22 오전 9,000선을 다시 내줘 8,958.94(-1.0%)를 기록 중입니다. 코스닥은 낙폭과대 반발로 971.73(+0.5%) 소폭 반등. 미·이란은 6/18 MOU 서명에도 레바논 교전·호르무즈를 두고 살얼음 협상이 이어집니다. 개전부터 현재까지 타임라인과 향후 시나리오를 정리했습니다.</span>
-          </span>
-          <span class="row-pdf">읽기 →</span>
-        </a>
-        <a class="row" href="newsletters/2026-06-19.html">
-          <span class="row-date">06.19 (금)</span>
-          <span class="row-no">제 10호</span>
-          <span class="row-tag">데일리</span>
-          <span class="row-body">
-            <span class="row-title">코스피 사상 첫 9,000 돌파 — 매파 FOMC도 못 막은 외국인 반도체 매수</span>
-            <span class="row-sum">6/18 코스피 9,063.84(+2.25%) 사상 첫 9,000 돌파, 장중 9,106. 외국인 1.28조 순매수(반도체 집중), 삼성 +4.62%·SK하이닉스 +6.51%. 단 코스닥 -3.01% 쏠림. 올해 +115%로 G20 1위. 오늘 미국은 준틴스 휴장.</span>
-          </span>
-          <span class="row-pdf">읽기 →</span>
-        </a>
-        <a class="row" href="newsletters/2026-06-17.html">
-          <span class="row-date">06.17 (수)</span>
-          <span class="row-no">제 9호</span>
-          <span class="row-tag">데일리</span>
-          <span class="row-body">
-            <span class="row-title">FOMC 당일 — 워시 신임 의장 첫 회의, 점도표가 분수령</span>
-            <span class="row-sum">신임 케빈 워시 의장의 첫 FOMC. 동결 97% 반영, 관건은 점도표입니다. 다우 장중 사상 첫 52,000, 나스닥 -1.15%(반도체 매도). 비둘기·매파·혼조 3대 시나리오를 자산별로 정리했습니다.</span>
-          </span>
-          <span class="row-pdf">읽기 →</span>
-        </a>
-        <a class="row" href="newsletters/2026-06-16.html">
-          <span class="row-date">06.16 (화)</span>
-          <span class="row-no">제 8호</span>
-          <span class="row-tag">데일리</span>
-          <span class="row-body">
-            <span class="row-title">미·이란 종전 합의에 글로벌 위험선호 급반등 — 코스피 +5.20% 8,545</span>
-            <span class="row-sum">종전 합의 확정 발표로 6/15 코스피 +5.20%(8,545.98), 나스닥 +3.07%. 외국인 +1조 순매수에 올해 14번째 매수 사이드카. WTI 2개월래 최저. 6/17 FOMC를 앞두고 있습니다.</span>
-          </span>
-          <span class="row-pdf">읽기 →</span>
-        </a>
-        <a class="row" href="newsletters/2026-06-15.html">
-          <span class="row-date">06.15 (월)</span>
-          <span class="row-no">제 7호</span>
-          <span class="row-tag">데일리</span>
-          <span class="row-body">
-            <span class="row-title">트럼프-이란 평화 합의 + SpaceX 사상 최대 IPO — 코스피 8,124 회복</span>
-            <span class="row-sum">평화 합의 시그널(6/19 스위스 서명 예정)과 SpaceX IPO 첫날 +19%. 코스피 6/12 +4.63%(8,124). WTI -4.5% 폭락, 원화 강세(1,506원대). 6/17 FOMC가 이번 주 핵심 변수입니다.</span>
-          </span>
-          <span class="row-pdf">읽기 →</span>
-        </a>
-        <a class="row" href="newsletters/2026-06-12.html">
-          <span class="row-date">06.12 (금)</span>
-          <span class="row-no">제 6호</span>
-          <span class="row-tag">데일리</span>
-          <span class="row-body">
-            <span class="row-title">코스피 6/11 V자 회복 + 외국인 23일 연속 매도 — 4일간 롤러코스터</span>
-            <span class="row-sum">6/8 서킷브레이커→6/9 +8.28%→6/10 -3.25%→6/11 일중 V자(-0.89%). 미 5월 CPI 4.2%(3년 최고) 충격과 휴전 시그널이 교차. 외국인 누적 -74조 원, 6/17 FOMC가 분수령입니다.</span>
-          </span>
-          <span class="row-pdf">읽기 →</span>
-        </a>
-        <a class="row" href="newsletters/2026-06-09.html">
-          <span class="row-date">06.09 (화)</span>
-          <span class="row-no">제 5호</span>
-          <span class="row-tag">데일리</span>
-          <span class="row-body">
-            <span class="row-title">코스피 +4.8% 급반등 + 매수 사이드카 — 서킷브레이커 다음 날의 V자</span>
-            <span class="row-sum">6/8 폭락 후 6/9 +4.8% 급반등, KOSPI200 선물 +5%로 매수 사이드카 발동. 삼성·SK하이닉스 6%대 동반 반등. 애플 WWDC(팀 쿡 작별·존 터너스 CEO 이양)도 핵심 뉴스였습니다.</span>
-          </span>
-          <span class="row-pdf">읽기 →</span>
-        </a>
-        <a class="row" href="newsletters/2026-06-05.html">
-          <span class="row-date">06.05 (금)</span>
-          <span class="row-no">제 3호</span>
-          <span class="row-tag">데일리</span>
-          <span class="row-body">
-            <span class="row-title">브로드컴 -13.78% 폭락 + 섹터 로테이션 — AI에서 헬스케어·금융으로</span>
-            <span class="row-sum">AVGO가 어닝 서프라이즈에도 Q3 AI 가이드 부족으로 -13.78% 폭락. 자금이 헬스케어(+3.14%)·금융(+2.67%)으로 이동하는 섹터 로테이션 신호가 켜졌습니다. 코스피는 휴장 후 첫 거래일 -1.84%.</span>
-          </span>
-          <span class="row-pdf">읽기 →</span>
-        </a>
-        </div>
+    <div class="sec-k" id="grid-k">최신 글</div>
+    <div class="cardgrid" id="cardgrid"><a class="ncard" href="newsletters/2026-06-22-skhynix-adr.html" data-cat="special">
+  <span class="ncard-tag" style="background:#C9A654;color:#3d2f08">특집호</span>
+  <span class="ncard-title">SK하이닉스 나스닥 ADR 상장 초읽기 — 리레이팅 기대 vs 신주 희석, 국내 주가·코스피는 어디로</span>
+  <span class="ncard-sum">메모리 2위·엔비디아 HBM 핵심 파트너 SK하이닉스가 미 나스닥 ADR 상장 초읽기에 들어갔습니다. 3/24 SEC에 Form F-1 비공개 제출, 이르면 현지 6/22 주간 심사 결과 발표 예정. 발행주식 약 2.5% 신주(추정 조달 10조~40조원)로 마이크론 대비 저평가 해소가 기대되지만 희석·중복상장 우려도 공존합니다. 6/19 종가 276.4만원 사상 최고. 국내 주가 3대 시나리오와 ‘삼전닉스’ 쏠림 속 코스피 영향, 6/24 마이크론·MSCI 변수까지 정리했습니다.</span>
+  <span class="ncard-meta">2026년 6월 22일 (월) · 제 13호</span>
+</a><a class="ncard" href="newsletters/2026-06-22.html" data-cat="daily">
+  <span class="ncard-tag" style="background:#1B3C6E;color:#ffffff">데일리</span>
+  <span class="ncard-title">코스피 9,000 하루 만에 반납 — 이란 호르무즈 &#x27;재봉쇄&#x27;에 유가 반등, 미·이란 스위스 담판은 살얼음</span>
+  <span class="ncard-sum">6/19 장중 사상 첫 9,300을 밟았던 코스피가 주말 이란의 호르무즈 재봉쇄·유가 반등에 6/22 오전 9,000선을 다시 내줘 8,958.94(-1.0%)를 기록 중입니다. 코스닥은 낙폭과대 반발로 971.73(+0.5%) 소폭 반등. 미·이란은 6/18 MOU 서명에도 레바논 교전·호르무즈를 두고 살얼음 협상이 이어집니다. 개전부터 현재까지 타임라인과 향후 시나리오를 정리했습니다.</span>
+  <span class="ncard-meta">2026년 6월 22일 (월) · 제 11호</span>
+</a><a class="ncard" href="newsletters/2026-06-19-special.html" data-cat="special">
+  <span class="ncard-tag" style="background:#C9A654;color:#3d2f08">특집호</span>
+  <span class="ncard-title">코스피 9,000 시대 — 상승·하락·횡보 3대 시나리오 정밀 분석</span>
+  <span class="ncard-sum">사상 첫 9,000 돌파를 맞아, 향후 코스피를 상승·하락·횡보 3대 시나리오로 나눠 정밀 분석한 기획 특집. 반도체 쏠림·외국인 수급·환율·미·이란 변수까지 시나리오별 트리거와 대응 전략을 정리했습니다.</span>
+  <span class="ncard-meta">2026년 6월 19일 (금) · 제 12호</span>
+</a><a class="ncard" href="newsletters/2026-06-19.html" data-cat="daily">
+  <span class="ncard-tag" style="background:#1B3C6E;color:#ffffff">데일리</span>
+  <span class="ncard-title">코스피 사상 첫 9,000 돌파 — 매파 FOMC도 못 막은 외국인 반도체 매수</span>
+  <span class="ncard-sum">6/18 코스피 9,063.84(+2.25%) 사상 첫 9,000 돌파, 장중 9,106. 외국인 1.28조 순매수(반도체 집중), 삼성 +4.62%·SK하이닉스 +6.51%. 단 코스닥 -3.01% 쏠림. 올해 +115%로 G20 1위. 오늘 미국은 준틴스 휴장.</span>
+  <span class="ncard-meta">2026년 6월 19일 (금) · 제 10호</span>
+</a><a class="ncard" href="newsletters/2026-06-17.html" data-cat="daily">
+  <span class="ncard-tag" style="background:#1B3C6E;color:#ffffff">데일리</span>
+  <span class="ncard-title">FOMC 당일 — 워시 신임 의장 첫 회의, 점도표가 분수령</span>
+  <span class="ncard-sum">신임 케빈 워시 의장의 첫 FOMC. 동결 97% 반영, 관건은 점도표입니다. 다우 장중 사상 첫 52,000, 나스닥 -1.15%(반도체 매도). 비둘기·매파·혼조 3대 시나리오를 자산별로 정리했습니다.</span>
+  <span class="ncard-meta">2026년 6월 17일 (수) · 제 9호</span>
+</a><a class="ncard" href="newsletters/2026-06-16.html" data-cat="daily">
+  <span class="ncard-tag" style="background:#1B3C6E;color:#ffffff">데일리</span>
+  <span class="ncard-title">미·이란 종전 합의에 글로벌 위험선호 급반등 — 코스피 +5.20% 8,545</span>
+  <span class="ncard-sum">종전 합의 확정 발표로 6/15 코스피 +5.20%(8,545.98), 나스닥 +3.07%. 외국인 +1조 순매수에 올해 14번째 매수 사이드카. WTI 2개월래 최저. 6/17 FOMC를 앞두고 있습니다.</span>
+  <span class="ncard-meta">2026년 6월 16일 (화) · 제 8호</span>
+</a><a class="ncard" href="newsletters/2026-06-15.html" data-cat="daily">
+  <span class="ncard-tag" style="background:#1B3C6E;color:#ffffff">데일리</span>
+  <span class="ncard-title">트럼프-이란 평화 합의 + SpaceX 사상 최대 IPO — 코스피 8,124 회복</span>
+  <span class="ncard-sum">평화 합의 시그널(6/19 스위스 서명 예정)과 SpaceX IPO 첫날 +19%. 코스피 6/12 +4.63%(8,124). WTI -4.5% 폭락, 원화 강세(1,506원대). 6/17 FOMC가 이번 주 핵심 변수입니다.</span>
+  <span class="ncard-meta">2026년 6월 15일 (월) · 제 7호</span>
+</a><a class="ncard" href="newsletters/2026-06-12.html" data-cat="daily">
+  <span class="ncard-tag" style="background:#1B3C6E;color:#ffffff">데일리</span>
+  <span class="ncard-title">코스피 6/11 V자 회복 + 외국인 23일 연속 매도 — 4일간 롤러코스터</span>
+  <span class="ncard-sum">6/8 서킷브레이커→6/9 +8.28%→6/10 -3.25%→6/11 일중 V자(-0.89%). 미 5월 CPI 4.2%(3년 최고) 충격과 휴전 시그널이 교차. 외국인 누적 -74조 원, 6/17 FOMC가 분수령입니다.</span>
+  <span class="ncard-meta">2026년 6월 12일 (금) · 제 6호</span>
+</a><a class="ncard" href="newsletters/2026-06-09.html" data-cat="daily">
+  <span class="ncard-tag" style="background:#1B3C6E;color:#ffffff">데일리</span>
+  <span class="ncard-title">코스피 +4.8% 급반등 + 매수 사이드카 — 서킷브레이커 다음 날의 V자</span>
+  <span class="ncard-sum">6/8 폭락 후 6/9 +4.8% 급반등, KOSPI200 선물 +5%로 매수 사이드카 발동. 삼성·SK하이닉스 6%대 동반 반등. 애플 WWDC(팀 쿡 작별·존 터너스 CEO 이양)도 핵심 뉴스였습니다.</span>
+  <span class="ncard-meta">2026년 6월 9일 (화) · 제 5호</span>
+</a><a class="ncard" href="newsletters/2026-06-08.html" data-cat="flash">
+  <span class="ncard-tag" style="background:#C0392B;color:#ffffff">특보</span>
+  <span class="ncard-title">코스피 서킷브레이커 발동 — -8.37% 급락, AVGO 도미노의 종착점</span>
+  <span class="ncard-sum">6/8 09:03 코스피 -8.37%로 9번째 서킷브레이커. 6/3 AVGO 가이드 미스→6/5 나스닥 -4.18%→한국 충격 압축 반영. 삼성 -9.27%·SK하이닉스 -8.02%. 4가지 시나리오와 투자자 행동 가이드를 담았습니다.</span>
+  <span class="ncard-meta">2026년 6월 8일 (월) · 제 4호</span>
+</a><a class="ncard" href="newsletters/2026-06-05.html" data-cat="daily">
+  <span class="ncard-tag" style="background:#1B3C6E;color:#ffffff">데일리</span>
+  <span class="ncard-title">브로드컴 -13.78% 폭락 + 섹터 로테이션 — AI에서 헬스케어·금융으로</span>
+  <span class="ncard-sum">AVGO가 어닝 서프라이즈에도 Q3 AI 가이드 부족으로 -13.78% 폭락. 자금이 헬스케어(+3.14%)·금융(+2.67%)으로 이동하는 섹터 로테이션 신호가 켜졌습니다. 코스피는 휴장 후 첫 거래일 -1.84%.</span>
+  <span class="ncard-meta">2026년 6월 5일 (금) · 제 3호</span>
+</a><a class="ncard" href="newsletters/2026-06-04-2.html" data-cat="special">
+  <span class="ncard-tag" style="background:#C9A654;color:#3d2f08">특집호</span>
+  <span class="ncard-title">Google 유상증자 집중 분석 — Alphabet $84.75B 자본 조달의 모든 것</span>
+  <span class="ncard-sum">빅테크 사상 최대 847.5억 달러 유상증자 호외 분석. 4단 발행 구조 해부, 버크셔 $10B 참여(그렉 아벨 체제 첫 빅테크 베팅), AI 캐펙스 경쟁과 단·중·장기 시나리오까지 정밀 해부.</span>
+  <span class="ncard-meta">2026년 6월 4일 (목) · 제 2호</span>
+</a><a class="ncard" href="newsletters/2026-06-04.html" data-cat="special">
+  <span class="ncard-tag" style="background:#C9A654;color:#3d2f08">창간호</span>
+  <span class="ncard-title">브로드컴 실적 폭발 + 이란 긴장에 9일 상승 종료 — 코스피 8,800선 첫 돌파</span>
+  <span class="ncard-sum">브로드컴(AVGO) Q2 매출 +48%·AI +143% 어닝 서프라이즈로 시간외 강세. 미국 3대 지수는 이란 긴장에 9일 연속 상승 종료. 코스피는 6/2 사상 첫 8,800 돌파 후 차익실현. 6/9 WWDC·6/11 CPI·6/17 FOMC가 줄줄이 대기합니다.</span>
+  <span class="ncard-meta">2026년 6월 4일 (목) · 제 1호</span>
+</a></div>
+    <div class="grid-empty" id="grid-empty" hidden>이 카테고리의 글이 아직 없어요.</div>
 
-        <div class="banner">
-          <a href="pdti.html">
-            <span class="banner-txt">
-              <div class="banner-k">INVEST STORY · INTERACTIVE</div>
-              <div class="banner-t">나의 투자 성향은? — 16가지 투자 유형 테스트</div>
-            </span>
-            <span class="banner-cta">테스트 시작하기 →</span>
-          </a>
-        </div>
-      </div>
-      <aside class="side"><div class="side-card"><div class="side-head"><div class="side-k">SPECIAL</div><div class="side-t">특집 · 기획</div></div><div class="side-list"><a class="side-item" href="newsletters/2026-06-22-skhynix-adr.html">
-            <span class="side-new">NEW</span><span class="side-tag">특집호</span>
-            <span class="side-title">SK하이닉스 나스닥 ADR 상장 초읽기 — 리레이팅 기대 vs 신주 희석, 국내 주가·코스피는 어디로</span>
-            <span class="side-date">06.22 (월)</span>
-          </a><a class="side-item" href="newsletters/2026-06-19-special.html">
-            <span class="side-tag">특집호</span>
-            <span class="side-title">코스피 9,000 시대 — 상승·하락·횡보 3대 시나리오 정밀 분석</span>
-            <span class="side-date">06.19 (금)</span>
-          </a><a class="side-item" href="newsletters/2026-06-08.html">
-            <span class="side-tag">특보</span>
-            <span class="side-title">코스피 서킷브레이커 발동 — -8.37% 급락, AVGO 도미노의 종착점</span>
-            <span class="side-date">06.08 (월)</span>
-          </a><a class="side-item" href="newsletters/2026-06-04-2.html">
-            <span class="side-tag">특집호</span>
-            <span class="side-title">Google 유상증자 집중 분석 — Alphabet $84.75B 자본 조달의 모든 것</span>
-            <span class="side-date">06.04 (목)</span>
-          </a><a class="side-item" href="newsletters/2026-06-04.html">
-            <span class="side-tag founder">창간호</span>
-            <span class="side-title">브로드컴 실적 폭발 + 이란 긴장에 9일 상승 종료 — 코스피 8,800선 첫 돌파</span>
-            <span class="side-date">06.04 (목)</span>
-          </a></div></div></aside>
+    <div class="banner">
+      <a href="pdti.html">
+        <span class="banner-txt">
+          <div class="banner-k">INVEST STORY · INTERACTIVE</div>
+          <div class="banner-t">나의 투자 성향은? — 16가지 투자 유형 테스트</div>
+        </span>
+        <span class="banner-cta">테스트 시작하기 →</span>
+      </a>
     </div>
   </main>
 
@@ -329,12 +233,46 @@
   </footer>
 
   <script>
-  /* 시세 스트립 실시간 갱신 (3단 폴백)
-     1) Twelve Data: ticker_config.json의 twelvedata_key가 있으면 우선 사용(KOSPI=KS11 등).
-     2) 야후(무키): CORS 프록시 경유 best-effort.
-     3) ticker.json 시드값: 위가 모두 실패해도 절대 빈 화면 없음.
-     - 탭이 보일 때 + 장중 위주로만 호출(무료 한도 절약).
-     - 값이 바뀌면 칸이 잠깐 반짝이고, 좌측에 LIVE/지연 + 시각 표시. */
+  /* ===== 1) 카테고리 탭 필터 ===== */
+  (function(){
+    var tabs=document.querySelectorAll('.tab');
+    var cards=document.querySelectorAll('#cardgrid .ncard');
+    var empty=document.getElementById('grid-empty');
+    var gk=document.getElementById('grid-k');
+    var LBL={all:'최신 글',daily:'데일리',special:'특집 · 기획',flash:'특보'};
+    function apply(cat){
+      var shown=0;
+      cards.forEach(function(c){
+        var ok=(cat==='all'||c.getAttribute('data-cat')===cat);
+        if(ok){c.hidden=false;shown++;}else{c.hidden=true;}
+      });
+      if(empty) empty.hidden = (shown>0);
+      if(gk) gk.textContent = LBL[cat]||'최신 글';
+    }
+    tabs.forEach(function(t){
+      t.addEventListener('click',function(){
+        tabs.forEach(function(x){x.classList.remove('on');});
+        t.classList.add('on');
+        apply(t.getAttribute('data-tab'));
+      });
+    });
+  })();
+
+  /* ===== 2) 지표 더보기 ===== */
+  (function(){
+    var btn=document.getElementById('morebtn');
+    if(!btn) return;
+    var more=document.querySelectorAll('.stat.more');
+    if(!more.length){ btn.style.display='none'; return; }
+    var open=false;
+    btn.addEventListener('click',function(){
+      open=!open;
+      more.forEach(function(s){ s.classList.toggle('show',open); });
+      btn.textContent = open ? '− 지표 접기' : '+ 지표 더보기';
+    });
+  })();
+
+  /* ===== 3) 시세 실시간 갱신 (Twelve Data → 야후 → ticker.json) · 정적 카드 patch ===== */
   (function(){
     var CFG = {
       'KOSPI':     {sym:'^KS11',    td:'KS11',    dec:2, mode:'pct', mkt:'kr'},
@@ -345,239 +283,128 @@
       '\uB098\uC2A4\uB2E5':       {sym:'^IXIC', td:'IXIC', dec:2, mode:'pct', mkt:'us'},
       '\uB2EC\uB7EC\uC778\uB371\uC2A4': {sym:'DX-Y.NYB', td:'DXY', dec:2, mode:'pct', mkt:'us'}
     };
-    var NBSP = String.fromCharCode(160);
-    var PROXY = [
-      function(u){ return u; },                                                              /* 직접 */
-      function(u){ return 'https://api.codetabs.com/v1/proxy/?quest=' + encodeURIComponent(u); },
-      function(u){ return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u); },
-      function(u){ return 'https://thingproxy.freeboard.io/fetch/' + u; }
-    ];
-    var baseAsof = '';
-    var liveOK = {};
-    var tdKey = '', tdDead = false;
-    var tdByName = {}, tdNames = {};
-    Object.keys(CFG).forEach(function(name){ tdByName[name]=CFG[name].td; tdNames[CFG[name].td]=name; });
+    var NBSP=String.fromCharCode(160);
+    var PROXY=[function(u){return u;},
+      function(u){return 'https://api.codetabs.com/v1/proxy/?quest='+encodeURIComponent(u);},
+      function(u){return 'https://api.allorigins.win/raw?url='+encodeURIComponent(u);}];
+    var baseAsof=(document.getElementById('tk-asof')||{}).textContent||'';
+    var liveOK={}, tdKey='', tdDead=false, tdByName={}, tdNames={};
+    Object.keys(CFG).forEach(function(n){ tdByName[n]=CFG[n].td; tdNames[CFG[n].td]=n; });
 
-    function fmt(n, dec){ return Number(n).toLocaleString('en-US',{minimumFractionDigits:dec,maximumFractionDigits:dec}); }
-    function arrowOf(d){ return d==='up' ? '\u25B2' : (d==='down' ? '\u25BC' : '\u00B7'); }
-
-    function syncClone(){
-      var m=document.querySelector('#tkmain'); if(!m) return;
-      var cs=document.querySelectorAll('.tk-clone');        /* 모든 클론 그룹을 #tkmain과 동일하게 유지 */
-      for(var i=0;i<cs.length;i++) cs[i].innerHTML=m.innerHTML;
-    }
-
-    /* ---- 시세판: 좌측 자동 스크롤 + 마우스 좌우 드래그 (어떤 화면폭에서도 끊김 없이 순환) ---- */
-    (function(){
-      var sc=document.querySelector('#tkscroll'); if(!sc) return;
-      var track=document.querySelector('#tkscroll .tk-track');
-      var AUTO_PXPS=28;                           /* 자동 속도(px/초) — 작을수록 천천히 */
-      var autoOn=true, dragging=false, hovering=false, lastT=0, startX=0, startScroll=0, fc=0;
-      try{ if(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) autoOn=false; }catch(e){}
-      function grpW(){ var g=document.querySelector('#tkmain'); return g?g.getBoundingClientRect().width:0; }
-      /* 화면폭보다 콘텐츠가 짧으면 스크롤이 벽에 막혀 멈춤 → 그룹을 충분히 복제해 항상 한 그룹폭 이상 남게 함 */
-      function ensureFill(){
-        if(!track) return; var gw=grpW(), m=document.querySelector('#tkmain'); if(gw<=0||!m) return;
-        var want=Math.ceil((sc.clientWidth + gw + 60)/gw); want=Math.max(2, Math.min(want, 12));
-        var have=track.querySelectorAll('.tk-grp').length, added=false;
-        for(var i=have;i<want;i++){
-          var c=m.cloneNode(true); c.removeAttribute('id'); c.classList.add('tk-clone'); c.setAttribute('aria-hidden','true');
-          track.appendChild(c); added=true;
-        }
-        if(added) syncClone();
-      }
-      function wrap(){ var w=grpW(); if(w<=0) return;     /* scrollLeft을 한 그룹폭 안으로 정규화 */
-        if(sc.scrollLeft>=w) sc.scrollLeft-=w; else if(sc.scrollLeft<0) sc.scrollLeft+=w; }
-      function tick(t){
-        if(autoOn && !dragging && !hovering && lastT){ sc.scrollLeft += AUTO_PXPS*((t-lastT)/1000); }
-        wrap();
-        if((fc++ % 60)===0) ensureFill();                /* 약 1초마다 폭 점검(상태표시 길이 변동·리사이즈 대응) */
-        lastT=t; requestAnimationFrame(tick);
-      }
-      sc.addEventListener('pointerdown', function(e){
-        dragging=true; sc.classList.add('tk-drag'); startX=e.clientX; startScroll=sc.scrollLeft;
-        try{ sc.setPointerCapture(e.pointerId); }catch(_){}
-      });
-      sc.addEventListener('pointermove', function(e){
-        if(!dragging) return; sc.scrollLeft=startScroll-(e.clientX-startX); wrap();
-      });
-      function endDrag(e){ if(!dragging) return; dragging=false; sc.classList.remove('tk-drag');
-        try{ sc.releasePointerCapture(e.pointerId); }catch(_){}
-      }
-      sc.addEventListener('pointerup', endDrag);
-      sc.addEventListener('pointercancel', endDrag);
-      sc.addEventListener('mouseenter', function(){ hovering=true; });   /* 데스크톱: 올리면 잠깐 멈춤 */
-      sc.addEventListener('mouseleave', function(){ hovering=false; });
-      sc.addEventListener('dragstart', function(e){ e.preventDefault(); });   /* 이미지/텍스트 끌림 방지 */
-      window.addEventListener('resize', ensureFill);
-      ensureFill();
-      requestAnimationFrame(tick);
-    })();
-    function renderSeed(tk){
-      var el=document.querySelector('#tkmain'); if(!el||!tk||!tk.items) return;
-      baseAsof = tk.asof || '';
-      el.innerHTML='';
-      var as=document.createElement('span'); as.className='tk-as'; as.textContent=baseAsof; el.appendChild(as);
-      tk.items.forEach(function(it){
-        var dir=it.dir||'flat';
-        var w=document.createElement('span'); w.className='tk'; w.setAttribute('data-n', it.name);
-        var n=document.createElement('span'); n.className='tk-n'; n.textContent=it.name;
-        var v=document.createElement('span'); v.className='tk-v'; v.textContent=it.value;
-        var c=document.createElement('span'); c.className='tk-c '+dir; c.textContent=arrowOf(dir)+NBSP+(it.change||'');
-        w.appendChild(n); w.appendChild(v); w.appendChild(c); el.appendChild(w);
-      });
-      syncClone();
-    }
-    function findCell(name){
-      var all=document.querySelectorAll('#tkmain .tk'); var hit=null;
-      all.forEach(function(x){
-        if(hit) return;
-        if(x.getAttribute('data-n')===name){ hit=x; return; }
-        var n=x.querySelector('.tk-n');               /* data-n 없는 시드 칸도 종목명으로 매칭 */
-        if(n && n.textContent.trim()===name) hit=x;
-      });
+    function fmt(n,dec){ return Number(n).toLocaleString('en-US',{minimumFractionDigits:dec,maximumFractionDigits:dec}); }
+    function arrowOf(d){ return d==='up'?'\u25B2':(d==='down'?'\u25BC':'\u00B7'); }
+    function findCard(name){
+      var all=document.querySelectorAll('.stat'); var hit=null;
+      all.forEach(function(x){ if(!hit && x.getAttribute('data-n')===name) hit=x; });
       return hit;
     }
-    function patch(name, value, change, dir){
-      var w=findCell(name); if(!w) return;
-      var v=w.querySelector('.tk-v'), c=w.querySelector('.tk-c');
-      var changed = (v && v.textContent!==value);
+    function patch(name,value,change,dir){
+      var w=findCard(name); if(!w) return;
+      var v=w.querySelector('.stat-v'), c=w.querySelector('.stat-c');
+      var changed=(v && v.textContent!==value);
       if(v) v.textContent=value;
-      if(c){ c.className='tk-c '+dir; c.textContent=arrowOf(dir)+NBSP+change; }
-      if(changed){ w.classList.remove('tk-flash'); void w.offsetWidth; w.classList.add('tk-flash'); }
-      syncClone();
+      if(c){ c.className='stat-c '+dir; c.textContent=arrowOf(dir)+NBSP+change; }
+      if(changed){ w.classList.remove('flash'); void w.offsetWidth; w.classList.add('flash'); }
     }
-    function applyQuote(name, close, change, pct){
+    function applyQuote(name,close,change,pct){
       var cf=CFG[name]; if(!cf) return;
-      var dir = pct>0?'up':(pct<0?'down':'flat');
-      var val=(cf.prefix||'')+fmt(close, cf.dec);
-      var chg=(cf.mode==='abs') ? ((change>=0?'+':'')+fmt(change,1)) : ((pct>=0?'+':'')+Math.abs(pct).toFixed(2)+'%');
-      patch(name, val, chg, dir); liveOK[name]=Date.now();
+      var dir=pct>0?'up':(pct<0?'down':'flat');
+      var val=(cf.prefix||'')+fmt(close,cf.dec);
+      var chg=(cf.mode==='abs')?((change>=0?'+':'')+fmt(change,1)):((pct>=0?'+':'')+Math.abs(pct).toFixed(2)+'%');
+      patch(name,val,chg,dir); liveOK[name]=Date.now();
     }
-
-    function getJson(url){            /* 프록시 체인(야후/ticker.json용) */
+    function getJson(url){
       var i=0;
-      function go(){
-        if(i>=PROXY.length) return Promise.reject();
-        return fetch(PROXY[i++](url), {cache:'no-store'})
-          .then(function(r){ if(!r.ok) throw 0; return r.text(); })
-          .then(function(t){ return JSON.parse(t); }).catch(go);
-      }
+      function go(){ if(i>=PROXY.length) return Promise.reject();
+        return fetch(PROXY[i++](url),{cache:'no-store'}).then(function(r){if(!r.ok)throw 0;return r.text();})
+          .then(function(t){return JSON.parse(t);}).catch(go); }
       return go();
     }
-
-    /* ---- 1) Twelve Data (키 있을 때 우선, CORS 지원 → 직접 호출) ---- */
     function tdFetch(names){
-      if(!tdKey || tdDead || !names.length) return Promise.resolve([]);
+      if(!tdKey||tdDead||!names.length) return Promise.resolve([]);
       var syms=names.map(function(n){return tdByName[n];}).join(',');
       var url='https://api.twelvedata.com/quote?symbol='+encodeURIComponent(syms)+'&apikey='+encodeURIComponent(tdKey);
-      return fetch(url,{cache:'no-store'}).then(function(r){ if(!r.ok) throw 0; return r.json(); }).then(function(j){
+      return fetch(url,{cache:'no-store'}).then(function(r){if(!r.ok)throw 0;return r.json();}).then(function(j){
         if(!j) return [];
-        if(j.status==='error' || j.code===401 || j.code===429){ tdDead=true; return []; }
+        if(j.status==='error'||j.code===401||j.code===429){ tdDead=true; return []; }
         var filled=[];
-        function handle(sym, q){
-          if(!q || q.status==='error') return;
-          var name=tdNames[sym] || (q.symbol && tdNames[q.symbol]); if(!name) return;
-          var close=parseFloat(q.close), pct=parseFloat(q.percent_change), chg=parseFloat(q.change);
-          if(isNaN(close)) return;
-          if(isNaN(pct)) pct=0; if(isNaN(chg)) chg=0;
-          applyQuote(name, close, chg, pct); filled.push(name);
-        }
-        if(names.length===1){ handle(tdByName[names[0]], j); }
-        else { Object.keys(j).forEach(function(sym){ handle(sym, j[sym]); }); }
+        function handle(sym,q){ if(!q||q.status==='error') return;
+          var name=tdNames[sym]||(q.symbol&&tdNames[q.symbol]); if(!name) return;
+          var close=parseFloat(q.close),pct=parseFloat(q.percent_change),chg=parseFloat(q.change);
+          if(isNaN(close)) return; if(isNaN(pct))pct=0; if(isNaN(chg))chg=0;
+          applyQuote(name,close,chg,pct); filled.push(name); }
+        if(names.length===1){ handle(tdByName[names[0]],j); }
+        else { Object.keys(j).forEach(function(sym){ handle(sym,j[sym]); }); }
         return filled;
-      }).catch(function(){ return []; });
+      }).catch(function(){return [];});
     }
-
-    /* ---- 2) 야후(무키) 폴백 ---- */
     function yahooOne(name){
       var cf=CFG[name]; if(!cf) return Promise.resolve(false);
       var hosts=['query1.finance.yahoo.com','query2.finance.yahoo.com'];
-      function tryHost(hi){
-        if(hi>=hosts.length) return Promise.resolve(false);
+      function tryHost(hi){ if(hi>=hosts.length) return Promise.resolve(false);
         var url='https://'+hosts[hi]+'/v8/finance/chart/'+encodeURIComponent(cf.sym)+'?range=1d&interval=5m';
         return getJson(url).then(function(j){
           var m=j&&j.chart&&j.chart.result&&j.chart.result[0]&&j.chart.result[0].meta; if(!m) return tryHost(hi+1);
           var price=(typeof m.regularMarketPrice==='number')?m.regularMarketPrice:null;
           var prev=(typeof m.chartPreviousClose==='number')?m.chartPreviousClose:((typeof m.previousClose==='number')?m.previousClose:null);
           if(price===null||prev===null) return tryHost(hi+1);
-          var diff=price-prev; applyQuote(name, price, diff, (prev?diff/prev*100:0)); return true;
-        }).catch(function(){ return tryHost(hi+1); });
+          var diff=price-prev; applyQuote(name,price,diff,(prev?diff/prev*100:0)); return true;
+        }).catch(function(){return tryHost(hi+1);});
       }
       return tryHost(0);
     }
-
-    function setStatus(mode){   /* 'live' | 'auto' | 'delay' */
-      var as=document.querySelector('#tkmain .tk-as'); if(!as) return;
-      var t=new Date(), p=function(x){return ('0'+x).slice(-2);};
-      var hhmmss=p(t.getHours())+':'+p(t.getMinutes())+':'+p(t.getSeconds());
+    function setStatus(mode){
+      var el=document.getElementById('tk-live'); if(!el) return;
+      var t=new Date(),p=function(x){return ('0'+x).slice(-2);};
+      var hhmm=p(t.getHours())+':'+p(t.getMinutes())+':'+p(t.getSeconds());
       var cls=(mode==='delay')?'tk-delay':'tk-live';
-      var word=(mode==='live')?'LIVE':((mode==='auto')?'\uC790\uB3D9':'\uC9C0\uC5F0'); /* 자동 / 지연 */
-      as.innerHTML=(baseAsof?baseAsof+'  \u00B7  ':'')+'<span class="'+cls+'">\u27F3 '+word+' '+hhmmss+'</span>';
-      syncClone();
+      var word=(mode==='live')?'LIVE':((mode==='auto')?'\uC790\uB3D9':'\uC9C0\uC5F0');
+      el.className=cls; el.textContent='\u00B7 \u27F3 '+word+' '+hhmm;
     }
-
-    /* ---- 시장 개장(KST) 판단 ---- */
     function marketState(){
-      var t=new Date(), u=t.getTime()+t.getTimezoneOffset()*60000, k=new Date(u+9*3600000);
-      var day=k.getDay(), hm=k.getHours()*60+k.getMinutes(), weekday=(day>=1&&day<=5);
-      var isKR=weekday && hm>=540 && hm<945;             /* 09:00~15:45 KST */
-      var isUS=weekday && (hm>=1350 || hm<360);          /* 22:30~익일 06:00 KST (서머타임 포함) */
-      var names=[];
-      Object.keys(CFG).forEach(function(name){
-        var m=CFG[name].mkt;
-        if((m==='kr'&&isKR)||(m==='us'&&isUS)||(m==='fx'&&(isKR||isUS))) names.push(name);
-      });
+      var t=new Date(),u=t.getTime()+t.getTimezoneOffset()*60000,k=new Date(u+9*3600000);
+      var day=k.getDay(),hm=k.getHours()*60+k.getMinutes(),weekday=(day>=1&&day<=5);
+      var isKR=weekday&&hm>=540&&hm<945, isUS=weekday&&(hm>=1350||hm<360);
+      var names=[]; Object.keys(CFG).forEach(function(n){ var m=CFG[n].mkt;
+        if((m==='kr'&&isKR)||(m==='us'&&isUS)||(m==='fx'&&(isKR||isUS))) names.push(n); });
       return {names:names, anyOpen:(isKR||isUS)};
     }
-
     function liveRound(names){
       return tdFetch(names).then(function(filled){
-        var need=names.filter(function(n){ return filled.indexOf(n)<0; });
-        var jobs=need.map(function(name, idx){
-          return new Promise(function(res){ setTimeout(function(){ yahooOne(name).then(res).catch(function(){res(false);}); }, idx*250); });
-        });
-        return Promise.all(jobs).then(function(rs){ return (filled.length>0) || rs.some(function(x){return x===true;}); });
+        var need=names.filter(function(n){return filled.indexOf(n)<0;});
+        var jobs=need.map(function(name,idx){ return new Promise(function(res){
+          setTimeout(function(){ yahooOne(name).then(res).catch(function(){res(false);}); }, idx*250); }); });
+        return Promise.all(jobs).then(function(rs){ return (filled.length>0)||rs.some(function(x){return x===true;}); });
       });
     }
-
     function cycle(){
       getJson('ticker.json?t='+Date.now()).then(function(tk){
-        if(tk&&tk.items){
-          if(!document.querySelector('#tkmain .tk')){ renderSeed(tk); }
-          else { baseAsof=tk.asof||baseAsof;
-            tk.items.forEach(function(it){
-              if(liveOK[it.name] && (Date.now()-liveOK[it.name]<300000)) return;
-              patch(it.name, it.value, it.change||'', it.dir||'flat');
-            });
-          }
+        if(tk&&tk.items){ baseAsof=tk.asof||baseAsof;
+          var a=document.getElementById('tk-asof'); if(a) a.textContent=baseAsof;
+          tk.items.forEach(function(it){
+            if(liveOK[it.name]&&(Date.now()-liveOK[it.name]<300000)) return;
+            patch(it.name,it.value,it.change||'',it.dir||'flat');
+          });
         }
       }).catch(function(){}).then(function(){
-        if(document.hidden) return;                 /* 라이브 API는 보일 때만(한도 절약) */
-        var s=marketState();
-        var names = s.names.length ? s.names : Object.keys(CFG);
+        if(document.hidden) return;
+        var s=marketState(); var names=s.names.length?s.names:Object.keys(CFG);
         liveRound(names).then(function(any){
-          var serverFresh = /\uC790\uB3D9/.test(baseAsof);   /* ticker.json asof에 '자동' 포함 = 서버 갱신 중 */
-          setStatus(any ? 'live' : (serverFresh ? 'auto' : 'delay'));
+          var serverFresh=/\uC790\uB3D9/.test(baseAsof);
+          setStatus(any?'live':(serverFresh?'auto':'delay'));
         });
       });
     }
-
     var timer=null;
-    function schedule(){
-      if(timer) clearTimeout(timer);
-      var ms = marketState().anyOpen ? 180000 : 1200000;   /* 장중 3분 · 폐장 20분 */
-      timer=setTimeout(function(){ cycle(); schedule(); }, ms);
-    }
+    function schedule(){ if(timer) clearTimeout(timer);
+      var ms=marketState().anyOpen?180000:1200000;
+      timer=setTimeout(function(){ cycle(); schedule(); }, ms); }
     function start(){ cycle(); schedule(); }
-
     fetch('ticker_config.json?t='+Date.now(),{cache:'no-store'})
-      .then(function(r){ return r.ok ? r.json() : null; })
-      .then(function(cfg){ if(cfg && typeof cfg.twelvedata_key==='string') tdKey=cfg.twelvedata_key.trim(); })
-      .catch(function(){})
-      .then(start);
-
-    document.addEventListener('visibilitychange', function(){ if(!document.hidden){ cycle(); } });
+      .then(function(r){return r.ok?r.json():null;})
+      .then(function(cfg){ if(cfg&&typeof cfg.twelvedata_key==='string') tdKey=cfg.twelvedata_key.trim(); })
+      .catch(function(){}).then(start);
+    document.addEventListener('visibilitychange',function(){ if(!document.hidden){ cycle(); } });
   })();
   </script>
 </body>

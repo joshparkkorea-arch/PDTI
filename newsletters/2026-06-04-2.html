@@ -55,6 +55,39 @@
  .artfoot .dom{color:var(--gold-d);font-weight:700;font-size:12px;letter-spacing:.06em;margin-top:10px}
  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
  a:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+
+ /* ===== 기사 요약 라벨(시안 C) + 모바일 표 호환 · 2026-06-22 추가 ===== */
+ .art-hero + .lead-para{font-size:16px;line-height:1.78;border:1px solid #E2E6EC;border-radius:4px;background:#fff;padding:15px 18px 16px;margin:18px 0 24px;position:relative}
+ .art-hero + .lead-para::before{content:"기사 요약";display:block;background:#1B3C6E;color:#fff;font-weight:700;font-size:12px;letter-spacing:.12em;padding:9px 18px;margin:-15px -18px 13px;border-left:4px solid #C9A654;border-radius:4px 4px 0 0}
+ table.grid td,table.grid th,table.kv td,table.kv th{overflow-wrap:anywhere}
+ table.kv{table-layout:fixed}
+ @media (max-width:560px){
+  main{padding-left:14px;padding-right:14px}
+  .art-hero{padding:20px 18px 22px}
+  .art-hero + .lead-para{font-size:15px;padding:13px 14px 14px}
+  .art-hero + .lead-para::before{padding:8px 14px;margin:-13px -14px 11px}
+  table.grid,table.kv{font-size:12px}
+  table.grid th,table.grid td,table.kv th,table.kv td{padding:7px 6px;line-height:1.5}
+ }
+
+ /* ===== 상세 목차(TOC) + 가독성 · 2026-06-22 ===== */
+ .sec{scroll-margin-top:74px;margin-top:42px}
+ #toc{margin:6px 0 22px;border:1px solid #E2E6EC;border-radius:6px;background:#fff;overflow:hidden}
+ #toc .toc-h{display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:11px 15px;font-size:13px;font-weight:700;color:#1B3C6E;background:#F4F6F8;user-select:none}
+ #toc .toc-h .tg{color:#a98731;font-size:12px}
+ #toc ol{list-style:none;margin:0;padding:6px 6px 8px;counter-reset:toc}
+ #toc li{counter-increment:toc}
+ #toc a{display:flex;gap:9px;padding:7px 10px;border-radius:4px;font-size:13px;color:#34404e;line-height:1.4;text-decoration:none}
+ #toc a:before{content:counter(toc,decimal-leading-zero);color:#C9A654;font-weight:700;font-variant-numeric:tabular-nums}
+ #toc a:hover{background:#F4F6F8;color:#1B3C6E}
+ #toc.collapsed ol{display:none}
+ .toTop{position:fixed;right:18px;bottom:18px;width:42px;height:42px;border-radius:50%;background:#1B3C6E;color:#fff;border:none;cursor:pointer;font-size:18px;line-height:42px;box-shadow:0 3px 12px rgba(20,41,74,.3);opacity:0;pointer-events:none;transition:opacity .2s;z-index:30}
+ .toTop.on{opacity:1;pointer-events:auto}
+ @media (min-width:1280px){
+  #toc{position:fixed;top:88px;left:max(16px,calc((100vw - 820px)/2 - 206px));width:190px;max-height:72vh;overflow:auto;margin:0;z-index:10}
+  #toc .toc-h{cursor:default} #toc .toc-h .tg{display:none} #toc.collapsed ol{display:block}
+ }
+ @media (max-width:560px){ .toTop{width:38px;height:38px;line-height:38px;font-size:16px} }
 </style></head><body>
 <div class="topbar"><div class="topbar-in"><a class="home" href="/">INVEST STORY</a><span class="tag">특집호 · 2026-06-04</span></div></div>
 <main>
@@ -163,4 +196,38 @@
  <a class="back" href="/">← 다른 리포트 보러가기</a>
  <div class="dom">investstory.co.kr</div>
 </footer>
+<script>
+(function(){
+ var main=document.querySelector('main'); if(!main) return;
+ var secs=main.querySelectorAll('section.sec'); if(secs.length<2) return;
+ var ol=document.createElement('ol');
+ secs.forEach(function(s,i){ var h=s.querySelector('h2'); if(!h) return;
+  var id=s.id||('sec-'+(i+1)); s.id=id;
+  var li=document.createElement('li'); var a=document.createElement('a');
+  a.href='#'+id; a.textContent=h.textContent.trim();
+  a.addEventListener('click',function(e){ e.preventDefault();
+   document.getElementById(id).scrollIntoView({behavior:'smooth',block:'start'});
+   history.replaceState(null,'','#'+id);
+   if(narrow.matches){ toc.classList.add('collapsed'); tg.textContent='\u25B8'; } });
+  li.appendChild(a); ol.appendChild(li); });
+ if(!ol.children.length) return;
+ var toc=document.createElement('nav'); toc.id='toc';
+ var hd=document.createElement('div'); hd.className='toc-h';
+ hd.innerHTML='<span>\uBAA9\uCC28</span><span class="tg">\u25BE</span>';
+ var tg=hd.querySelector('.tg');
+ toc.appendChild(hd); toc.appendChild(ol);
+ var anchor=main.querySelector('.lead-para')||main.querySelector('.art-hero');
+ if(anchor&&anchor.parentNode){ anchor.parentNode.insertBefore(toc,anchor.nextSibling); }
+ else { main.insertBefore(toc,main.firstChild); }
+ var narrow=window.matchMedia('(max-width:1279px)');
+ function setMode(){ if(narrow.matches){ toc.classList.add('collapsed'); tg.textContent='\u25B8'; } else { toc.classList.remove('collapsed'); } }
+ setMode();
+ hd.addEventListener('click',function(){ if(!narrow.matches) return; toc.classList.toggle('collapsed'); tg.textContent=toc.classList.contains('collapsed')?'\u25B8':'\u25BE'; });
+ try{ narrow.addEventListener('change',setMode); }catch(_){ }
+ var top=document.createElement('button'); top.className='toTop'; top.setAttribute('aria-label','\uB9E8 \uC704\uB85C'); top.textContent='\u2191';
+ top.addEventListener('click',function(){ window.scrollTo({top:0,behavior:'smooth'}); });
+ document.body.appendChild(top);
+ window.addEventListener('scroll',function(){ top.classList.toggle('on', window.scrollY>600); },{passive:true});
+})();
+</script>
 </body></html>
