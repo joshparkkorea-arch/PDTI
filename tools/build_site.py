@@ -71,8 +71,8 @@ def main():
     lead_daily = dailies[0] if dailies else None
     lead_html = card(lead_daily) if lead_daily else '<p class="empty">아직 발간된 데일리 리포트가 없습니다.</p>'
 
-    # ----- 그 아래 미리보기: '최신 특집호' (단, 당일 업로드분은 미리보기에서 제외 → 사이드바 리스트로) -----
-    spec_pool = [a for a in issues if a.get("tag") == "특집호" and a["date"] != newest_date]
+    # ----- 그 아래 미리보기: '가장 최근 특집호' (당일 업로드분 포함) -----
+    spec_pool = [a for a in issues if a.get("tag") == "특집호"]
     lead_special = spec_pool[0] if spec_pool else None
     special_html = card(lead_special) if lead_special else '<p class="empty">최신 특집·기획 리포트가 곧 이곳에 소개됩니다.</p>'
 
@@ -167,6 +167,10 @@ def main():
   .tk-v{{font-weight:700;color:#fff;font-variant-numeric:tabular-nums}}
   .tk-c{{font-weight:700;font-variant-numeric:tabular-nums}}
   .tk-c.up{{color:#ff8a7a}} .tk-c.down{{color:#7fb6ef}} .tk-c.flat{{color:#c7d6ea}}
+  .tk{{border-radius:3px}}
+  @keyframes tkflash{{0%{{background:rgba(201,166,84,0)}}22%{{background:rgba(201,166,84,.34)}}100%{{background:rgba(201,166,84,0)}}}}
+  .tk-flash{{animation:tkflash .9s ease-out}}
+  .tk-live{{color:#9fe3b0;font-weight:700}}
 
   /* ---- 섹션 라벨 ---- */
   .eyebrow{{display:flex;align-items:center;gap:12px;margin:34px 0 16px}}
@@ -321,28 +325,116 @@ def main():
     # 배너 실시간 갱신 스크립트(f-string 밖 일반 문자열 — 중괄호 충돌 방지)
     ticker_script = """
   <script>
-  /* 배너 실시간 갱신: ticker.json을 주기적으로 읽어 시세 스트립을 다시 그린다 */
+  /* 시세 스트립 실시간 갱신
+     - 표시 종목/순서/시드값은 ticker.json이 기준(서버측 GitHub Actions가 갱신).
+     - 브라우저에서 야후 시세를 CORS 프록시 경유로 받아 값을 덮어쓴다(키 불필요).
+     - 라이브 실패 종목은 ticker.json 값을 그대로 유지(폴백) → 절대 빈 화면/오류 없음.
+     - 값이 바뀌면 해당 칸이 잠깐 반짝이고, 우측 상단에 갱신 시각을 표시한다. */
   (function(){
-    function render(tk){
-      var el=document.querySelector('.ticker-in');
-      if(!el||!tk||!tk.items){return;}
+    var CFG = {
+      'KOSPI':     {sym:'^KS11',    dec:2, mode:'pct'},
+      'KOSDAQ':    {sym:'^KQ11',    dec:2, mode:'pct'},
+      'USD/KRW':   {sym:'KRW=X',    dec:1, mode:'abs'},
+      'WTI':       {sym:'CL=F',     dec:2, mode:'pct', prefix:'$'},
+      'S&P 500':   {sym:'^GSPC',    dec:2, mode:'pct'},
+      '\\uB098\\uC2A4\\uB2E5':       {sym:'^IXIC',    dec:2, mode:'pct'},
+      '\\uB2EC\\uB7EC\\uC778\\uB371\\uC2A4': {sym:'DX-Y.NYB', dec:2, mode:'pct'}
+    };
+    var NBSP = String.fromCharCode(160);
+    var PROXY = [
+      function(u){ return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u); },
+      function(u){ return 'https://corsproxy.io/?url=' + encodeURIComponent(u); }
+    ];
+    var baseAsof = '';
+    var liveOK = {};
+
+    function fmt(n, dec){ return Number(n).toLocaleString('en-US',{minimumFractionDigits:dec,maximumFractionDigits:dec}); }
+    function arrowOf(d){ return d==='up' ? '\\u25B2' : (d==='down' ? '\\u25BC' : '\\u00B7'); }
+
+    function renderSeed(tk){
+      var el=document.querySelector('.ticker-in'); if(!el||!tk||!tk.items) return;
+      baseAsof = tk.asof || '';
       el.innerHTML='';
-      var as=document.createElement('span'); as.className='tk-as'; as.textContent=tk.asof||''; el.appendChild(as);
+      var as=document.createElement('span'); as.className='tk-as'; as.textContent=baseAsof; el.appendChild(as);
       tk.items.forEach(function(it){
         var dir=it.dir||'flat';
-        var arrow=dir==='up'?'\\u25B2':(dir==='down'?'\\u25BC':'\\u00B7');
-        var w=document.createElement('span'); w.className='tk';
+        var w=document.createElement('span'); w.className='tk'; w.setAttribute('data-n', it.name);
         var n=document.createElement('span'); n.className='tk-n'; n.textContent=it.name;
         var v=document.createElement('span'); v.className='tk-v'; v.textContent=it.value;
-        var c=document.createElement('span'); c.className='tk-c '+dir; c.textContent=arrow+'\\u00A0'+(it.change||'');
+        var c=document.createElement('span'); c.className='tk-c '+dir; c.textContent=arrowOf(dir)+NBSP+(it.change||'');
         w.appendChild(n); w.appendChild(v); w.appendChild(c); el.appendChild(w);
       });
     }
-    function load(){
-      fetch('ticker.json?t='+Date.now(),{cache:'no-store'})
-        .then(function(r){return r.json();}).then(render).catch(function(){});
+
+    function findCell(name){
+      var all=document.querySelectorAll('.ticker-in .tk'); var hit=null;
+      all.forEach(function(x){ if(x.getAttribute('data-n')===name) hit=x; });
+      return hit;
     }
-    load(); setInterval(load, 60000);
+    function patch(name, value, change, dir){
+      var w=findCell(name); if(!w) return;
+      var v=w.querySelector('.tk-v'), c=w.querySelector('.tk-c');
+      var changed = (v && v.textContent!==value);
+      if(v) v.textContent=value;
+      if(c){ c.className='tk-c '+dir; c.textContent=arrowOf(dir)+NBSP+change; }
+      if(changed){ w.classList.remove('tk-flash'); void w.offsetWidth; w.classList.add('tk-flash'); }
+    }
+
+    function getJson(url){
+      var chain=[url].concat(PROXY.map(function(p){return p(url);}));
+      var i=0;
+      function go(){
+        if(i>=chain.length) return Promise.reject();
+        return fetch(chain[i++], {cache:'no-store'})
+          .then(function(r){ if(!r.ok) throw 0; return r.json(); })
+          .catch(go);
+      }
+      return go();
+    }
+
+    function liveOne(name){
+      var cf=CFG[name]; if(!cf) return;
+      var url='https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(cf.sym)+'?range=1d&interval=5m';
+      getJson(url).then(function(j){
+        var m=j&&j.chart&&j.chart.result&&j.chart.result[0]&&j.chart.result[0].meta; if(!m) return;
+        var price=(typeof m.regularMarketPrice==='number')?m.regularMarketPrice:null;
+        var prev=(typeof m.chartPreviousClose==='number')?m.chartPreviousClose:((typeof m.previousClose==='number')?m.previousClose:null);
+        if(price===null||prev===null) return;
+        var diff=price-prev, eps=Math.abs(prev)*1e-6;
+        var dir=diff>eps?'up':(diff<-eps?'down':'flat');
+        var val=(cf.prefix||'')+fmt(price, cf.dec);
+        var chg=(cf.mode==='abs') ? ((diff>=0?'+':'')+fmt(diff,1)) : ((diff>=0?'+':'')+(diff/prev*100).toFixed(2)+'%');
+        patch(name, val, chg, dir);
+        liveOK[name]=Date.now();
+      }).catch(function(){});
+    }
+
+    function stampTime(){
+      var as=document.querySelector('.tk-as'); if(!as) return;
+      var t=new Date(), p=function(x){return ('0'+x).slice(-2);};
+      as.innerHTML=(baseAsof?baseAsof+'  \\u00B7  ':'')+'<span class="tk-live">\\u27F3 '+p(t.getHours())+':'+p(t.getMinutes())+':'+p(t.getSeconds())+'</span>';
+    }
+
+    function cycle(){
+      getJson('ticker.json?t='+Date.now()).then(function(tk){
+        if(tk&&tk.items){
+          if(!document.querySelector('.ticker-in .tk')){ renderSeed(tk); }
+          else {
+            baseAsof = tk.asof || baseAsof;
+            tk.items.forEach(function(it){
+              if(liveOK[it.name] && (Date.now()-liveOK[it.name] < 300000)) return; /* 라이브 살아있으면 시드로 되돌리지 않음 */
+              patch(it.name, it.value, it.change||'', it.dir||'flat');
+            });
+          }
+        }
+      }).catch(function(){}).then(function(){
+        Object.keys(CFG).forEach(function(name, idx){ setTimeout(function(){ liveOne(name); }, idx*200); });
+        stampTime();
+      });
+    }
+
+    cycle();
+    setInterval(cycle, 60000);
   })();
   </script>
 """
