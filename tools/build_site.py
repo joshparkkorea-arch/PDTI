@@ -253,6 +253,36 @@ def main():
   </footer>
 </body>
 </html>'''
+    # 배너 실시간 갱신 스크립트(f-string 밖 일반 문자열 — 중괄호 충돌 방지)
+    ticker_script = """
+  <script>
+  /* 배너 실시간 갱신: ticker.json을 주기적으로 읽어 시세 스트립을 다시 그린다 */
+  (function(){
+    function render(tk){
+      var el=document.querySelector('.ticker-in');
+      if(!el||!tk||!tk.items){return;}
+      el.innerHTML='';
+      var as=document.createElement('span'); as.className='tk-as'; as.textContent=tk.asof||''; el.appendChild(as);
+      tk.items.forEach(function(it){
+        var dir=it.dir||'flat';
+        var arrow=dir==='up'?'\\u25B2':(dir==='down'?'\\u25BC':'\\u00B7');
+        var w=document.createElement('span'); w.className='tk';
+        var n=document.createElement('span'); n.className='tk-n'; n.textContent=it.name;
+        var v=document.createElement('span'); v.className='tk-v'; v.textContent=it.value;
+        var c=document.createElement('span'); c.className='tk-c '+dir; c.textContent=arrow+'\\u00A0'+(it.change||'');
+        w.appendChild(n); w.appendChild(v); w.appendChild(c); el.appendChild(w);
+      });
+    }
+    function load(){
+      fetch('ticker.json?t='+Date.now(),{cache:'no-store'})
+        .then(function(r){return r.json();}).then(render).catch(function(){});
+    }
+    load(); setInterval(load, 60000);
+  })();
+  </script>
+"""
+    if "</body>" in page:
+        page = page.replace("</body>", ticker_script + "</body>", 1)
     with open(OUT, "w", encoding="utf-8") as f:
         f.write(page)
     print(f"[build_site] index.html 생성 완료 · 발간 호 {len(issues)}건")

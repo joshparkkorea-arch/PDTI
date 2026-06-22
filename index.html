@@ -133,7 +133,7 @@
     <div class="rule thin"></div>
   </header>
 
-  <div class="ticker"><div class="ticker-in"><span class="tk-as">2026-06-18 종가</span><span class="tk"><span class="tk-n">KOSPI</span><span class="tk-v">9,063.84</span><span class="tk-c up">▲&nbsp;+2.25%</span></span><span class="tk"><span class="tk-n">KOSDAQ</span><span class="tk-v">1,000.93</span><span class="tk-c down">▼&nbsp;-3.01%</span></span><span class="tk"><span class="tk-n">USD/KRW</span><span class="tk-v">1,527.1</span><span class="tk-c up">▲&nbsp;+13.7</span></span><span class="tk"><span class="tk-n">S&amp;P 500</span><span class="tk-v">7,500.58</span><span class="tk-c up">▲&nbsp;+1.08%</span></span><span class="tk"><span class="tk-n">나스닥</span><span class="tk-v">26,517.93</span><span class="tk-c up">▲&nbsp;+1.91%</span></span><span class="tk"><span class="tk-n">달러인덱스</span><span class="tk-v">100선</span><span class="tk-c up">▲&nbsp;돌파</span></span></div></div>
+  <div class="ticker"><div class="ticker-in"><span class="tk-as">2026-06-22 장중 · 환율·WTI·미국은 직전 확인값</span><span class="tk"><span class="tk-n">KOSPI</span><span class="tk-v">8,958.94</span><span class="tk-c down">▼&nbsp;-1.03%</span></span><span class="tk"><span class="tk-n">KOSDAQ</span><span class="tk-v">971.73</span><span class="tk-c up">▲&nbsp;+0.53%</span></span><span class="tk"><span class="tk-n">USD/KRW</span><span class="tk-v">1,527.0</span><span class="tk-c down">▼&nbsp;-0.1</span></span><span class="tk"><span class="tk-n">WTI</span><span class="tk-v">$78.70</span><span class="tk-c up">▲&nbsp;+3.00%</span></span><span class="tk"><span class="tk-n">S&amp;P 500</span><span class="tk-v">7,500.58</span><span class="tk-c up">▲&nbsp;+1.08%</span></span><span class="tk"><span class="tk-n">나스닥</span><span class="tk-v">26,517.93</span><span class="tk-c up">▲&nbsp;+1.91%</span></span><span class="tk"><span class="tk-n">달러인덱스</span><span class="tk-v">100.59</span><span class="tk-c up">▲&nbsp;+0.72%</span></span></div></div>
 
   <main class="wrap">
     <div class="eyebrow"><h3>오늘의 리포트</h3></div>
@@ -141,11 +141,11 @@
         <article class="lead">
           <a class="lead-link" href="newsletters/2026-06-22.html">
             <div class="lead-meta">
-              <span class="chip">데일리</span>
+              <span class="chip">특보</span>
               <span class="lead-date">2026년 6월 22일 (월) · 제 11호</span>
             </div>
-            <h2 class="lead-title">코스피 9,000 안착 후 첫 거래일 — 장중 9,300 찍고 반락, 양극화·빚투 경고 속 미·이란 회담 지연</h2>
-            <p class="lead-sum">6/19 코스피는 장중 사상 첫 9,300을 밟았지만 미·이란 스위스 실무회담 연기에 반락해 9,052.42(-0.13%)로 9,000을 사수했습니다. 코스닥은 -3.43%로 1,000을 내준 극심한 양극화. 외국인·기관 매도를 개인이 2.5조 순매수로 방어. 미국은 6/19 준틴스 휴장, 오늘 3일 만에 재개장하며 6/24 마이크론 실적이 분수령입니다.</p>
+            <h2 class="lead-title">코스피 9,000 하루 만에 반납 — 이란 호르무즈 &#x27;재봉쇄&#x27;에 유가 반등, 미·이란 스위스 담판은 살얼음</h2>
+            <p class="lead-sum">6/19 장중 사상 첫 9,300을 밟았던 코스피가 주말 이란의 호르무즈 재봉쇄·유가 반등에 6/22 오전 9,000선을 다시 내줘 8,958.94(-1.0%)를 기록 중입니다. 코스닥은 낙폭과대 반발로 971.73(+0.5%) 소폭 반등. 미·이란은 6/18 MOU 서명에도 레바논 교전·호르무즈를 두고 살얼음 협상이 이어집니다. 개전부터 현재까지 타임라인과 향후 시나리오를 정리했습니다.</p>
           </a>
         </article>
 
@@ -275,5 +275,31 @@
       <div class="foot-dom">investstory.co.kr</div>
     </div>
   </footer>
+
+  <script>
+  /* 배너 실시간 갱신: ticker.json을 주기적으로 읽어 시세 스트립을 다시 그린다 */
+  (function(){
+    function render(tk){
+      var el=document.querySelector('.ticker-in');
+      if(!el||!tk||!tk.items){return;}
+      el.innerHTML='';
+      var as=document.createElement('span'); as.className='tk-as'; as.textContent=tk.asof||''; el.appendChild(as);
+      tk.items.forEach(function(it){
+        var dir=it.dir||'flat';
+        var arrow=dir==='up'?'\u25B2':(dir==='down'?'\u25BC':'\u00B7');
+        var w=document.createElement('span'); w.className='tk';
+        var n=document.createElement('span'); n.className='tk-n'; n.textContent=it.name;
+        var v=document.createElement('span'); v.className='tk-v'; v.textContent=it.value;
+        var c=document.createElement('span'); c.className='tk-c '+dir; c.textContent=arrow+'\u00A0'+(it.change||'');
+        w.appendChild(n); w.appendChild(v); w.appendChild(c); el.appendChild(w);
+      });
+    }
+    function load(){
+      fetch('ticker.json?t='+Date.now(),{cache:'no-store'})
+        .then(function(r){return r.json();}).then(render).catch(function(){});
+    }
+    load(); setInterval(load, 60000);
+  })();
+  </script>
 </body>
 </html>
