@@ -22,6 +22,12 @@ def kdate(s, longfmt=True):
         return f"{y}년 {m}월 {d}일 ({WD[dt.weekday()]})"
     return f"{m:02d}.{d:02d} ({WD[dt.weekday()]})"
 
+def kdatetime(a, longfmt=True):
+    """날짜 + (있으면) 발행 시각. manifest 항목의 'time'(예: '15:35') 사용."""
+    base = kdate(a["date"], longfmt)
+    t = a.get("time")
+    return f"{base} {t}" if t else base
+
 def esc(s): return html.escape(str(s), quote=True)
 
 def load(path, default):
@@ -65,7 +71,7 @@ def main():
           <a class="lead-link" href="{esc(a["file"])}">
             <div class="lead-meta">
               <span class="chip">{esc(a.get("tag","리포트"))}</span>
-              <span class="lead-date">{kdate(a["date"])} · 제 {a.get("no","")}호</span>
+              <span class="lead-date">{kdatetime(a)} · 제 {a.get("no","")}호</span>
             </div>
             <h2 class="lead-title">{esc(a["title"])}</h2>
             <p class="lead-sum">{esc(a.get("summary",""))}</p>
@@ -90,7 +96,7 @@ def main():
             continue
         rows.append(f'''
         <a class="row" href="{esc(a["file"])}">
-          <span class="row-date">{kdate(a["date"], False)}</span>
+          <span class="row-date">{kdatetime(a, False)}</span>
           <span class="row-no">제 {a.get("no","")}호</span>
           <span class="row-tag">{esc(a.get("tag",""))}</span>
           <span class="row-body">
@@ -111,7 +117,7 @@ def main():
         sp_items.append(f'''<a class="side-item" href="{esc(a["file"])}">
             {new_badge}<span class="side-tag{tagcls}">{esc(a.get("tag",""))}</span>
             <span class="side-title">{esc(a["title"])}</span>
-            <span class="side-date">{kdate(a["date"], False)}</span>
+            <span class="side-date">{kdatetime(a, False)}</span>
           </a>''')
     side_html = ""
     if sp_items:

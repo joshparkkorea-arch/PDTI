@@ -610,18 +610,19 @@ def render_ai(mode, date_kst, meta):
 
 
 # ----------------------------- manifest / build -----------------------------
-def update_manifest(date_str, mode, title, summary, relfile):
+def update_manifest(date_str, time_str, mode, title, summary, relfile):
     with open(MANIFEST, encoding="utf-8") as f:
         man = json.load(f)
     issues = man.setdefault("issues", [])
     # 같은 파일(=같은 날짜·모드)이면 갱신
     existing = next((it for it in issues if it.get("file") == relfile), None)
     if existing:
-        existing.update({"date": date_str, "tag": "데일리", "title": title, "summary": summary})
+        existing.update({"date": date_str, "time": time_str, "tag": "데일리",
+                         "title": title, "summary": summary})
         no = existing.get("no")
     else:
         no = max([it.get("no", 0) for it in issues] + [0]) + 1
-        issues.append({"no": no, "date": date_str, "tag": "데일리",
+        issues.append({"no": no, "date": date_str, "time": time_str, "tag": "데일리",
                        "title": title, "summary": summary, "file": relfile})
     with open(MANIFEST, "w", encoding="utf-8") as f:
         json.dump(man, f, ensure_ascii=False, indent=2)
@@ -726,7 +727,7 @@ def main():
         f.write(htmlstr)
     print(f"[daily_news] 기사 작성: {relfile}")
 
-    no = update_manifest(now.strftime("%Y-%m-%d"), mode, title, summary, relfile)
+    no = update_manifest(now.strftime("%Y-%m-%d"), now.strftime("%H:%M"), mode, title, summary, relfile)
     print(f"[daily_news] manifest 등록: 제{no}호 (데일리)")
 
     if rebuild_site():
