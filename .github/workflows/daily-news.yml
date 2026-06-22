@@ -1,0 +1,69 @@
+name: daily-news
+
+# 데일리 뉴스레터 자동 발행: 개장 직후(09:05 KST) · 마감 직후(15:35 KST), 평일만.
+# 거래일(휴장일) 판정은 daily_news.py가 KIS 휴장일 API로 직접 수행 → 휴장이면 스스로 건너뜀.
+on:
+  schedule:
+    - cron: "5 0 * * 1-5"    # 09:05 KST = 00:05 UTC → 개장 브리핑
+    - cron: "35 6 * * 1-5"   # 15:35 KST = 06:35 UTC → 마감 시황
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "open(개장) 또는 close(마감) — 비우면 시각으로 자동 판단"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+concurrency:
+  group: daily-news
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 모드 결정 (open/close)
+        id: mode
+        run: |
+          M="${{ github.event.inputs.mode }}"
+          if [ -z "$M" ]; then
+            H=$(date -u +%H)            # UTC 시각
+            if [ "$H" -lt "03" ]; then M="open"; else M="close"; fi
+          fi
+          echo "mode=$M" >> "$GITHUB_OUTPUT"
+          echo "선택된 모드: $M"
+
+      - name: 시세 갱신(update_ticker)
+        env:
+          TWELVEDATA_API_KEY: ${{ secrets.TWELVEDATA_API_KEY }}
+          KIS_APP_KEY: ${{ secrets.KIS_APP_KEY }}
+          KIS_APP_SECRET: ${{ secrets.KIS_APP_SECRET }}
+        run: python tools/update_ticker.py || echo "update_ticker 경고(계속 진행)"
+
+      - name: 데일리 기사 생성
+        env:
+          KIS_APP_KEY: ${{ secrets.KIS_APP_KEY }}
+          KIS_APP_SECRET: ${{ secrets.KIS_APP_SECRET }}
+        run: python tools/daily_news.py ${{ steps.mode.outputs.mode }}
+
+      - name: 변경분 커밋
+        run: |
+          if git diff --quiet -- newsletters manifest.json index.html ticker.json; then
+            echo "변경 없음(휴장일 등) — 커밋 생략"
+          else
+            git config user.name  "invest-story-bot"
+            git config user.email "actions@users.noreply.github.com"
+            git add newsletters manifest.json index.html ticker.json
+            git commit -m "feat(daily): ${{ steps.mode.outputs.mode }} 뉴스레터 자동 발행 [skip ci]"
+            git push
+          fi
