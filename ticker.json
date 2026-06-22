@@ -1,12 +1,47 @@
 {
-  "asof": "2026-06-22 장중 · 환율·WTI·미국은 직전 확인값",
+  "asof": "2026-06-22 12:04 KST (자동·Twelve Data)",
   "items": [
-    { "name": "KOSPI",     "value": "8,958.94",  "change": "-1.03%", "dir": "down" },
-    { "name": "KOSDAQ",    "value": "971.73",    "change": "+0.53%", "dir": "up" },
-    { "name": "USD/KRW",   "value": "1,527.0",   "change": "-0.1",   "dir": "down" },
-    { "name": "WTI",       "value": "$78.70",    "change": "+3.00%", "dir": "up" },
-    { "name": "S&P 500",   "value": "7,500.58",  "change": "+1.08%", "dir": "up" },
-    { "name": "나스닥",     "value": "26,517.93", "change": "+1.91%", "dir": "up" },
-    { "name": "달러인덱스",  "value": "100.59",    "change": "+0.72%", "dir": "up" }
+    {
+      "name": "KOSPI",
+      "value": "9,140.10",
+      "change": "+0.97%",
+      "dir": "up"
+    },
+    {
+      "name": "KOSDAQ",
+      "value": "956.47",
+      "change": "-1.05%",
+      "dir": "down"
+    },
+    {
+      "name": "USD/KRW",
+      "value": "1,538.6",
+      "change": "+10.9",
+      "dir": "up"
+    },
+    {
+      "name": "WTI",
+      "value": "$75.29",
+      "change": "-0.74%",
+      "dir": "down"
+    },
+    {
+      "name": "S&P 500",
+      "value": "7,500.58",
+      "change": "+1.08%",
+      "dir": "up"
+    },
+    {
+      "name": "나스닥",
+      "value": "26,517.93",
+      "change": "+1.91%",
+      "dir": "up"
+    },
+    {
+      "name": "달러인덱스",
+      "value": "100.82",
+      "change": "-0.03%",
+      "dir": "down"
+    }
   ]
 }
