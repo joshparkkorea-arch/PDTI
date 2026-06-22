@@ -162,7 +162,7 @@
     <div class="rule thin"></div>
   </header>
 
-  <div class="ticker"><div class="ticker-in"><span class="tk-as">2026-06-22 장중 · 환율·WTI·미국은 직전 확인값</span><span class="tk"><span class="tk-n">KOSPI</span><span class="tk-v">8,958.94</span><span class="tk-c down">▼&nbsp;-1.03%</span></span><span class="tk"><span class="tk-n">KOSDAQ</span><span class="tk-v">971.73</span><span class="tk-c up">▲&nbsp;+0.53%</span></span><span class="tk"><span class="tk-n">USD/KRW</span><span class="tk-v">1,527.0</span><span class="tk-c down">▼&nbsp;-0.1</span></span><span class="tk"><span class="tk-n">WTI</span><span class="tk-v">$78.70</span><span class="tk-c up">▲&nbsp;+3.00%</span></span><span class="tk"><span class="tk-n">S&amp;P 500</span><span class="tk-v">7,500.58</span><span class="tk-c up">▲&nbsp;+1.08%</span></span><span class="tk"><span class="tk-n">나스닥</span><span class="tk-v">26,517.93</span><span class="tk-c up">▲&nbsp;+1.91%</span></span><span class="tk"><span class="tk-n">달러인덱스</span><span class="tk-v">100.59</span><span class="tk-c up">▲&nbsp;+0.72%</span></span></div></div>
+  <div class="ticker"><div class="ticker-in"><span class="tk-as">2026-06-22 14:03 KST (자동·KIS+Twelve Data)</span><span class="tk" data-n="KOSPI"><span class="tk-n">KOSPI</span><span class="tk-v">9,033.37</span><span class="tk-c down">▼&nbsp;-0.21%</span></span><span class="tk" data-n="KOSDAQ"><span class="tk-n">KOSDAQ</span><span class="tk-v">952.76</span><span class="tk-c down">▼&nbsp;-1.43%</span></span><span class="tk" data-n="USD/KRW"><span class="tk-n">USD/KRW</span><span class="tk-v">1,537.8</span><span class="tk-c up">▲&nbsp;+10.1</span></span><span class="tk" data-n="WTI"><span class="tk-n">WTI</span><span class="tk-v">$75.46</span><span class="tk-c down">▼&nbsp;-0.51%</span></span><span class="tk" data-n="S&amp;P 500"><span class="tk-n">S&amp;P 500</span><span class="tk-v">7,500.58</span><span class="tk-c up">▲&nbsp;+1.08%</span></span><span class="tk" data-n="나스닥"><span class="tk-n">나스닥</span><span class="tk-v">26,517.93</span><span class="tk-c up">▲&nbsp;+1.91%</span></span><span class="tk" data-n="달러인덱스"><span class="tk-n">달러인덱스</span><span class="tk-v">100.92</span><span class="tk-c up">▲&nbsp;+0.08%</span></span></div></div>
 
   <main class="wrap">
     <div class="home-grid">
@@ -366,7 +366,12 @@
     }
     function findCell(name){
       var all=document.querySelectorAll('.ticker-in .tk'); var hit=null;
-      all.forEach(function(x){ if(x.getAttribute('data-n')===name) hit=x; });
+      all.forEach(function(x){
+        if(hit) return;
+        if(x.getAttribute('data-n')===name){ hit=x; return; }
+        var n=x.querySelector('.tk-n');               /* data-n 없는 시드 칸도 종목명으로 매칭 */
+        if(n && n.textContent.trim()===name) hit=x;
+      });
       return hit;
     }
     function patch(name, value, change, dir){
