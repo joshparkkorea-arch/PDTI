@@ -114,6 +114,47 @@ def fetch_td_all(key):
         out[td] = (close, prev)
     return out
 
+KIS_BASE = "https://openapi.koreainvestment.com:9443"
+
+def kis_token(app_key, app_secret):
+    """KIS 접근토큰 발급(24h 유효)."""
+    body = json.dumps({"grant_type": "client_credentials",
+                       "appkey": app_key, "appsecret": app_secret}).encode()
+    req = urllib.request.Request(KIS_BASE + "/oauth2/tokenP", data=body,
+                                 headers={"Content-Type": "application/json"}, method="POST")
+    with urllib.request.urlopen(req, timeout=20) as r:
+        return json.load(r)["access_token"]
+
+def kis_index(token, app_key, app_secret, iscd):
+    """국내 업종 현재지수 조회 → (현재지수, 전일종가)."""
+    url = (KIS_BASE + "/uapi/domestic-stock/v1/quotations/inquire-index-price"
+           "?FID_COND_MRKT_DIV_CODE=U&FID_INPUT_ISCD=" + iscd)
+    req = urllib.request.Request(url, headers={
+        "Content-Type": "application/json",
+        "authorization": "Bearer " + token,
+        "appkey": app_key, "appsecret": app_secret,
+        "tr_id": "FHPUP02100000", "custtype": "P",
+    })
+    with urllib.request.urlopen(req, timeout=20) as r:
+        data = json.load(r)
+    if data.get("rt_cd") != "0":
+        raise RuntimeError(data.get("msg1", "kis error"))
+    o = data["output"]
+    price = float(o["bstp_nmix_prpr"])             # 현재지수
+    vrss = float(o["bstp_nmix_prdy_vrss"])         # 전일대비(부호 포함)
+    return price, price - vrss                      # (현재, 전일종가)
+
+def fetch_kis(app_key, app_secret):
+    """KIS로 KOSPI·KOSDAQ 조회 → {표시이름: (현재, 전일종가)}."""
+    token = kis_token(app_key, app_secret)
+    out = {}
+    for name, iscd in (("KOSPI", "0001"), ("KOSDAQ", "1001")):
+        try:
+            out[name] = kis_index(token, app_key, app_secret, iscd)
+        except Exception as e:
+            sys.stderr.write(f"[kis] {name} 실패: {e}\n")
+    return out
+
 def load_prev_ticker():
     try:
         with open(TICKER, encoding="utf-8") as f:
@@ -125,6 +166,8 @@ def main():
     prev_tk = load_prev_ticker()
     prev_by_name = {it["name"]: it for it in prev_tk.get("items", [])}
     key = os.environ.get("TWELVEDATA_API_KEY", "").strip()
+    kis_key = os.environ.get("KIS_APP_KEY", "").strip()
+    kis_secret = os.environ.get("KIS_APP_SECRET", "").strip()
     td_data = {}
     if key:
         try:
@@ -132,12 +175,21 @@ def main():
             print(f"[update_ticker] Twelve Data {len(td_data)}/{len(SYMBOLS)} 수신")
         except Exception as e:
             sys.stderr.write(f"[warn] Twelve Data 실패: {e} — 야후로 폴백\n")
+    kis_data = {}
+    if kis_key and kis_secret:
+        try:
+            kis_data = fetch_kis(kis_key, kis_secret)
+            print(f"[update_ticker] KIS {len(kis_data)}/2 수신 (KOSPI·KOSDAQ)")
+        except Exception as e:
+            sys.stderr.write(f"[warn] KIS 실패: {e}\n")
     items, ok = [], 0
     for name, sym, td, fmt in SYMBOLS:
         price = prev = None
-        if td in td_data:
+        if name in kis_data:                       # 1순위: KIS(국내지수 실시간)
+            price, prev = kis_data[name]
+        elif td in td_data:                        # 2순위: Twelve Data
             price, prev = td_data[td]
-        else:
+        else:                                      # 3순위: 야후
             try:
                 price, prev = fetch_quote(sym)
                 time.sleep(0.4)  # 야후 과호출 방지
@@ -154,11 +206,18 @@ def main():
         sys.stderr.write("[error] 모든 종목 실패 — ticker.json 변경 안 함\n")
         return 1
     now = datetime.now(KST).strftime("%Y-%m-%d %H:%M KST")
-    src = "Twelve Data" if (key and td_data) else "야후"
+    parts = []
+    if kis_data:
+        parts.append("KIS")
+    if key and td_data:
+        parts.append("Twelve Data")
+    if not parts:
+        parts.append("야후")
+    src = "+".join(parts)
     out = {"asof": now + f" (자동·{src})", "items": items}
     with open(TICKER, "w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False, indent=2)
-    print(f"[update_ticker] {ok}/{len(SYMBOLS)} 갱신 · asof {now}")
+    print(f"[update_ticker] {ok}/{len(SYMBOLS)} 갱신 · asof {now} · src {src}")
     return 0
 
 if __name__ == "__main__":
