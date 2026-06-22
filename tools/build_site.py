@@ -46,8 +46,14 @@ def main():
               f'<span class="tk-v">{esc(it["value"])}</span>'
               f'<span class="tk-c {esc(it.get("dir","flat"))}">{arrow}&nbsp;{esc(it["change"])}</span></span>')
         asof = esc(tk.get("asof",""))
-        ticker_html = (f'<div class="ticker"><div class="ticker-in">'
-                       f'<span class="tk-as">{asof}</span>{"".join(cells)}</div></div>')
+        cells_html = "".join(cells)
+        # 좌측 고정 라벨(asof/상태) + 우측 마퀴(동일한 종목 그룹 2벌을 이어붙여 무한 스크롤)
+        ticker_html = (f'<div class="ticker">'
+                       f'<span class="tk-as">{asof}</span>'
+                       f'<div class="tk-mq"><div class="tk-track">'
+                       f'<div class="tk-grp" id="tkmain">{cells_html}</div>'
+                       f'<div class="tk-grp tk-clone" aria-hidden="true">{cells_html}</div>'
+                       f'</div></div></div>')
 
     # 최신 발간일(이 날짜에 올라온 특집·특보는 '당일 업로드'로 보고 New 배지 + 미리보기 제외)
     newest_date = issues[0]["date"] if issues else None
@@ -159,10 +165,16 @@ def main():
   .issueline b{{color:var(--gold-d);font-weight:700}}
 
   /* ---- 티커 ---- */
-  .ticker{{background:var(--navy);color:#eaf0f7;overflow-x:auto;scrollbar-width:none}}
+  .ticker{{background:var(--navy);color:#eaf0f7;display:flex;align-items:center;overflow:hidden}}
   .ticker::-webkit-scrollbar{{display:none}}
-  .ticker-in{{max-width:980px;margin:0 auto;padding:9px 22px;display:flex;gap:22px;align-items:center;white-space:nowrap;font-size:13px}}
-  .tk-as{{color:#9fb4d0;font-size:11.5px;letter-spacing:.04em;padding-right:4px;border-right:1px solid #34507e}}
+  .tk-as{{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#9fb4d0;font-size:11.5px;letter-spacing:.04em;padding:9px 16px 9px 22px;border-right:1px solid #34507e}}
+  .tk-mq{{flex:1 1 auto;overflow:hidden}}
+  .tk-track{{display:flex;width:max-content;animation:tkscroll 40s linear infinite;will-change:transform}}
+  .tk-grp{{display:flex;gap:22px;align-items:center;white-space:nowrap;font-size:13px;padding-left:22px}}
+  @keyframes tkscroll{{from{{transform:translateX(0)}}to{{transform:translateX(-50%)}}}}
+  .ticker:hover .tk-track{{animation-play-state:paused}}
+  @media (prefers-reduced-motion:reduce){{.tk-track{{animation:none}}}}
+  @media (max-width:640px){{.tk-as{{max-width:44vw}}}}
   .tk{{display:inline-flex;gap:7px;align-items:baseline}}
   .tk-n{{color:#c7d6ea;font-weight:600;letter-spacing:.02em}}
   .tk-v{{font-weight:700;color:#fff;font-variant-numeric:tabular-nums}}
@@ -359,11 +371,15 @@ def main():
     function fmt(n, dec){ return Number(n).toLocaleString('en-US',{minimumFractionDigits:dec,maximumFractionDigits:dec}); }
     function arrowOf(d){ return d==='up' ? '\\u25B2' : (d==='down' ? '\\u25BC' : '\\u00B7'); }
 
+    function syncClone(){
+      var m=document.querySelector('#tkmain'), c=document.querySelector('.tk-clone');
+      if(m&&c) c.innerHTML=m.innerHTML;        /* 보이지 않는 두번째 그룹을 항상 동일하게 유지 → 끊김 없는 무한 스크롤 */
+    }
     function renderSeed(tk){
-      var el=document.querySelector('.ticker-in'); if(!el||!tk||!tk.items) return;
+      var el=document.querySelector('#tkmain'); if(!el||!tk||!tk.items) return;
       baseAsof = tk.asof || '';
+      var asEl=document.querySelector('.tk-as'); if(asEl) asEl.textContent=baseAsof;
       el.innerHTML='';
-      var as=document.createElement('span'); as.className='tk-as'; as.textContent=baseAsof; el.appendChild(as);
       tk.items.forEach(function(it){
         var dir=it.dir||'flat';
         var w=document.createElement('span'); w.className='tk'; w.setAttribute('data-n', it.name);
@@ -372,9 +388,10 @@ def main():
         var c=document.createElement('span'); c.className='tk-c '+dir; c.textContent=arrowOf(dir)+NBSP+(it.change||'');
         w.appendChild(n); w.appendChild(v); w.appendChild(c); el.appendChild(w);
       });
+      syncClone();
     }
     function findCell(name){
-      var all=document.querySelectorAll('.ticker-in .tk'); var hit=null;
+      var all=document.querySelectorAll('#tkmain .tk'); var hit=null;
       all.forEach(function(x){
         if(hit) return;
         if(x.getAttribute('data-n')===name){ hit=x; return; }
@@ -390,6 +407,7 @@ def main():
       if(v) v.textContent=value;
       if(c){ c.className='tk-c '+dir; c.textContent=arrowOf(dir)+NBSP+change; }
       if(changed){ w.classList.remove('tk-flash'); void w.offsetWidth; w.classList.add('tk-flash'); }
+      syncClone();
     }
     function applyQuote(name, close, change, pct){
       var cf=CFG[name]; if(!cf) return;
@@ -487,7 +505,7 @@ def main():
     function cycle(){
       getJson('ticker.json?t='+Date.now()).then(function(tk){
         if(tk&&tk.items){
-          if(!document.querySelector('.ticker-in .tk')){ renderSeed(tk); }
+          if(!document.querySelector('#tkmain .tk')){ renderSeed(tk); }
           else { baseAsof=tk.asof||baseAsof;
             tk.items.forEach(function(it){
               if(liveOK[it.name] && (Date.now()-liveOK[it.name]<300000)) return;
