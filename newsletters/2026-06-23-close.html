@@ -31,6 +31,11 @@
  .disc{font-size:11.5px;color:var(--mute);line-height:1.65}
  .up{color:var(--up);font-weight:700}
  .down{color:var(--down);font-weight:700}
+ /* 본문 강조 키트(색=역할 1:1) · 2026-06-23 */
+ main .key{font-weight:700;color:var(--ink);background:linear-gradient(transparent 60%,rgba(201,166,84,.45) 60%);padding:0 1px;border-radius:1px}
+ main .num{font-family:var(--serif);font-weight:700;color:var(--navy);font-variant-numeric:tabular-nums}
+ main strong{font-weight:700;color:var(--ink);letter-spacing:-.01em}
+ p.takeaway{margin:16px 0 6px;padding:12px 15px;background:#FBF7EE;border-left:4px solid var(--gold);border-radius:0 7px 7px 0;font-family:var(--serif);font-weight:700;color:var(--navy);font-size:15px;line-height:1.62}
  table.grid{width:100%;border-collapse:collapse;margin:6px 0 18px;font-size:13.5px;border:1px solid var(--line);table-layout:fixed}
  table.grid th{background:var(--navy);color:#fff;font-weight:700;text-align:left;padding:9px 10px;font-size:12.5px;vertical-align:top}
  table.grid td{padding:9px 10px;border-top:1px solid var(--line);vertical-align:top;word-break:keep-all}
@@ -80,7 +85,7 @@
 <div class="topbar"><div class="topbar-in"><a class="home" href="/">INVEST STORY</a><span class="tag">데일리 · 마감 · 2026-06-23</span></div></div>
 <main>
 <header class="art-hero"><div class="ah-k">JOSH PARK INVEST · 데일리 마감 시황</div><div class="ah-t">코스피 9.99% 대폭락·서킷브레이커 발동 — 신고가 하루 만에 &#x27;검은 화요일&#x27;</div><div class="ah-s">2026년 6월 23일(화) · 코스피 8,203.84(−9.99%)·코스닥 891.52(−7.77%) … 오후 2시33분 서킷브레이커 1단계, 오전엔 매도 사이드카</div></header>
-<p class="lead-para">6월 23일 코스피가 전 거래일 대비 <b>9.99% 폭락한 8,203.84</b>로 거래를 마쳤다. 오후 2시 33분 지수가 −8.11%까지 밀리며 <b>서킷브레이커 1단계</b>가 발동돼 유가증권시장 전 종목 거래가 20분간 멈췄고, 오전에는 코스피200·코스닥150 선물 급락으로 <b>매도 사이드카</b>까지 걸렸다. 코스닥도 7.77% 급락한 891.52로 장을 마쳤다. 불과 하루 전 9,114 사상 최고가를 쓰며 환호하던 시장이 24시간 만에 '검은 화요일'로 돌변했다.</p>
+<p class="lead-para">6월 23일 코스피가 전 거래일 대비 <span class="down">9.99%</span> 폭락한 <span class="num">8,203.84</span>로 거래를 마쳤다. 오후 2시 33분 지수가 <span class="down">−8.11%</span>까지 밀리며 <span class="key">서킷브레이커 1단계</span>가 발동돼 유가증권시장 전 종목 거래가 20분간 멈췄고, 오전에는 코스피200·코스닥150 선물 급락으로 <strong>매도 사이드카</strong>까지 걸렸다. 코스닥도 7.77% 급락한 891.52로 장을 마쳤다. 불과 하루 전 <span class="num">9,114</span> 사상 최고가를 쓰며 환호하던 시장이 24시간 만에 '검은 화요일'로 돌변했다.</p>
 
 <section class="sec"><div class="eyebrow">MARKET WRAP · 마감 지수</div><h2>신고가 다음 날, 사상 최악 수준의 하루</h2></section>
 <div class="src-cat">6월 23일 마감 지수</div>
@@ -91,15 +96,15 @@
 <tr><td>WTI</td><td>$72.74</td><td><span class="down">−1.52%</span></td></tr>
 <tr><td>나스닥 (간밤)</td><td>26,166.60</td><td><span class="down">−1.32%</span></td></tr>
 </tbody></table>
-<p>코스피는 전일 종가(9,114.55) 대비 910포인트 넘게 빠졌다. 하루 낙폭으로는 코로나19 팬데믹 선언(2020년 3월)에 비견되는 수준으로, 신고가 바로 다음 날 두 자릿수에 가까운 폭락이 나왔다는 점에서 시장 충격은 더 컸다.</p>
+<p>코스피는 전일 종가(<span class="num">9,114.55</span>) 대비 <span class="num">910포인트</span> 넘게 빠졌다. 하루 낙폭으로는 코로나19 팬데믹 선언(2020년 3월)에 비견되는 수준으로, 신고가 바로 다음 날 두 자릿수에 가까운 폭락이 나왔다는 점에서 시장 충격은 더 컸다.</p>
 
-<section class="sec"><div class="eyebrow">TIMELINE · 발동 일지</div><h2>오전 사이드카 → 오후 서킷브레이커</h2></section>
-<p>이날 시장은 <b>두 단계의 안전장치</b>가 차례로 작동했다. 오전 장에서 외국인의 대규모 선물 매도로 코스피200 선물이 전일 대비 5%(코스닥150 선물 6%) 이상 급락하면서 <b>매도 사이드카</b>가 발동, 프로그램 매도호가의 효력이 5분간 정지됐다. 그러나 현물 투매가 멈추지 않으면서 지수는 오후 들어 낙폭을 키웠고, <b>오후 2시 33분 코스피가 −8.11%에 도달</b>해 1분간 지속되자 <b>서킷브레이커 1단계</b>가 발동됐다. 이로써 유가증권시장 전 종목과 관련 선물·옵션 거래가 20분간 중단됐고, 이후 10분 단일가(동시호가)를 거쳐 거래가 재개됐다.</p>
-<p>거래 재개 후에도 투매는 이어졌다. 코스피는 장 막판 −10% 부근까지 밀렸다가 8,203.84(−9.99%)로 마감했다. 코스닥은 −7.77%로 서킷브레이커 발동 기준(−8%)을 가까스로 비켜갔다.</p>
+<p class="takeaway">신고가를 쓴 바로 다음 날 −9.99% — 코로나19 팬데믹에 비견되는 낙폭이 정점 직후에 터졌다.</p><section class="sec"><div class="eyebrow">TIMELINE · 발동 일지</div><h2>오전 사이드카 → 오후 서킷브레이커</h2></section>
+<p>이날 시장은 <strong>두 단계의 안전장치</strong>가 차례로 작동했다. 오전 장에서 외국인의 대규모 선물 매도로 코스피200 선물이 전일 대비 5%(코스닥150 선물 6%) 이상 급락하면서 <span class="key">매도 사이드카</span>가 발동, 프로그램 매도호가의 효력이 5분간 정지됐다. 그러나 현물 투매가 멈추지 않으면서 지수는 오후 들어 낙폭을 키웠고, <strong>오후 2시 33분</strong> 코스피가 <span class="down">−8.11%</span>에 도달해 1분간 지속되자 <span class="key">서킷브레이커 1단계</span>가 발동됐다. 이로써 유가증권시장 전 종목과 관련 선물·옵션 거래가 20분간 중단됐고, 이후 10분 단일가(동시호가)를 거쳐 거래가 재개됐다.</p>
+<p>거래 재개 후에도 투매는 이어졌다. 코스피는 장 막판 −10% 부근까지 밀렸다가 <span class="num">8,203.84</span>(<span class="down">−9.99%</span>)로 마감했다. 코스닥은 <span class="down">−7.77%</span>로 서킷브레이커 발동 기준(−8%)을 가까스로 비켜갔다.</p>
 
-<section class="sec"><div class="eyebrow">SYSTEM · 제도 이해</div><h2>서킷브레이커와 사이드카, 무엇이 다른가</h2></section>
-<p><b>사이드카</b>는 선물 가격이 급변(코스피200 선물 ±5%, 코스닥150 선물 ±6%)할 때 <b>프로그램 매매호가만</b> 5분간 멈추는 '예비 경보'다. 반면 <b>서킷브레이커</b>는 현물 지수가 전일 대비 −8%(1단계)·−15%(2단계)·−20%(3단계)로 급락할 때 <b>시장 전체 거래를 중단</b>하는 더 강력한 장치다. 1단계는 20분 거래중단 + 10분 동시호가로 사실상 30분간 매매가 멈추며, 3단계가 발동되면 당일 장이 조기 종료된다. 둘 다 하루 한 차례, 오후 2시 50분 이후에는 발동되지 않는다.</p>
-<p>한국 증시의 서킷브레이커는 2024년 8월 이후 한동안 자취를 감췄다가, <b>2026년 들어 3월과 6월에 잇따라 발동</b>되는 이례적 국면에 들어섰다. 이번이 그 연장선으로, 지정학·금리 충격이 누적되며 변동성 장세가 구조화되고 있다는 신호로 읽힌다.</p>
+<p class="takeaway">오전 매도 사이드카로 시작해 오후 서킷브레이커로 끝난, 안전장치 두 단계가 모두 작동한 하루였다.</p><section class="sec"><div class="eyebrow">SYSTEM · 제도 이해</div><h2>서킷브레이커와 사이드카, 무엇이 다른가</h2></section>
+<p><span class="key">사이드카</span>는 선물 가격이 급변(코스피200 선물 ±5%, 코스닥150 선물 ±6%)할 때 <strong>프로그램 매매호가만</strong> 5분간 멈추는 '예비 경보'다. 반면 <span class="key">서킷브레이커</span>는 현물 지수가 전일 대비 −8%(1단계)·−15%(2단계)·−20%(3단계)로 급락할 때 <strong>시장 전체 거래를 중단</strong>하는 더 강력한 장치다. 1단계는 20분 거래중단 + 10분 동시호가로 사실상 30분간 매매가 멈추며, 3단계가 발동되면 당일 장이 조기 종료된다. 둘 다 하루 한 차례, 오후 2시 50분 이후에는 발동되지 않는다.</p>
+<p>한국 증시의 서킷브레이커는 2024년 8월 이후 한동안 자취를 감췄다가, <strong>2026년 들어 3월과 6월에 잇따라 발동</strong>되는 이례적 국면에 들어섰다. 이번이 그 연장선으로, 지정학·금리 충격이 누적되며 변동성 장세가 구조화되고 있다는 신호로 읽힌다.</p>
 
 <section class="sec"><div class="eyebrow">WHY · 폭락의 배경</div><h2>'삼중 충격'이 임계점을 넘었다</h2></section>
 <div class="src-cat">① 간밤 미국 반도체·기술주 급락의 전이</div>
@@ -109,22 +114,22 @@
 <div class="src-cat">③ 미·이란 지정학 리스크와 유가</div>
 <p>미·이란 종전 협상의 교착이 길어지며 중동 지정학 불확실성이 재차 부각됐다. 위험회피 심리가 강해지면서 신흥국·수출주에 대한 외국인 자금 이탈이 가속됐다.</p>
 <div class="src-cat">④ 외국인 투매 — 직접적 방아쇠</div>
-<p>외국인의 대규모 선물·현물 동시 매도가 사이드카와 서킷브레이커를 차례로 끌어낸 직접적 트리거였다. 선물이 현물보다 먼저 무너지는 프로그램 주도형 급락 패턴이 그대로 재현됐다.</p>
+<p>외국인의 대규모 선물·현물 동시 매도가 사이드카와 서킷브레이커를 차례로 끌어낸 <span class="key">직접적 트리거</span>였다. 선물이 현물보다 먼저 무너지는 프로그램 주도형 급락 패턴이 그대로 재현됐다.</p>
 <div class="src-cat">⑤ 원화 약세 — 환율 1,530원대</div>
-<p>원/달러 환율이 1,530원대 후반에 머무는 원화 약세는 외국인의 환차손 우려를 자극해 매도를 부추기는 악순환 요인으로 작용했다.</p>
+<p>원/달러 환율이 <span class="num">1,530원</span>대 후반에 머무는 원화 약세는 외국인의 환차손 우려를 자극해 매도를 부추기는 악순환 요인으로 작용했다.</p>
 <div class="src-cat">⑥ 신고가 직후의 밸류에이션 부담</div>
 <p>코스피가 9,000선을 단숨에 돌파하며 9,114 신고가를 쓴 직후라는 점이 차익실현 압력을 키웠다. 누적된 매수 차익잔고가 대외 악재를 만나 한꺼번에 출회되며 낙폭을 증폭시켰다.</p>
 
-<section class="sec"><div class="eyebrow">SECTOR · 수급</div><h2>반도체 투톱이 무너뜨린 지수</h2></section>
-<p>낙폭은 시가총액 1·2위인 삼성전자와 SK하이닉스를 비롯한 반도체 대형주가 주도했다. 지수 영향력이 큰 종목들이 동반 급락하면서 프로그램 매물이 매물을 부르는 연쇄 하락이 나타났다. 서킷브레이커로 30분간 매매가 멈췄지만, 이는 과열된 매도 쏠림을 잠시 식혔을 뿐 추세를 되돌리지는 못했다. 외국인·기관 수급 세부 수치는 장 마감 직후 잠정치인 만큼, 확정 전까지는 방향성 해석에 신중할 필요가 있다.</p>
+<p class="takeaway">여섯 갈래 악재가 한꺼번에 임계점을 넘었고, 직접적 방아쇠는 외국인의 선물·현물 동시 투매였다.</p><section class="sec"><div class="eyebrow">SECTOR · 수급</div><h2>반도체 투톱이 무너뜨린 지수</h2></section>
+<p>낙폭은 시가총액 1·2위인 <span class="key">삼성전자와 SK하이닉스</span>를 비롯한 반도체 대형주가 주도했다. 지수 영향력이 큰 종목들이 동반 급락하면서 프로그램 매물이 매물을 부르는 연쇄 하락이 나타났다. 서킷브레이커로 30분간 매매가 멈췄지만, 이는 과열된 매도 쏠림을 잠시 식혔을 뿐 추세를 되돌리지는 못했다. 외국인·기관 수급 세부 수치는 장 마감 직후 잠정치인 만큼, 확정 전까지는 방향성 해석에 신중할 필요가 있다.</p>
 
 <section class="sec"><div class="eyebrow">CONTRAST · 어제와 오늘</div><h2>24시간 만에 환희에서 공포로</h2></section>
-<p>바로 전 거래일인 6월 22일, 코스피는 <b>9,114 사상 최고가</b>를 경신하며 '반도체·MLCC·2차전지 3각 랠리'로 환호했다. 슈퍼사이클 기대가 시장을 지배했고, 신고가 행진에 대한 낙관이 정점에 달했던 시점이다. 그러나 단 하루 만에 지수는 −9.99%로 무너졌다. <b>신고가 다음 날의 두 자릿수 급락</b>은 그만큼 단기 과열과 쏠림이 심했음을, 그리고 외부 충격에 취약한 구조였음을 드러낸다. 어제의 강세를 이끌던 반도체가 오늘은 낙폭을 주도했다는 점도 뼈아프다.</p>
+<p>바로 전 거래일인 6월 22일, 코스피는 <span class="num">9,114</span> 사상 최고가를 경신하며 '반도체·MLCC·2차전지 3각 랠리'로 환호했다. 슈퍼사이클 기대가 시장을 지배했고, 신고가 행진에 대한 낙관이 정점에 달했던 시점이다. 그러나 단 하루 만에 지수는 <span class="down">−9.99%</span>로 무너졌다. <span class="key">신고가 다음 날의 두 자릿수 급락</span>은 그만큼 단기 과열과 쏠림이 심했음을, 그리고 외부 충격에 취약한 구조였음을 드러낸다. 어제의 강세를 이끌던 반도체가 오늘은 낙폭을 주도했다는 점도 뼈아프다.</p>
 
-<section class="sec"><div class="eyebrow">OUTLOOK · 단기 전망</div><h2>반등의 조건과 추가 조정의 조건</h2></section>
+<p class="takeaway">어제 랠리를 이끈 반도체가 오늘은 낙폭을 주도했다 — 단기 과열과 쏠림이 부른 역습이다.</p><section class="sec"><div class="eyebrow">OUTLOOK · 단기 전망</div><h2>반등의 조건과 추가 조정의 조건</h2></section>
 <p>역사적으로 서킷브레이커 발동 직후에는 단기 기술적 반등이 나온 경우가 많았다. 과거 통계상 발동 이후 약 한 달 반(32거래일)이 지나면 평균 9.9%, 석 달(60거래일) 전후로는 20%가량 회복되는 경향이 관찰됐다. 다만 2020년 3월 팬데믹 국면처럼 충격이 누적될 때는 추가 급락이 이어진 예외도 있었던 만큼, 단정보다 '조건부' 대응이 필요하다.</p>
-<p>분수령은 다섯 가지다. ① 외국인 매도가 진정되는지, ② 간밤 미국 증시와 국채금리·달러가 안정되는지, ③ 미·이란 협상이 진전되는지, ④ 반도체 업황·수급이 버텨주는지, ⑤ 원/달러 환율이 1,500원대로 내려오는지다. 이 중 둘 이상이 우호적으로 돌아서면 기술적 반등을, 지정학·금리 악재가 심화되면 추가 조정을 각각 열어둬야 한다.</p>
-<p class="small">※ 본 마감 시황은 작성 시점 데이터와 공개 정보를 근거로 합니다. 서킷브레이커 발동 시각·지수 등락률·외국인 수급 등 세부 수치는 한국거래소 공시·확정치로 추후 정정될 수 있습니다.</p><hr class="rule"><p class="disc">본 리포트는 시장 정보 제공 및 분석 목적이며 특정 종목의 매수·매도 권유가 아닙니다. 본문의 뉴스·수치는 작성 시점 web 검색 및 공개 데이터를 근거로 하며 출처를 표기했으나, 속보성 사안은 이후 정정될 수 있습니다. 전망·시나리오는 작성 시점 판단으로 실제와 다를 수 있습니다. 모든 투자 결정은 투자자 본인의 판단과 책임 하에 이루어져야 하며, Josh Park Invest는 본 자료를 활용한 투자 결과에 어떠한 책임도 지지 않습니다.</p><p class="byline" style="margin:30px 0 4px;padding-top:16px;border-top:1px solid var(--line);font-weight:700;color:var(--ink);font-size:14px">박철웅 기자 <a href="mailto:joshpark.korea@gmail.com" style="font-weight:600">joshpark.korea@gmail.com</a></p>
+<p>분수령은 다섯 가지다. ① 외국인 매도가 진정되는지, ② 간밤 미국 증시와 국채금리·달러가 안정되는지, ③ 미·이란 협상이 진전되는지, ④ 반도체 업황·수급이 버텨주는지, ⑤ 원/달러 환율이 <span class="num">1,500원</span>대로 내려오는지다. 이 중 둘 이상이 우호적으로 돌아서면 기술적 반등을, 지정학·금리 악재가 심화되면 추가 조정을 각각 열어둬야 한다.</p>
+<p class="takeaway">반등이냐 추가 조정이냐는 외국인 매도·미국 증시·미·이란·반도체 업황·환율, 다섯 변수의 방향에 달렸다.</p><p class="small">※ 본 마감 시황은 작성 시점 데이터와 공개 정보를 근거로 합니다. 서킷브레이커 발동 시각·지수 등락률·외국인 수급 등 세부 수치는 한국거래소 공시·확정치로 추후 정정될 수 있습니다.</p><hr class="rule"><p class="disc">본 리포트는 시장 정보 제공 및 분석 목적이며 특정 종목의 매수·매도 권유가 아닙니다. 본문의 뉴스·수치는 작성 시점 web 검색 및 공개 데이터를 근거로 하며 출처를 표기했으나, 속보성 사안은 이후 정정될 수 있습니다. 전망·시나리오는 작성 시점 판단으로 실제와 다를 수 있습니다. 모든 투자 결정은 투자자 본인의 판단과 책임 하에 이루어져야 하며, Josh Park Invest는 본 자료를 활용한 투자 결과에 어떠한 책임도 지지 않습니다.</p><p class="byline" style="margin:30px 0 4px;padding-top:16px;border-top:1px solid var(--line);font-weight:700;color:var(--ink);font-size:14px">박철웅 기자 <a href="mailto:joshpark.korea@gmail.com" style="font-weight:600">joshpark.korea@gmail.com</a></p>
 </main>
 <footer class="artfoot">
  <a class="kk" href="https://open.kakao.com/o/giw7dfAb" target="_blank" rel="noopener">투자이야기 오픈채팅 바로가기</a><br>
