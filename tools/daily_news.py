@@ -236,27 +236,70 @@ def _mcap_kr(eok):
     if jo:         return f"{jo:,}조원"
     return f"{rem:,}억원"
 
+def _fmp_get(url):
+    with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": UA}), timeout=20) as r:
+        return json.load(r)
+
 def fmp_quote(ticker, fmp_key):
-    """미국 종목 → {pc,c,vol,mcap} 표시문자열. 실패 시 None."""
+    """미국 종목 → {pc,c,vol,mcap}. FMP stable /quote 우선, 실패 시 구버전 v3, 그래도 안 되면 None."""
+    if not fmp_key:
+        sys.stderr.write("[fmp] FMP_API_KEY 비어있음 — Actions 시크릿 확인 필요\n")
+        return None
+    t = urllib.parse.quote(ticker); k = urllib.parse.quote(fmp_key)
+    urls = [
+        f"https://financialmodelingprep.com/stable/quote?symbol={t}&apikey={k}",
+        f"https://financialmodelingprep.com/api/v3/quote/{t}?apikey={k}",
+    ]
+    for u in urls:
+        try:
+            arr = _fmp_get(u)
+            if isinstance(arr, dict):
+                if arr.get("Error Message") or arr.get("error"):
+                    sys.stderr.write(f"[fmp] {ticker} API응답오류: {str(arr)[:140]}\n")
+                    continue
+                arr = [arr]
+            if not arr:
+                continue
+            q = arr[0]
+            pc, c, vol, mc = q.get("previousClose"), q.get("price"), q.get("volume"), q.get("marketCap")
+            if c is None and pc is None:
+                continue
+            return {
+                "pc":   (f"${float(pc):,.2f}" if pc is not None else "—"),
+                "c":    (f"${float(c):,.2f}"  if c  is not None else "—"),
+                "vol":  ((_ci(vol) + "주") if _ci(vol) else "—"),
+                "mcap": (_mcap_usd(mc) or "—"),
+            }
+        except Exception as e:
+            code = getattr(e, "code", None)
+            sys.stderr.write(f"[fmp] {ticker} 실패{(' HTTP '+str(code)) if code else ''}: {e}\n")
+    return None
+
+def fmp_index(symbol, fmp_key):
+    """지수(예: ^DJI) → {value,change,dir}. 실패 시 None."""
     if not fmp_key:
         return None
-    try:
-        url = f"{FMP_BASE}/quote/{urllib.parse.quote(ticker)}?apikey={urllib.parse.quote(fmp_key)}"
-        with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": UA}), timeout=20) as r:
-            arr = json.load(r)
-        if not arr:
-            return None
-        q = arr[0]
-        pc, c, vol, mc = q.get("previousClose"), q.get("price"), q.get("volume"), q.get("marketCap")
-        return {
-            "pc":   (f"${float(pc):,.2f}" if pc is not None else "—"),
-            "c":    (f"${float(c):,.2f}"  if c  is not None else "—"),
-            "vol":  ((_ci(vol) + "주") if _ci(vol) else "—"),
-            "mcap": (_mcap_usd(mc) or "—"),
-        }
-    except Exception as e:
-        sys.stderr.write(f"[fmp] {ticker} 실패: {e}\n")
-        return None
+    t = urllib.parse.quote(symbol); k = urllib.parse.quote(fmp_key)
+    for u in (f"https://financialmodelingprep.com/stable/quote?symbol={t}&apikey={k}",
+              f"https://financialmodelingprep.com/api/v3/quote/{t}?apikey={k}"):
+        try:
+            arr = _fmp_get(u)
+            if isinstance(arr, dict):
+                arr = [arr]
+            if not arr:
+                continue
+            q = arr[0]
+            price = q.get("price")
+            chg = q.get("changePercentage", q.get("changesPercentage"))
+            if price is None:
+                continue
+            c = float(chg) if chg is not None else 0.0
+            return {"value": f"{float(price):,.2f}",
+                    "change": f"{'+' if c >= 0 else ''}{c:.2f}%",
+                    "dir": "up" if c >= 0 else "down"}
+        except Exception as e:
+            sys.stderr.write(f"[fmp-index] {symbol} 실패: {e}\n")
+    return None
 
 def kis_stock(code, token, key, sec):
     """한국 종목 → {pc,c,vol,mcap}. 실패 시 None. (inquire-price FHKST01010100)"""
@@ -342,7 +385,7 @@ def _ai_user_prompt(mode, date_kst, items, asof, vol, rank_up, rank_dn, flows):
     lines = [f'[확정 데이터 — 아래 숫자는 그대로 사용, 추가 사실은 web_search로 확인]',
              f'작성시각(KST): {asof or dstr}', f'발행일: {dstr}', f'모드: {mode}']
     idx = []
-    for nm in ["KOSPI", "KOSDAQ", "USD/KRW", "WTI", "S&P 500", "나스닥", "달러인덱스"]:
+    for nm in ["KOSPI", "KOSDAQ", "USD/KRW", "WTI", "S&P 500", "나스닥", "다우존스", "달러인덱스"]:
         it = items.get(nm)
         if it:
             idx.append(f'{nm} {it.get("value","")}({it.get("change","")})')
@@ -371,7 +414,9 @@ def _ai_user_prompt(mode, date_kst, items, asof, vol, rank_up, rank_dn, flows):
         focus = (
             "이번은 '개장 브리핑'입니다. 간밤 미국 증시·주요 미국 뉴스 위주로 구성하되, 한국 장에 큰 영향을 "
             "줄 이슈가 있으면 포함하세요. 미국 거래량/주목 상위 5종목을 web_search로 확인해 흐름·뉴스를 분석하고 "
-            "전망을 제시하세요. 한국 코스피·코스닥은 전 거래일 종가 기준으로 출발 환경을 짚어주세요.")
+            "전망을 제시하세요. 한국 코스피·코스닥은 전 거래일 종가 기준으로 출발 환경을 짚어주세요. "
+            "간밤 미국 지수표에는 S&P500·나스닥·다우존스를 모두 넣되, 종가(레벨) 칸을 비우거나 '—'로 두지 말고 "
+            "확정 데이터에 없으면 web_search로 확인한 마감 지수를 채우세요.")
         sections = ("개장 요약(lead-para) → 간밤 미국 지수·지표표(table.grid) → 간밤 주요 뉴스(출처 명시) → "
                     "미국 주목 5종목 분석 → 오늘 한국 증시 관전 포인트·전망(근거 명시)")
 
@@ -869,6 +914,14 @@ def main():
     if not items:
         sys.stderr.write("[daily_news] ticker.json 비어있음 — update_ticker.py를 먼저 실행하세요\n")
         return 1
+
+    if mode == "open":
+        dji = fmp_index("^DJI", os.environ.get("FMP_API_KEY", "").strip())
+        if dji:
+            items["다우존스"] = dji
+            print(f"[daily_news] 다우존스 종가 확보: {dji['value']}({dji['change']})")
+        else:
+            print("[daily_news] 다우존스 종가 미확보(FMP) — AI가 web_search로 채움")
 
     rank_up = rank_dn = flows = vol = None
     if token:
