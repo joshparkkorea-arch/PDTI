@@ -18,6 +18,7 @@ PDTI_PATH = "pdti.html"
 KAKAO = "https://open.kakao.com/o/giw7dfAb"
 DOMAIN = "investstory.co.kr"
 WD = ["월","화","수","목","금","토","일"]
+KST = datetime.timezone(datetime.timedelta(hours=9))
 
 # 지표 표시 순서·한글 라벨 (ticker.json name → 라벨). 마지막 '달러인덱스'는 더보기.
 STAT_ORDER = [
@@ -74,33 +75,56 @@ def main():
     asof = esc(tk.get("asof","")) if tk else ""
 
     # ---------- 카드(공용) ----------
-    def card_html(a, feature=False):
+    present = {cat_of(a.get("tag","")) for a in issues}
+    today_iso = datetime.datetime.now(KST).date().isoformat()
+
+    def feat_html(a, cat, label):
         c = cat_of(a.get("tag",""))
         bg, fg = CAT_COLOR[c]
         tag = esc(a.get("tag","리포트"))
-        meta = f'{kdatetime(a, not feature)} · 제 {a.get("no","")}호'
-        if feature:
-            return f'''<a class="feature cat-{c}" href="{esc(a["file"])}" style="--cat:{bg}">
+        meta = f'{kdatetime(a, False)} · 제 {a.get("no","")}호'
+        hid = "" if cat == "all" else " hidden"
+        return f'''<a class="feature cat-{c}" href="{esc(a["file"])}" style="--cat:{bg}" data-feat="{cat}" data-label="{esc(label)}" data-file="{esc(a["file"])}"{hid}>
   <span class="feat-tag" style="background:{bg};color:{fg}">{tag}</span>
   <h2 class="feat-title">{esc(a["title"])}</h2>
   <p class="feat-sum">{esc(a.get("summary",""))}</p>
   <span class="feat-meta">{esc(meta)}</span>
   <span class="feat-cta">전문 읽기 →</span>
 </a>'''
-        return f'''<a class="ncard" href="{esc(a["file"])}" data-cat="{c}">
+
+    def card_html(a):
+        c = cat_of(a.get("tag",""))
+        bg, fg = CAT_COLOR[c]
+        tag = esc(a.get("tag","리포트"))
+        meta = f'{kdatetime(a, True)} · 제 {a.get("no","")}호'
+        return f'''<a class="ncard" href="{esc(a["file"])}" data-cat="{c}" data-file="{esc(a["file"])}">
   <span class="ncard-tag" style="background:{bg};color:{fg}">{tag}</span>
   <span class="ncard-title">{esc(a["title"])}</span>
   <span class="ncard-sum">{esc(a.get("summary",""))}</span>
   <span class="ncard-meta">{esc(meta)}</span>
 </a>'''
 
-    feature = issues[0] if issues else None
-    feature_html = card_html(feature, feature=True) if feature else '<p class="empty">아직 발간된 리포트가 없습니다.</p>'
-    rest = issues[1:] if feature else issues
-    cards_html = "".join(card_html(a) for a in rest) if rest else '<p class="empty" data-empty="all">리포트가 쌓이면 이곳에 정리됩니다.</p>'
+    def newest_in(cat):
+        for a in issues:
+            if cat == "all" or cat_of(a.get("tag","")) == cat:
+                return a
+        return None
+    def label_for(a):
+        return "오늘의 리포트" if a and a.get("date") == today_iso else "최신 리포트"
 
-    # 탭(있는 카테고리만 노출 + 전체)
-    present = {cat_of(a.get("tag","")) for a in issues}
+    # 카테고리별 대표 카드(전체 + 있는 카테고리). 탭 클릭 시 JS가 해당 카드를 보여줌.
+    feat_specs = [("all", issues[0] if issues else None)]
+    for _c in ("daily","special","flash"):
+        if _c in present:
+            feat_specs.append((_c, newest_in(_c)))
+    features_html = "".join(feat_html(a, cat, label_for(a)) for cat, a in feat_specs if a) \
+        if issues else '<p class="empty">아직 발간된 리포트가 없습니다.</p>'
+    init_label = label_for(issues[0]) if issues else "오늘의 리포트"
+
+    # 카드 그리드 = 전체 호(JS가 탭별 필터 + 대표 카드 중복 제거)
+    cards_html = "".join(card_html(a) for a in issues) if issues \
+        else '<p class="empty" data-empty="all">리포트가 쌓이면 이곳에 정리됩니다.</p>'
+
     tab_defs = [("all","전체")] + [(c,l) for c,l in (("daily","데일리"),("special","특집·기획"),("flash","특보")) if c in present]
     tabs_html = "".join(
         f'<button class="tab{" on" if c=="all" else ""}" data-tab="{c}">{esc(l)}</button>' for c,l in tab_defs)
@@ -182,6 +206,7 @@ def main():
   .feature{{display:block;background:var(--paper);border:1px solid var(--line);border-left:5px solid var(--cat,var(--navy));
     border-radius:8px;padding:22px 24px 24px;transition:box-shadow .15s}}
   .feature:hover{{box-shadow:0 6px 22px rgba(20,41,74,.08)}}
+  .feature[hidden]{{display:none}}
   .feat-tag{{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.04em;padding:3px 10px;border-radius:3px}}
   .feat-title{{font-family:var(--serif);font-weight:900;color:var(--ink);font-size:clamp(22px,4.2vw,31px);line-height:1.3;letter-spacing:-.01em;margin:12px 0 11px}}
   .feat-sum{{color:#3c4855;font-size:15px;line-height:1.72;margin:0;max-width:62ch}}
@@ -242,12 +267,12 @@ def main():
     <div class="stats">{stat_cards_html}</div>
     <button class="morebtn" id="morebtn" type="button">+ 지표 더보기</button>
 
-    <div class="sec-k" id="feat-k">오늘의 리포트</div>
-    {feature_html}
+    <div class="sec-k" id="feat-k">{init_label}</div>
+    <div id="features">{features_html}</div>
 
     <div class="sec-k" id="grid-k">최신 글</div>
     <div class="cardgrid" id="cardgrid">{cards_html}</div>
-    <div class="grid-empty" id="grid-empty" hidden>이 카테고리의 글이 아직 없어요.</div>
+    <div class="grid-empty" id="grid-empty" hidden>이 카테고리의 다른 글은 아직 없어요.</div>
 
     <div class="banner">
       <a href="{PDTI_PATH}">
@@ -286,18 +311,27 @@ SCRIPT = r"""
   (function(){
     var tabs=document.querySelectorAll('.tab');
     var cards=document.querySelectorAll('#cardgrid .ncard');
+    var feats=document.querySelectorAll('#features .feature');
     var empty=document.getElementById('grid-empty');
     var gk=document.getElementById('grid-k');
+    var fk=document.getElementById('feat-k');
     var LBL={all:'최신 글',daily:'데일리',special:'특집 · 기획',flash:'특보'};
     function apply(cat){
+      var featFile=null;
+      feats.forEach(function(f){
+        var on=(f.getAttribute('data-feat')===cat);
+        f.hidden=!on;
+        if(on){ featFile=f.getAttribute('data-file'); if(fk) fk.textContent=f.getAttribute('data-label')||'최신 리포트'; }
+      });
       var shown=0;
       cards.forEach(function(c){
-        var ok=(cat==='all'||c.getAttribute('data-cat')===cat);
+        var ok=(cat==='all'||c.getAttribute('data-cat')===cat)&&c.getAttribute('data-file')!==featFile;
         if(ok){c.hidden=false;shown++;}else{c.hidden=true;}
       });
-      if(empty) empty.hidden = (shown>0);
-      if(gk) gk.textContent = LBL[cat]||'최신 글';
+      if(empty) empty.hidden=(shown>0);
+      if(gk){ gk.style.display=shown>0?'':'none'; gk.textContent=LBL[cat]||'최신 글'; }
     }
+    apply('all');
     tabs.forEach(function(t){
       t.addEventListener('click',function(){
         tabs.forEach(function(x){x.classList.remove('on');});
