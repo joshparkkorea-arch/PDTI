@@ -32,6 +32,14 @@ jobs:
         with:
           python-version: "3.12"
 
+      # KIS 토큰 공용 캐시 복원. 이 워크플로(9:05/15:35)가 발급·저장을 담당한다.
+      - name: Restore KIS token cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .cache
+          key: kis-token-
+          restore-keys: kis-token-
+
       - name: 모드 결정 (open/close)
         id: mode
         run: |
@@ -55,6 +63,7 @@ jobs:
           KIS_APP_KEY: ${{ secrets.KIS_APP_KEY }}
           KIS_APP_SECRET: ${{ secrets.KIS_APP_SECRET }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
         run: python tools/daily_news.py ${{ steps.mode.outputs.mode }}
 
       - name: 변경분 커밋
@@ -68,3 +77,11 @@ jobs:
             git commit -m "feat(daily): ${{ steps.mode.outputs.mode }} 뉴스레터 자동 발행 [skip ci]"
             git push
           fi
+
+      # 9:05/15:35 실행에서 발급된 토큰을 캐시에 저장 → 당일 시세 갱신기가 재사용.
+      - name: Save KIS token cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: .cache
+          key: kis-token-${{ github.run_id }}-${{ github.run_attempt }}
