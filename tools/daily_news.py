@@ -236,6 +236,21 @@ def _mcap_kr(eok):
     if jo:         return f"{jo:,}조원"
     return f"{rem:,}억원"
 
+_CHGCOLOR = {"up": "#C0392B", "down": "#1B5E9B", "flat": "#1a1a1a"}  # 상승 빨강 / 하락 파랑 / 보합 검정
+
+def _pct_disp(rate):
+    """부호 있는 실수(%) → ('+10.64%'|'-0.37%'|'0.00%', 'up'|'down'|'flat'). 실패 시 (None,'flat')."""
+    try:
+        v = float(rate)
+    except Exception:
+        return (None, "flat")
+    if v > 0:
+        return (f"+{v:.2f}%", "up")
+    if v < 0:
+        return (f"{v:.2f}%", "down")
+    return ("0.00%", "flat")
+
+
 def _fmp_get(url):
     with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": UA}), timeout=20) as r:
         return json.load(r)
@@ -264,9 +279,11 @@ def fmp_quote(ticker, fmp_key):
             pc, c, vol, mc = q.get("previousClose"), q.get("price"), q.get("volume"), q.get("marketCap")
             if c is None and pc is None:
                 continue
+            chg_disp, chg_dir = _pct_disp(q.get("changePercentage", q.get("changesPercentage")))
             return {
                 "pc":   (f"${float(pc):,.2f}" if pc is not None else "—"),
                 "c":    (f"${float(c):,.2f}"  if c  is not None else "—"),
+                "chg":  chg_disp, "dir": chg_dir,
                 "vol":  ((_ci(vol) + "주") if _ci(vol) else "—"),
                 "mcap": (_mcap_usd(mc) or "—"),
             }
@@ -316,9 +333,17 @@ def kis_stock(code, token, key, sec):
         pc = o.get("stck_sdpr")    # 기준가(=전일 종가)
         vol = o.get("acml_vol")    # 누적거래량
         mc = o.get("hts_avls")     # 시가총액(억원)
+        sign = o.get("prdy_vrss_sign", "3")   # 1·2 상승 / 4·5 하락 / 3 보합
+        try:
+            mag = abs(float(o.get("prdy_ctrt", "0")))
+            signed = mag if sign in ("1", "2") else (-mag if sign in ("4", "5") else 0.0)
+            chg_disp, chg_dir = _pct_disp(signed)
+        except Exception:
+            chg_disp, chg_dir = (None, "flat")
         return {
             "pc":   ((_ci(pc) + "원") if _ci(pc) else "—"),
             "c":    ((_ci(c) + "원") if _ci(c) else "—"),
+            "chg":  chg_disp, "dir": chg_dir,
             "vol":  ((_ci(vol) + "주") if _ci(vol) else "—"),
             "mcap": (_mcap_kr(mc) or "—"),
         }
@@ -327,14 +352,19 @@ def kis_stock(code, token, key, sec):
         return None
 
 def std_stock_table(name, ident, d):
-    """전일 종가 / 금일 종가 / 거래량 / 시가총액 — 모든 종목 동일한 4줄 표."""
+    """전일 종가 / 금일 종가(+등락률) / 거래량 / 시가총액 — 모든 종목 동일한 4줄 표."""
     if d is None:
         d = {"pc": "—", "c": "—", "vol": "—", "mcap": "—"}
+    c_cell = esc(d["c"])
+    chg = d.get("chg")
+    if chg:
+        col = _CHGCOLOR.get(d.get("dir", "flat"), "#1a1a1a")
+        c_cell += f' <span style="color:{col};font-weight:600">({esc(chg)})</span>'
     head = f'<div class="src-cat">{esc(name)} ({esc(ident)}) — 핵심 지표</div>' if name else ""
     return (head +
         '<table class="grid"><thead><tr><th>항목</th><th>수치</th></tr></thead><tbody>'
         f'<tr><td>전일 종가</td><td>{esc(d["pc"])}</td></tr>'
-        f'<tr><td>금일 종가</td><td>{esc(d["c"])}</td></tr>'
+        f'<tr><td>금일 종가</td><td>{c_cell}</td></tr>'
         f'<tr><td>거래량</td><td>{esc(d["vol"])}</td></tr>'
         f'<tr><td>시가총액</td><td>{esc(d["mcap"])}</td></tr>'
         '</tbody></table>')
