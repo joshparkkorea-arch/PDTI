@@ -879,8 +879,14 @@ def render_ai(mode, date_kst, meta):
     """Claude가 쓴 {title, subtitle, summary, body_html}을 기존 디자인에 입힌다."""
     d = date_kst
     dstr = f'{d.year}년 {d.month}월 {d.day}일({WEEKDAY_KR[d.weekday()]})'
-    tag = "마감" if mode == "close" else "개장"
-    eyebrow = "JOSH PARK INVEST · 데일리 " + ("마감 시황" if mode == "close" else "개장 브리핑")
+    if mode == "breaking":
+        tag = "특보"
+        eyebrow = "JOSH PARK INVEST · 특보"
+        toplabel = "특보"
+    else:
+        tag = "마감" if mode == "close" else "개장"
+        eyebrow = "JOSH PARK INVEST · 데일리 " + ("마감 시황" if mode == "close" else "개장 브리핑")
+        toplabel = "데일리 · " + tag
     title = str(meta["title"]).strip()
     subtitle = str(meta.get("subtitle", "")).strip()
     body_html = str(meta["body_html"])
@@ -890,7 +896,7 @@ def render_ai(mode, date_kst, meta):
             '하에 이루어져야 하며, Josh Park Invest는 본 자료를 활용한 투자 결과에 어떠한 책임도 지지 않습니다.')
     parts = [head_html(esc(title))]
     parts.append(f'<div class="topbar"><div class="topbar-in"><a class="home" href="/">INVEST STORY</a>'
-                 f'<span class="tag">데일리 · {tag} · {d.strftime("%Y-%m-%d")}</span></div></div>\n')
+                 f'<span class="tag">{toplabel} · {d.strftime("%Y-%m-%d")}</span></div></div>\n')
     parts.append('<main>\n')
     parts.append(f'<header class="art-hero"><div class="ah-k">{esc(eyebrow)}</div>'
                  f'<div class="ah-t">{esc(title)}</div>'
@@ -907,19 +913,19 @@ def render_ai(mode, date_kst, meta):
 
 
 # ----------------------------- manifest / build -----------------------------
-def update_manifest(date_str, time_str, mode, title, summary, relfile):
+def update_manifest(date_str, time_str, mode, title, summary, relfile, tag="데일리"):
     with open(MANIFEST, encoding="utf-8") as f:
         man = json.load(f)
     issues = man.setdefault("issues", [])
     # 같은 파일(=같은 날짜·모드)이면 갱신
     existing = next((it for it in issues if it.get("file") == relfile), None)
     if existing:
-        existing.update({"date": date_str, "time": time_str, "tag": "데일리",
+        existing.update({"date": date_str, "time": time_str, "tag": tag,
                          "title": title, "summary": summary})
         no = existing.get("no")
     else:
         no = max([it.get("no", 0) for it in issues] + [0]) + 1
-        issues.append({"no": no, "date": date_str, "time": time_str, "tag": "데일리",
+        issues.append({"no": no, "date": date_str, "time": time_str, "tag": tag,
                        "title": title, "summary": summary, "file": relfile})
     with open(MANIFEST, "w", encoding="utf-8") as f:
         json.dump(man, f, ensure_ascii=False, indent=2)
@@ -981,6 +987,15 @@ def main():
         return 0
 
     now = datetime.now(KST)
+    # 발행 시간 가드: 마감은 15:00 이후, 개장은 12:00 이전에만 발행(예약 09:05/15:35은 정상 통과). --force로 우회.
+    if not force:
+        h = now.hour
+        if mode == "close" and h < 15:
+            print(f"[daily_news] 마감 기사는 15:00 KST 이후에만 발행합니다(현재 {now:%H:%M}). 발행하지 않고 종료. (--force로 강제 가능)")
+            return 0
+        if mode == "open" and h >= 12:
+            print(f"[daily_news] 개장 기사는 12:00 KST 이전에만 발행합니다(현재 {now:%H:%M}). 발행하지 않고 종료. (--force로 강제 가능)")
+            return 0
     ok, why = (True, "강제") if force else trading_day(now, token, key, sec)
     print(f"[daily_news] {now:%Y-%m-%d %H:%M KST} · mode={mode} · 거래일판정={ok}({why})")
     if not ok:
