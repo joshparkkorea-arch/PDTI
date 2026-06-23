@@ -132,6 +132,7 @@ def fetch_fluctuation(token, app_key, app_secret, sort_code, n=5):
         for o in data.get("output", [])[:n]:
             out.append({
                 "name": o.get("hts_kor_isnm", "—"),
+                "code": o.get("stck_shrn_iscd") or o.get("mksc_shrn_iscd") or "",
                 "price": o.get("stck_prpr", "—"),
                 "ctrt": o.get("prdy_ctrt", "—"),   # 등락률(%)
                 "sign": o.get("prdy_vrss_sign", "3"),
@@ -188,6 +189,7 @@ def fetch_volume_rank(token, app_key, app_secret, n=5):
         for o in data.get("output", [])[:n]:
             out.append({
                 "name": o.get("hts_kor_isnm", "—"),
+                "code": o.get("mksc_shrn_iscd") or o.get("stck_shrn_iscd") or "",
                 "price": o.get("stck_prpr", "—"),
                 "ctrt": o.get("prdy_ctrt", "—"),
                 "vol": o.get("acml_vol", "—"),
@@ -197,6 +199,125 @@ def fetch_volume_rank(token, app_key, app_secret, n=5):
     except Exception as e:
         sys.stderr.write(f"[vol] 거래량순위 실패: {e}\n")
         return None
+
+
+# --------------------- 종목 핵심지표(전일종가/금일종가/거래량/시가총액) ---------------------
+# AI는 표를 직접 쓰지 않고 본문에 {{STOCK|시장|식별자|종목명}} 토큰만 남긴다.
+# 그 자리에 코드가 KIS(한국)/FMP(미국)로 실제 숫자를 받아 '항상 동일한 4줄 표'를 박는다.
+FMP_BASE = "https://financialmodelingprep.com/api/v3"
+
+def _ci(n):
+    try:
+        return f"{int(round(float(n))):,}"
+    except Exception:
+        return None
+
+def _mcap_usd(raw):
+    try:
+        v = float(raw)
+    except Exception:
+        return None
+    if v <= 0:
+        return None
+    if v >= 1e12: return f"${v/1e12:.2f}T"
+    if v >= 1e9:  return f"${v/1e9:.1f}B"
+    if v >= 1e6:  return f"${v/1e6:.1f}M"
+    return f"${v:,.0f}"
+
+def _mcap_kr(eok):
+    try:
+        v = float(eok)
+    except Exception:
+        return None
+    if v <= 0:
+        return None
+    jo = int(v // 10000); rem = int(round(v % 10000))
+    if jo and rem: return f"{jo:,}조 {rem:,}억원"
+    if jo:         return f"{jo:,}조원"
+    return f"{rem:,}억원"
+
+def fmp_quote(ticker, fmp_key):
+    """미국 종목 → {pc,c,vol,mcap} 표시문자열. 실패 시 None."""
+    if not fmp_key:
+        return None
+    try:
+        url = f"{FMP_BASE}/quote/{urllib.parse.quote(ticker)}?apikey={urllib.parse.quote(fmp_key)}"
+        with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": UA}), timeout=20) as r:
+            arr = json.load(r)
+        if not arr:
+            return None
+        q = arr[0]
+        pc, c, vol, mc = q.get("previousClose"), q.get("price"), q.get("volume"), q.get("marketCap")
+        return {
+            "pc":   (f"${float(pc):,.2f}" if pc is not None else "—"),
+            "c":    (f"${float(c):,.2f}"  if c  is not None else "—"),
+            "vol":  ((_ci(vol) + "주") if _ci(vol) else "—"),
+            "mcap": (_mcap_usd(mc) or "—"),
+        }
+    except Exception as e:
+        sys.stderr.write(f"[fmp] {ticker} 실패: {e}\n")
+        return None
+
+def kis_stock(code, token, key, sec):
+    """한국 종목 → {pc,c,vol,mcap}. 실패 시 None. (inquire-price FHKST01010100)"""
+    if not token or not code:
+        return None
+    try:
+        data = kis_get("/uapi/domestic-stock/v1/quotations/inquire-price", "FHKST01010100",
+                       {"fid_cond_mrkt_div_code": "J", "fid_input_iscd": code},
+                       token, key, sec)
+        if data.get("rt_cd") != "0":
+            return None
+        o = data.get("output") or {}
+        c  = o.get("stck_prpr")    # 현재가(=금일 종가)
+        pc = o.get("stck_sdpr")    # 기준가(=전일 종가)
+        vol = o.get("acml_vol")    # 누적거래량
+        mc = o.get("hts_avls")     # 시가총액(억원)
+        return {
+            "pc":   ((_ci(pc) + "원") if _ci(pc) else "—"),
+            "c":    ((_ci(c) + "원") if _ci(c) else "—"),
+            "vol":  ((_ci(vol) + "주") if _ci(vol) else "—"),
+            "mcap": (_mcap_kr(mc) or "—"),
+        }
+    except Exception as e:
+        sys.stderr.write(f"[kis-stock] {code} 실패: {e}\n")
+        return None
+
+def std_stock_table(name, ident, d):
+    """전일 종가 / 금일 종가 / 거래량 / 시가총액 — 모든 종목 동일한 4줄 표."""
+    if d is None:
+        d = {"pc": "—", "c": "—", "vol": "—", "mcap": "—"}
+    head = f'<div class="src-cat">{esc(name)} ({esc(ident)}) — 핵심 지표</div>' if name else ""
+    return (head +
+        '<table class="grid"><thead><tr><th>항목</th><th>수치</th></tr></thead><tbody>'
+        f'<tr><td>전일 종가</td><td>{esc(d["pc"])}</td></tr>'
+        f'<tr><td>금일 종가</td><td>{esc(d["c"])}</td></tr>'
+        f'<tr><td>거래량</td><td>{esc(d["vol"])}</td></tr>'
+        f'<tr><td>시가총액</td><td>{esc(d["mcap"])}</td></tr>'
+        '</tbody></table>')
+
+def inject_stock_tables(body, token, key, sec):
+    """본문의 {{STOCK|시장|식별자|종목명}} 토큰을 공식 4줄 표로 치환(같은 종목은 1회만 조회)."""
+    import re
+    fmp_key = os.environ.get("FMP_API_KEY", "").strip()
+    cache = {}
+    def fetch(market, ident):
+        ck = (market, ident)
+        if ck not in cache:
+            if market == "us":
+                cache[ck] = fmp_quote(ident, fmp_key)
+            elif market == "kr":
+                cache[ck] = kis_stock(ident, token, key, sec)
+            else:
+                cache[ck] = None
+        return cache[ck]
+    def repl(m):
+        market = (m.group(1) or "").strip().lower()
+        ident  = (m.group(2) or "").strip()
+        name   = (m.group(3) or "").strip()
+        return std_stock_table(name, ident, fetch(market, ident))
+    pat = r"(?:<p>\s*)?\{\{\s*STOCK\s*\|\s*([a-zA-Z]+)\s*\|\s*([^|}]+?)\s*\|\s*([^}]*?)\s*\}\}(?:\s*</p>)?"
+    return re.sub(pat, repl, body or "")
 
 
 # ----------------------------- Claude API 작성 -----------------------------
@@ -229,11 +350,11 @@ def _ai_user_prompt(mode, date_kst, items, asof, vol, rank_up, rank_dn, flows):
         lines.append("지수/지표: " + ", ".join(idx))
     if vol:
         lines.append("거래량 상위(한국): " + "; ".join(
-            f'{x["name"]} 현재가 {x["price"]} 등락 {x["ctrt"]}% 거래량 {x["vol"]}' for x in vol))
+            f'{x["name"]}({x.get("code","")}) 현재가 {x["price"]} 등락 {x["ctrt"]}% 거래량 {x["vol"]}' for x in vol))
     if rank_up:
-        lines.append("등락률 상위: " + ", ".join(f'{x["name"]} {x["ctrt"]}%' for x in rank_up))
+        lines.append("등락률 상위: " + ", ".join(f'{x["name"]}({x.get("code","")}) {x["ctrt"]}%' for x in rank_up))
     if rank_dn:
-        lines.append("등락률 하위: " + ", ".join(f'{x["name"]} {x["ctrt"]}%' for x in rank_dn))
+        lines.append("등락률 하위: " + ", ".join(f'{x["name"]}({x.get("code","")}) {x["ctrt"]}%' for x in rank_dn))
     if flows:
         lines.append("수급(외국인/기관/개인 순매수): " + "; ".join(
             f'{m} 외 {v.get("frgn")} 기 {v.get("orgn")} 개 {v.get("indv")}' for m, v in flows.items()))
@@ -265,7 +386,13 @@ def _ai_user_prompt(mode, date_kst, items, asof, vol, rank_up, rank_dn, flows):
         "3) 뉴스는 직접 인용 대신 자신의 말로 요약(저작권). 출처만 표기.\n"
         "4) 분량은 충실하게(읽을거리 있는 데일리 뉴스레터 수준). 과장·미확인 추측 금지.\n"
         "5) 한국 증시 색상 관례: 상승=빨강(class=\"up\"), 하락=파랑(class=\"down\").\n"
-        "6) 개별 종목을 심층 분석할 때는 그 종목의 전일 종가·(당일) 마감 종가·거래량·시가총액을 반드시 함께 표기하세요(web_search로 확인). 표(table.grid)나 문장으로 명확히 제시하고, 확인 안 된 항목은 '확인 중'으로 두되 임의 추정은 금지.\n\n"
+        "6) 종목 심층 분석 — 데이터 표는 절대 직접 쓰지 마세요(숫자가 틀릴 수 있음). 분석할 종목마다 소제목 다음 줄에 "
+        "아래 '종목 토큰'을 독립된 한 줄로(절대 <p> 안에 넣지 말 것) 넣으면, 코드가 그 자리에 "
+        "전일 종가·금일 종가·거래량·시가총액 4줄 공식 표를 자동으로 채웁니다.\n"
+        "   · 토큰 형식: {{STOCK|시장|식별자|종목명}}   (시장 = us 또는 kr)\n"
+        "   · 미국: 식별자=티커  예) {{STOCK|us|INTC|인텔}}\n"
+        "   · 한국: 식별자=6자리 종목코드  예) {{STOCK|kr|005930|삼성전자}}  — 위 '확정 데이터'에 적힌 코드만 사용(모르면 토큰 없이 글로만 언급).\n"
+        "   · '확인 중'이라고 절대 쓰지 마세요. 종가·거래량·시가총액 숫자를 본문에 직접 적지 말고 토큰에 맡기세요.\n\n"
         f"{AI_CLASSES}\n"
         "[출력 형식] 아래 형식 '그대로' 출력하세요. 각 구분선(===...===)을 정확히 쓰고 그 사이에 내용만 넣으세요. "
         "마크다운 코드펜스(```)나 형식 밖의 다른 말은 절대 쓰지 마세요. body_html은 위 클래스만 쓴 순수 HTML입니다.\n"
@@ -758,6 +885,10 @@ def main():
     if api_key:
         try:
             meta = compose_with_claude(api_key, mode, now, items, asof, vol, rank_up, rank_dn, flows)
+            try:
+                meta["body_html"] = inject_stock_tables(meta["body_html"], token, key, sec)
+            except Exception as e:
+                sys.stderr.write(f"[stock] 종목표 삽입 경고: {e}\n")
             htmlstr, title, summary = render_ai(mode, now, meta)
             print(f"[daily_news] Claude API 작성 완료 · 제목: {title}")
         except Exception as e:
