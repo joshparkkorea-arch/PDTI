@@ -471,9 +471,17 @@ AI_CLASSES = (
     " - <div class=\"src-cat\">소제목</div> : 표/블록 위 작은 소제목\n"
     " - <table class=\"grid\"><thead><tr><th>…</th></tr></thead><tbody><tr><td>…</td></tr></tbody></table> : 데이터 표\n"
     " - 등락은 <span class=\"up\">+1.2%</span> / <span class=\"down\">-0.8%</span> (한국식: 상승=빨강 up, 하락=파랑 down)\n"
+    " - <span class=\"key\">핵심 구절</span> : 꼭 읽혀야 할 핵심 키워드·사건명에 골드 밑줄 강조. 한 문단에 1~2개까지만(남발 금지).\n"
+    " - <span class=\"num\">8,203.84</span> : 본문 속 중요한 '절대 수치'(지수 레벨·금액·종목수 등)를 세리프로 환기. 등락률(%)에는 쓰지 말 것 — 그건 up/down.\n"
+    " - <p class=\"takeaway\">섹션 핵심 한 줄</p> : 섹션마다 가장 중요한 결론 1문장을 콜아웃 박스로(섹션당 최대 1개, 보통 섹션 끝에).\n"
+    " - <strong>…</strong> : 부차(약) 강조. key/num에 해당 안 되는 일반 강조용.\n"
     " - <p class=\"small\">…</p> : 작은 보조설명·출처\n"
     " - <hr class=\"rule\"> : 구분선\n"
     " - 출처 링크: <a href=\"URL\" target=\"_blank\" rel=\"noopener\">매체명</a>\n"
+    "\n[강조 규칙 — 색=역할 1:1 고정]\n"
+    " · 빨강(up)·파랑(down)은 오직 '등락률 수치'에만. 일반 강조에 색을 섞지 말 것(색이 흔해지면 안 읽힘).\n"
+    " · 키워드 환기=.key(골드밑줄), 중요 숫자=.num(세리프), 섹션 결론=.takeaway 1개로 역할을 나눠 쓸 것.\n"
+    " · 강조는 절제(문단당 .key 1~2개): 다 강조하면 위계가 사라진다. 평문이 기본, 강조는 포인트.\n"
 )
 
 
@@ -666,6 +674,11 @@ ART_CSS = """<style>
  .disc{font-size:11.5px;color:var(--mute);line-height:1.65}
  .up{color:var(--up);font-weight:700}
  .down{color:var(--down);font-weight:700}
+ /* ===== 본문 강조 키트(색=역할 1:1) · 2026-06-23 추가 ===== */
+ main .key{font-weight:700;color:var(--ink);background:linear-gradient(transparent 60%,rgba(201,166,84,.45) 60%);padding:0 1px;border-radius:1px}
+ main .num{font-family:var(--serif);font-weight:700;color:var(--navy);font-variant-numeric:tabular-nums}
+ main strong{font-weight:700;color:var(--ink);letter-spacing:-.01em}
+ p.takeaway{margin:16px 0 6px;padding:12px 15px;background:#FBF7EE;border-left:4px solid var(--gold);border-radius:0 7px 7px 0;font-family:var(--serif);font-weight:700;color:var(--navy);font-size:15px;line-height:1.62}
  table.grid{width:100%;border-collapse:collapse;margin:6px 0 18px;font-size:13.5px;border:1px solid var(--line);table-layout:fixed}
  table.grid th{background:var(--navy);color:#fff;font-weight:700;text-align:left;padding:9px 10px;font-size:12.5px;vertical-align:top}
  table.grid td{padding:9px 10px;border-top:1px solid var(--line);vertical-align:top;word-break:keep-all}
