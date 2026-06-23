@@ -1074,13 +1074,42 @@ def main():
     else:
         print("[daily_news] ANTHROPIC_API_KEY 없음 — 템플릿 모드(숫자 위주)")
 
+    used_ai = htmlstr is not None
     if htmlstr is None:
         htmlstr, title, summary = build_html(mode, now, items, asof, rank_up, rank_dn, flows)
 
     os.makedirs(NEWS_DIR, exist_ok=True)
     fname = f'{now:%Y-%m-%d}-{mode}.html'
     relfile = f'newsletters/{fname}'
-    with open(os.path.join(NEWS_DIR, fname), "w", encoding="utf-8") as f:
+    abspath = os.path.join(NEWS_DIR, fname)
+
+    # ── 수동 확정 기사 보호 (재발 방지) ───────────────────────────────
+    # 증상: 지연·중복 크론으로 같은 날 close가 한 번 더 돌면, 손본 긴 기사를
+    #       짧은 자동본으로 덮어써 버린다(예: 23:45 재실행).
+    prev = None
+    if os.path.exists(abspath):
+        try:
+            with open(abspath, encoding="utf-8") as _pf:
+                prev = _pf.read()
+        except Exception:
+            prev = None
+    if prev is not None:
+        # (1) 잠금: <!-- INVEST_STORY_LOCKED --> 가 있으면 자동발행이 절대 덮어쓰지 않음(수동 확정본 보호)
+        if "INVEST_STORY_LOCKED" in prev:
+            print(f"[lock] {relfile} 잠금(LOCKED) — 재생성·manifest 갱신을 건너뜁니다(수동 확정본 보호).")
+            return 0
+        force = os.environ.get("FORCE_REGEN", "").strip() == "1"
+        # (2) 멱등성: 같은 날짜·모드 파일이 이미 있으면 중복/지연 재실행으로 보고 건너뜀
+        if not force:
+            print(f"[guard] {relfile} 이미 존재 — 중복/지연 재실행으로 판단해 건너뜁니다. "
+                  f"강제로 덮어쓰려면 FORCE_REGEN=1 환경변수를 주세요.")
+            return 0
+        # (3) 폴백 보호: 강제 재생성이어도 AI 실패(짧은 템플릿)면 더 긴 기존 파일을 보존
+        if (not used_ai) and len(htmlstr) < len(prev):
+            print(f"[guard] 강제 재생성이나 AI 작성 실패(템플릿) — 더 긴 기존 파일을 보존합니다: {relfile}")
+            return 0
+
+    with open(abspath, "w", encoding="utf-8") as f:
         f.write(htmlstr)
     print(f"[daily_news] 기사 작성: {relfile}")
 
