@@ -170,8 +170,7 @@
   a.href='#'+id; a.textContent=h.textContent.trim();
   a.addEventListener('click',function(e){ e.preventDefault();
    document.getElementById(id).scrollIntoView({behavior:'smooth',block:'start'});
-   history.replaceState(null,'','#'+id);
-   if(narrow.matches){ toc.classList.add('collapsed'); tg.textContent='\u25B8'; } });
+   history.replaceState(null,'','#'+id); });
   li.appendChild(a); ol.appendChild(li); });
  if(!ol.children.length) return;
  var toc=document.createElement('nav'); toc.id='toc';
@@ -183,10 +182,8 @@
  if(anchor&&anchor.parentNode){ anchor.parentNode.insertBefore(toc,anchor.nextSibling); }
  else { main.insertBefore(toc,main.firstChild); }
  var narrow=window.matchMedia('(max-width:1279px)');
- function setMode(){ if(narrow.matches){ toc.classList.add('collapsed'); tg.textContent='\u25B8'; } else { toc.classList.remove('collapsed'); } }
- setMode();
+ tg.textContent='\u25BE';
  hd.addEventListener('click',function(){ if(!narrow.matches) return; toc.classList.toggle('collapsed'); tg.textContent=toc.classList.contains('collapsed')?'\u25B8':'\u25BE'; });
- try{ narrow.addEventListener('change',setMode); }catch(_){ }
  var top=document.createElement('button'); top.className='toTop'; top.setAttribute('aria-label','\uB9E8 \uC704\uB85C'); top.textContent='\u2191';
  top.addEventListener('click',function(){ window.scrollTo({top:0,behavior:'smooth'}); });
  document.body.appendChild(top);

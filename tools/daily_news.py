@@ -56,28 +56,11 @@ def esc(s):
 
 # ----------------------------- KIS -----------------------------
 def kis_token(app_key, app_secret):
-    """접근토큰 발급. KIS는 토큰 발급이 '1분당 1회' 제한이라, 같은 워크플로에서
-    update_ticker가 직전에 토큰을 받았으면 충돌할 수 있다. 막히면 65초 쉬고 1회 재시도."""
-    body = json.dumps({"grant_type": "client_credentials",
-                       "appkey": app_key, "appsecret": app_secret}).encode()
-    last = None
-    for attempt in range(2):
-        try:
-            req = urllib.request.Request(KIS_BASE + "/oauth2/tokenP", data=body,
-                                         headers={"Content-Type": "application/json", "User-Agent": UA},
-                                         method="POST")
-            with urllib.request.urlopen(req, timeout=20) as r:
-                data = json.load(r)
-            tok = data.get("access_token")
-            if tok:
-                return tok
-            raise RuntimeError(data.get("error_description") or data.get("msg1") or "no access_token")
-        except Exception as e:
-            last = e
-            if attempt == 0:
-                sys.stderr.write(f"[kis] 토큰 1차 실패({e}) — 65초 후 재시도(1분당 1회 제한 회피)\n")
-                time.sleep(65)
-    raise last
+    """접근토큰: 공용 캐시(.cache/kis_token.json)에서 재사용, 없으면 1회 발급(+캐시).
+    update_ticker는 발급하지 않으므로, 실제 발급은 매일 9:05 개장 실행 때 여기서만 일어난다
+    → 한투 '1일 1회 발급 원칙' 준수. 발급 시 1분당 1회 제한은 kis_auth가 65초 재시도로 회피."""
+    import kis_auth
+    return kis_auth.get_token(app_key, app_secret, allow_issue=True)
 
 
 def kis_get(path, tr_id, params, token, app_key, app_secret):
@@ -482,8 +465,7 @@ TOC_JS = r"""<script>
   a.href='#'+id; a.textContent=h.textContent.trim();
   a.addEventListener('click',function(e){ e.preventDefault();
    document.getElementById(id).scrollIntoView({behavior:'smooth',block:'start'});
-   history.replaceState(null,'','#'+id);
-   if(narrow.matches){ toc.classList.add('collapsed'); tg.textContent='\u25B8'; } });
+   history.replaceState(null,'','#'+id); });
   li.appendChild(a); ol.appendChild(li); });
  if(!ol.children.length) return;
  var toc=document.createElement('nav'); toc.id='toc';
@@ -495,10 +477,8 @@ TOC_JS = r"""<script>
  if(anchor&&anchor.parentNode){ anchor.parentNode.insertBefore(toc,anchor.nextSibling); }
  else { main.insertBefore(toc,main.firstChild); }
  var narrow=window.matchMedia('(max-width:1279px)');
- function setMode(){ if(narrow.matches){ toc.classList.add('collapsed'); tg.textContent='\u25B8'; } else { toc.classList.remove('collapsed'); } }
- setMode();
+ tg.textContent='\u25BE';
  hd.addEventListener('click',function(){ if(!narrow.matches) return; toc.classList.toggle('collapsed'); tg.textContent=toc.classList.contains('collapsed')?'\u25B8':'\u25BE'; });
- try{ narrow.addEventListener('change',setMode); }catch(_){ }
  var top=document.createElement('button'); top.className='toTop'; top.setAttribute('aria-label','맨 위로'); top.textContent='\u2191';
  top.addEventListener('click',function(){ window.scrollTo({top:0,behavior:'smooth'}); });
  document.body.appendChild(top);

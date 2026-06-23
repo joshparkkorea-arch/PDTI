@@ -9,6 +9,7 @@
 """
 import json, os, sys, time, urllib.request, urllib.error, urllib.parse
 from datetime import datetime, timezone, timedelta
+import kis_auth   # KIS 토큰 공용 캐시(읽기 전용으로 사용)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TICKER = os.path.join(ROOT, "ticker.json")
@@ -145,8 +146,14 @@ def kis_index(token, app_key, app_secret, iscd):
     return price, price - vrss                      # (현재, 전일종가)
 
 def fetch_kis(app_key, app_secret):
-    """KIS로 KOSPI·KOSDAQ 조회 → {표시이름: (현재, 전일종가)}."""
-    token = kis_token(app_key, app_secret)
+    """KIS로 KOSPI·KOSDAQ 조회 → {표시이름: (현재, 전일종가)}.
+    토큰은 공용 캐시에서만 가져온다(여기서는 발급하지 않음). 유효 토큰이 없으면
+    KIS 호출을 건너뛰고 {}를 돌려줘 직전 ticker.json 값이 유지되게 한다.
+    (실제 발급은 매일 9:05 개장 때 daily_news.py만 수행 → 한투 '1일 1회' 준수.)"""
+    token = kis_auth.get_token(app_key, app_secret, allow_issue=False)
+    if not token:
+        sys.stderr.write("[kis] 유효 토큰 없음 — KIS 호출 생략(직전 값 유지)\n")
+        return {}
     out = {}
     for name, iscd in (("KOSPI", "0001"), ("KOSDAQ", "1001")):
         try:
