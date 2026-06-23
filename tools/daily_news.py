@@ -369,28 +369,75 @@ def std_stock_table(name, ident, d):
         f'<tr><td>시가총액</td><td>{esc(d["mcap"])}</td></tr>'
         '</tbody></table>')
 
+def fmp_batch(tickers, fmp_key):
+    """여러 미국 티커를 1회 호출로 조회 → {TICKER: {pc,c,chg,dir,vol,mcap}}. 분당 호출제한 회피."""
+    out = {}
+    syms = ",".join(sorted({t.strip().upper() for t in tickers if t and t.strip()}))
+    if not fmp_key or not syms:
+        if not fmp_key:
+            sys.stderr.write("[fmp] FMP_API_KEY 비어있음 — Actions 시크릿 확인 필요\n")
+        return out
+    k = urllib.parse.quote(fmp_key); s = urllib.parse.quote(syms, safe=",")
+    urls = [
+        f"https://financialmodelingprep.com/stable/quote?symbol={s}&apikey={k}",       # 콤마 다중(검증된 엔드포인트)
+        f"https://financialmodelingprep.com/stable/batch-quote?symbols={s}&apikey={k}",  # 전용 배치
+        f"https://financialmodelingprep.com/api/v3/quote/{s}?apikey={k}",                # 구버전 폴백
+    ]
+    for u in urls:
+        try:
+            arr = _fmp_get(u)
+            if isinstance(arr, dict):
+                if arr.get("Error Message") or arr.get("error"):
+                    sys.stderr.write(f"[fmp-batch] API응답오류: {str(arr)[:140]}\n")
+                    continue
+                arr = [arr]
+            if not arr:
+                continue
+            for q in arr:
+                sym = (q.get("symbol") or "").upper()
+                if not sym:
+                    continue
+                pc, c, vol, mc = q.get("previousClose"), q.get("price"), q.get("volume"), q.get("marketCap")
+                chg_disp, chg_dir = _pct_disp(q.get("changePercentage", q.get("changesPercentage")))
+                out[sym] = {
+                    "pc":   (f"${float(pc):,.2f}" if pc is not None else "—"),
+                    "c":    (f"${float(c):,.2f}"  if c  is not None else "—"),
+                    "chg":  chg_disp, "dir": chg_dir,
+                    "vol":  ((_ci(vol) + "주") if _ci(vol) else "—"),
+                    "mcap": (_mcap_usd(mc) or "—"),
+                }
+            if out:
+                return out
+        except Exception as e:
+            code = getattr(e, "code", None)
+            sys.stderr.write(f"[fmp-batch] 실패{(' HTTP '+str(code)) if code else ''}: {e}\n")
+    return out
+
 def inject_stock_tables(body, token, key, sec):
-    """본문의 {{STOCK|시장|식별자|종목명}} 토큰을 공식 4줄 표로 치환(같은 종목은 1회만 조회)."""
+    """본문의 {{STOCK|시장|식별자|종목명}} 토큰을 공식 4줄 표로 치환.
+    미국 종목은 콤마로 묶어 1회만 호출(분당 제한 회피), 한국 종목은 KIS로 개별 조회."""
     import re
+    body = body or ""
     fmp_key = os.environ.get("FMP_API_KEY", "").strip()
-    cache = {}
-    def fetch(market, ident):
-        ck = (market, ident)
-        if ck not in cache:
-            if market == "us":
-                cache[ck] = fmp_quote(ident, fmp_key)
-            elif market == "kr":
-                cache[ck] = kis_stock(ident, token, key, sec)
-            else:
-                cache[ck] = None
-        return cache[ck]
+    pat = r"(?:<p>\s*)?\{\{\s*STOCK\s*\|\s*([a-zA-Z]+)\s*\|\s*([^|}]+?)\s*\|\s*([^}]*?)\s*\}\}(?:\s*</p>)?"
+    toks = re.findall(pat, body)
+    us_syms = [ident for (mkt, ident, _nm) in toks if mkt.strip().lower() == "us"]
+    us_data = fmp_batch(us_syms, fmp_key) if us_syms else {}
+    kr_cache = {}
     def repl(m):
         market = (m.group(1) or "").strip().lower()
         ident  = (m.group(2) or "").strip()
         name   = (m.group(3) or "").strip()
-        return std_stock_table(name, ident, fetch(market, ident))
-    pat = r"(?:<p>\s*)?\{\{\s*STOCK\s*\|\s*([a-zA-Z]+)\s*\|\s*([^|}]+?)\s*\|\s*([^}]*?)\s*\}\}(?:\s*</p>)?"
-    return re.sub(pat, repl, body or "")
+        if market == "us":
+            d = us_data.get(ident.upper())
+        elif market == "kr":
+            if ident not in kr_cache:
+                kr_cache[ident] = kis_stock(ident, token, key, sec)
+            d = kr_cache[ident]
+        else:
+            d = None
+        return std_stock_table(name, ident, d)
+    return re.sub(pat, repl, body)
 
 
 # ----------------------------- Claude API 작성 -----------------------------
@@ -465,7 +512,7 @@ def _ai_user_prompt(mode, date_kst, items, asof, vol, rank_up, rank_dn, flows):
         "아래 '종목 토큰'을 독립된 한 줄로(절대 <p> 안에 넣지 말 것) 넣으면, 코드가 그 자리에 "
         "전일 종가·금일 종가·거래량·시가총액 4줄 공식 표를 자동으로 채웁니다.\n"
         "   · 토큰 형식: {{STOCK|시장|식별자|종목명}}   (시장 = us 또는 kr)\n"
-        "   · 미국: 식별자=티커  예) {{STOCK|us|INTC|인텔}}\n"
+        "   · 미국: 식별자=티커(상장된 실제 종목만 — 비상장 기업은 토큰 쓰지 말 것)  예) {{STOCK|us|INTC|인텔}}\n"
         "   · 한국: 식별자=6자리 종목코드  예) {{STOCK|kr|005930|삼성전자}}  — 위 '확정 데이터'에 적힌 코드만 사용(모르면 토큰 없이 글로만 언급).\n"
         "   · '확인 중'이라고 절대 쓰지 마세요. 종가·거래량·시가총액 숫자를 본문에 직접 적지 말고 토큰에 맡기세요.\n\n"
         f"{AI_CLASSES}\n"
