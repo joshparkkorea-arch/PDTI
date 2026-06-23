@@ -369,48 +369,69 @@ def std_stock_table(name, ident, d):
         f'<tr><td>시가총액</td><td>{esc(d["mcap"])}</td></tr>'
         '</tbody></table>')
 
-def fmp_batch(tickers, fmp_key):
-    """여러 미국 티커를 1회 호출로 조회 → {TICKER: {pc,c,chg,dir,vol,mcap}}. 분당 호출제한 회피."""
+def _fmp_fmt(q):
+    """FMP quote dict → {pc,c,chg,dir,vol,mcap} 표시문자열."""
+    pc, c, vol, mc = q.get("previousClose"), q.get("price"), q.get("volume"), q.get("marketCap")
+    chg_disp, chg_dir = _pct_disp(q.get("changePercentage", q.get("changesPercentage")))
+    return {
+        "pc":   (f"${float(pc):,.2f}" if pc is not None else "—"),
+        "c":    (f"${float(c):,.2f}"  if c  is not None else "—"),
+        "chg":  chg_disp, "dir": chg_dir,
+        "vol":  ((_ci(vol) + "주") if _ci(vol) else "—"),
+        "mcap": (_mcap_usd(mc) or "—"),
+    }
+
+def _fmp_try(url):
+    """URL 1회 호출 → quote dict 리스트(실패/오류 시 빈 리스트)."""
+    try:
+        arr = _fmp_get(url)
+        if isinstance(arr, dict):
+            if arr.get("Error Message") or arr.get("error"):
+                sys.stderr.write(f"[fmp] 응답오류: {str(arr)[:140]}\n")
+                return []
+            arr = [arr]
+        return arr or []
+    except Exception as e:
+        code = getattr(e, "code", None)
+        tail = url.split("?")[0].rsplit("/", 1)[-1]
+        sys.stderr.write(f"[fmp] {tail} 실패{(' HTTP ' + str(code)) if code else ''}: {e}\n")
+        return []
+
+def fmp_quotes(tickers, fmp_key):
+    """여러 미국 티커 → {TICKER: {...}}. 배치로 한 번에 시도하고,
+    빠진 종목은 단일 호출로 보강(분당/버스트 제한 회피: 호출 간격 + 실패 시 대기 후 재시도)."""
     out = {}
-    syms = ",".join(sorted({t.strip().upper() for t in tickers if t and t.strip()}))
-    if not fmp_key or not syms:
-        if not fmp_key:
-            sys.stderr.write("[fmp] FMP_API_KEY 비어있음 — Actions 시크릿 확인 필요\n")
+    syms = sorted({t.strip().upper() for t in tickers if t and t.strip()})
+    if not fmp_key:
+        sys.stderr.write("[fmp] FMP_API_KEY 비어있음 — Actions 시크릿 확인 필요\n")
         return out
-    k = urllib.parse.quote(fmp_key); s = urllib.parse.quote(syms, safe=",")
-    urls = [
-        f"https://financialmodelingprep.com/stable/quote?symbol={s}&apikey={k}",       # 콤마 다중(검증된 엔드포인트)
-        f"https://financialmodelingprep.com/stable/batch-quote?symbols={s}&apikey={k}",  # 전용 배치
-        f"https://financialmodelingprep.com/api/v3/quote/{s}?apikey={k}",                # 구버전 폴백
-    ]
-    for u in urls:
-        try:
-            arr = _fmp_get(u)
-            if isinstance(arr, dict):
-                if arr.get("Error Message") or arr.get("error"):
-                    sys.stderr.write(f"[fmp-batch] API응답오류: {str(arr)[:140]}\n")
-                    continue
-                arr = [arr]
-            if not arr:
-                continue
-            for q in arr:
-                sym = (q.get("symbol") or "").upper()
-                if not sym:
-                    continue
-                pc, c, vol, mc = q.get("previousClose"), q.get("price"), q.get("volume"), q.get("marketCap")
-                chg_disp, chg_dir = _pct_disp(q.get("changePercentage", q.get("changesPercentage")))
-                out[sym] = {
-                    "pc":   (f"${float(pc):,.2f}" if pc is not None else "—"),
-                    "c":    (f"${float(c):,.2f}"  if c  is not None else "—"),
-                    "chg":  chg_disp, "dir": chg_dir,
-                    "vol":  ((_ci(vol) + "주") if _ci(vol) else "—"),
-                    "mcap": (_mcap_usd(mc) or "—"),
-                }
-            if out:
-                return out
-        except Exception as e:
-            code = getattr(e, "code", None)
-            sys.stderr.write(f"[fmp-batch] 실패{(' HTTP '+str(code)) if code else ''}: {e}\n")
+    if not syms:
+        return out
+    k = urllib.parse.quote(fmp_key)
+    js = urllib.parse.quote(",".join(syms), safe=",")
+    # 1) 배치 빠른 경로(되면 1회로 끝, 무료에서 막히면 빈 응답 → 폴백)
+    for u in (f"https://financialmodelingprep.com/stable/batch-quote?symbols={js}&apikey={k}",
+              f"https://financialmodelingprep.com/stable/quote?symbol={js}&apikey={k}"):
+        for q in _fmp_try(u):
+            sym = (q.get("symbol") or "").upper()
+            if sym and sym not in out:
+                out[sym] = _fmp_fmt(q)
+        if all(s in out for s in syms):
+            return out
+    # 2) 빠진 종목은 단일 호출(검증된 엔드포인트). 간격 2초 + 실패 시 20초 후 1회 재시도.
+    miss = [s for s in syms if s not in out]
+    if miss:
+        print(f"[fmp] 배치 미해결 {len(miss)}종목 단일 호출 보강: {', '.join(miss)}")
+    for i, sym in enumerate(miss):
+        if i:
+            time.sleep(2)
+        one = f"https://financialmodelingprep.com/stable/quote?symbol={urllib.parse.quote(sym)}&apikey={k}"
+        arr = _fmp_try(one)
+        if not arr:
+            time.sleep(20)  # 분당 한도 리셋 대기 후 재시도
+            arr = _fmp_try(one)
+        if arr:
+            out[sym] = _fmp_fmt(arr[0])
     return out
 
 def inject_stock_tables(body, token, key, sec):
@@ -422,7 +443,7 @@ def inject_stock_tables(body, token, key, sec):
     pat = r"(?:<p>\s*)?\{\{\s*STOCK\s*\|\s*([a-zA-Z]+)\s*\|\s*([^|}]+?)\s*\|\s*([^}]*?)\s*\}\}(?:\s*</p>)?"
     toks = re.findall(pat, body)
     us_syms = [ident for (mkt, ident, _nm) in toks if mkt.strip().lower() == "us"]
-    us_data = fmp_batch(us_syms, fmp_key) if us_syms else {}
+    us_data = fmp_quotes(us_syms, fmp_key) if us_syms else {}
     kr_cache = {}
     def repl(m):
         market = (m.group(1) or "").strip().lower()
@@ -987,15 +1008,11 @@ def main():
         return 0
 
     now = datetime.now(KST)
-    # 발행 시간 가드: 마감은 15:00 이후, 개장은 12:00 이전에만 발행(예약 09:05/15:35은 정상 통과). --force로 우회.
-    if not force:
-        h = now.hour
-        if mode == "close" and h < 15:
-            print(f"[daily_news] 마감 기사는 15:00 KST 이후에만 발행합니다(현재 {now:%H:%M}). 발행하지 않고 종료. (--force로 강제 가능)")
-            return 0
-        if mode == "open" and h >= 12:
-            print(f"[daily_news] 개장 기사는 12:00 KST 이전에만 발행합니다(현재 {now:%H:%M}). 발행하지 않고 종료. (--force로 강제 가능)")
-            return 0
+    # 발행 시간 가드: '마감'은 15:00 이후에만(13:17 같은 조기 마감 방지). 예약 15:35은 정상 통과.
+    # 개장 브리핑은 당일 재실행 허용(데이터 보정 목적). --force로 우회 가능.
+    if not force and mode == "close" and now.hour < 15:
+        print(f"[daily_news] 마감 기사는 15:00 KST 이후에만 발행합니다(현재 {now:%H:%M}). 발행하지 않고 종료. (--force로 강제 가능)")
+        return 0
     ok, why = (True, "강제") if force else trading_day(now, token, key, sec)
     print(f"[daily_news] {now:%Y-%m-%d %H:%M KST} · mode={mode} · 거래일판정={ok}({why})")
     if not ok:
