@@ -292,6 +292,40 @@ def fmp_quote(ticker, fmp_key):
             sys.stderr.write(f"[fmp] {ticker} 실패{(' HTTP '+str(code)) if code else ''}: {e}\n")
     return None
 
+def twelvedata_quote(symbol, td_key):
+    """FMP가 빈값을 준 미국 종목의 2차 폴백.
+    Twelve Data quote → {pc,c,chg,dir,vol,mcap}. 시가총액은 무료 플랜 미제공이라 '—'."""
+    if not td_key:
+        return None
+    try:
+        sym = urllib.parse.quote(symbol.strip().upper())
+        url = (f"https://api.twelvedata.com/quote?symbol={sym}"
+               f"&apikey={urllib.parse.quote(td_key)}")
+        j = _fmp_get(url)  # 동일한 JSON GET 헬퍼 재사용
+    except Exception as e:
+        sys.stderr.write(f"[td] {symbol} 호출 실패: {e}\n")
+        return None
+    if not isinstance(j, dict) or j.get("status") == "error" or j.get("code"):
+        sys.stderr.write(f"[td] {symbol} 응답오류: {str(j)[:140]}\n")
+        return None
+    pc, c, vol = j.get("previous_close"), j.get("close"), j.get("volume")
+    if c is None and pc is None:
+        return None
+    def _usd(x):
+        try:
+            return f"${float(x):,.2f}"
+        except Exception:
+            return "—"
+    chg_disp, chg_dir = _pct_disp(j.get("percent_change"))
+    return {
+        "pc":   (_usd(pc) if pc is not None else "—"),
+        "c":    (_usd(c)  if c  is not None else "—"),
+        "chg":  chg_disp, "dir": chg_dir,
+        "vol":  ((_ci(vol) + "주") if _ci(vol) else "—"),
+        "mcap": "—",  # Twelve Data 무료: 시가총액 미제공 → 그 칸만 '—'
+    }
+
+
 def fmp_index(symbol, fmp_key):
     """지수(예: ^DJI) → {value,change,dir}. 실패 시 None."""
     if not fmp_key:
@@ -444,6 +478,30 @@ def inject_stock_tables(body, token, key, sec):
     toks = re.findall(pat, body)
     us_syms = [ident for (mkt, ident, _nm) in toks if mkt.strip().lower() == "us"]
     us_data = fmp_quotes(us_syms, fmp_key) if us_syms else {}
+
+    # FMP에서 누락됐거나 값이 빈 미국 종목 → Twelve Data 2차 폴백
+    # (가격·전일종가·등락률·거래량 보강. 시가총액은 무료 미제공이라 그 칸만 '—'.)
+    def _is_blank(dd):
+        return (not dd) or (dd.get("c") in (None, "—") and dd.get("pc") in (None, "—"))
+    if us_syms:
+        td_key = os.environ.get("TWELVEDATA_API_KEY", "").strip()
+        need = sorted({s.upper() for s in us_syms if _is_blank(us_data.get(s.upper()))})
+        if need and td_key:
+            print(f"[td] FMP 누락 {len(need)}종목 → Twelve Data 폴백: {', '.join(need)}")
+            for i, sym in enumerate(need):
+                if i:
+                    time.sleep(1)  # 무료 8req/분 → 호출 간격
+                td = twelvedata_quote(sym, td_key)
+                if td and not _is_blank(td):
+                    us_data[sym] = td
+                    print(f"[td] {sym} 보강 성공(시가총액 제외)")
+        elif need and not td_key:
+            sys.stderr.write("[td] TWELVEDATA_API_KEY 없음 — 폴백 불가(워크플로 env 확인)\n")
+        # 두 소스 모두 실패해 빈 표가 될 종목 경고(아침에 바로 눈에 띄게)
+        still = sorted({s.upper() for s in us_syms if _is_blank(us_data.get(s.upper()))})
+        if still:
+            sys.stderr.write(f"[stock][경고] FMP·TwelveData 모두 실패 → 빈 표: {', '.join(still)}\n")
+
     kr_cache = {}
     def repl(m):
         market = (m.group(1) or "").strip().lower()
