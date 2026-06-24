@@ -604,7 +604,8 @@ def _ai_user_prompt(mode, date_kst, items, asof, vol, rank_up, rank_dn, flows):
         "   · '확인 중'이라고 절대 쓰지 마세요. 종가·거래량·시가총액 숫자를 본문에 직접 적지 말고 토큰에 맡기세요.\n\n"
         "7) 등락률 표기 통일: 전일 대비 '일간 등락률'에는 항상 +/− 부호를 붙입니다(예: <span class=\"up\">+1.2%</span>, <span class=\"down\">−9.99%</span>). 단, 기준금리·물가율·지수 레벨처럼 '변동이 아닌 값'에는 부호를 붙이지 마세요.\n"
         "8) 쉬운 풀이: 중학생이 모를 만한 경제·금융 용어는 처음 나올 때 괄호로 짧게 뜻을 병기하세요(예: 서킷브레이커(주가가 급락하면 거래를 잠시 멈추는 제도), 밸류에이션(기업가치 대비 주가 수준)). 한 용어당 한 번만, 간결하게.\n"
-        "9) 미국 지수·지표·기관 알파벳 병기: 처음 나올 때 알파벳/약어를 괄호로 함께 적습니다(예: 나스닥(NASDAQ), 연준(Fed), 연방공개시장위원회(FOMC), 소비자물가(CPI), 점도표(dot plot)).\n\n"
+        "9) 미국 지수·지표·기관 알파벳 병기: 처음 나올 때 알파벳/약어를 괄호로 함께 적습니다(예: 나스닥(NASDAQ), 연준(Fed), 연방공개시장위원회(FOMC), 소비자물가(CPI), 점도표(dot plot)).\n"
+        "10) 실적 발표·경제지표 등 '시각이 정해진' 일정을 언급할 때는 항상 한국시간(KST)으로 환산해 원래 시간과 함께 병기합니다(예: '미 동부 오후 4시 30분(한국시간 익일 새벽 5시 30분)'). 미국은 서머타임 적용 여부에 따라 한국과의 시차가 13/14시간으로 달라지니, web_search로 해당 일정의 정확한 KST를 확인해 적습니다. 분 단위가 공시되지 않은 '장 마감 후(after market close)' 같은 표현은 그대로 옮기되, 콘퍼런스콜 등 구체 시각이 있으면 그 시각을 KST로 병기합니다.\n\n"
         f"{AI_CLASSES}\n"
         "[출력 형식] 아래 형식 '그대로' 출력하세요. 각 구분선(===...===)을 정확히 쓰고 그 사이에 내용만 넣으세요. "
         "마크다운 코드펜스(```)나 형식 밖의 다른 말은 절대 쓰지 마세요. body_html은 위 클래스만 쓴 순수 HTML입니다.\n"
@@ -619,7 +620,9 @@ def _ai_user_prompt(mode, date_kst, items, asof, vol, rank_up, rank_dn, flows):
     )
 
 
-def call_anthropic(api_key, system, user, max_tokens=16000, max_searches=7):
+def call_anthropic(api_key, system, user, max_tokens=16000, max_searches=7, max_attempts=4):
+    # 재시도 정책(사고#8 대응): 과부하·타임아웃·5xx·429 등 '일시적' 오류는 백오프 후 재시도.
+    # 단 400(잔액부족 등)·401·403은 재시도해도 동일하므로 즉시 실패시켜 폴백 판단으로 넘긴다.
     body = {
         "model": ANTHROPIC_MODEL,
         "max_tokens": max_tokens,
@@ -627,16 +630,38 @@ def call_anthropic(api_key, system, user, max_tokens=16000, max_searches=7):
         "messages": [{"role": "user", "content": user}],
         "tools": [{"type": "web_search_20250305", "name": "web_search", "max_uses": max_searches}],
     }
-    req = urllib.request.Request("https://api.anthropic.com/v1/messages",
-                                 data=json.dumps(body).encode("utf-8"),
-                                 headers={"content-type": "application/json",
-                                          "x-api-key": api_key,
-                                          "anthropic-version": "2023-06-01",
-                                          "User-Agent": UA}, method="POST")
-    with urllib.request.urlopen(req, timeout=240) as r:
-        data = json.load(r)
-    texts = [b.get("text", "") for b in data.get("content", []) if b.get("type") == "text"]
-    return "\n".join(t for t in texts if t).strip()
+    payload = json.dumps(body).encode("utf-8")
+    last_err = None
+    for attempt in range(1, max_attempts + 1):
+        req = urllib.request.Request("https://api.anthropic.com/v1/messages",
+                                     data=payload,
+                                     headers={"content-type": "application/json",
+                                              "x-api-key": api_key,
+                                              "anthropic-version": "2023-06-01",
+                                              "User-Agent": UA}, method="POST")
+        try:
+            with urllib.request.urlopen(req, timeout=240) as r:
+                data = json.load(r)
+            texts = [b.get("text", "") for b in data.get("content", []) if b.get("type") == "text"]
+            out = "\n".join(t for t in texts if t).strip()
+            if not out:
+                raise ValueError("빈 응답(텍스트 블록 없음)")
+            return out
+        except urllib.error.HTTPError as e:
+            if e.code in (400, 401, 403):  # 잔액/인증/요청오류 → 재시도 무의미
+                try:
+                    detail = e.read().decode("utf-8", "ignore")[:300]
+                except Exception:
+                    detail = ""
+                raise RuntimeError(f"Anthropic {e.code} 비재시도 오류(잔액/인증 점검): {detail}") from e
+            last_err = f"HTTP {e.code}"
+        except (urllib.error.URLError, TimeoutError, OSError, ValueError) as e:
+            last_err = repr(e)
+        if attempt < max_attempts:
+            wait = min(45, 6 * (2 ** (attempt - 1)))  # 6 → 12 → 24 → (45)
+            sys.stderr.write(f"[ai] Claude 호출 실패(시도 {attempt}/{max_attempts}: {last_err}) — {wait}s 후 재시도\n")
+            time.sleep(wait)
+    raise RuntimeError(f"Anthropic 호출 {max_attempts}회 연속 실패: {last_err}")
 
 
 def parse_article(txt):
@@ -676,13 +701,16 @@ def compose_with_claude(api_key, mode, date_kst, items, asof, vol, rank_up, rank
         "반드시 지정된 구분자 형식으로만 출력합니다."
     )
     user = _ai_user_prompt(mode, date_kst, items, asof, vol, rank_up, rank_dn, flows)
-    raw = call_anthropic(api_key, system, user)
-    try:
-        return parse_article(raw)
-    except Exception:
-        # 진단을 위해 원문 앞부분을 로그로 남기고 다시 던짐 → main에서 폴백
-        sys.stderr.write("[ai] 응답 파싱 실패. 원문 앞 400자:\n" + (raw[:400] if raw else "(빈 응답)") + "\n")
-        raise
+    last_err = None
+    for attempt in range(1, 3):  # 파싱 실패(형식 깨짐) 시 1회 더 재생성
+        raw = call_anthropic(api_key, system, user)
+        try:
+            return parse_article(raw)
+        except Exception as e:
+            last_err = e
+            sys.stderr.write(f"[ai] 응답 파싱 실패(시도 {attempt}/2): {e}. 원문 앞 400자:\n"
+                             + (raw[:400] if raw else "(빈 응답)") + "\n")
+    raise last_err
 
 
 
@@ -1166,6 +1194,19 @@ def main():
         if (not used_ai) and len(htmlstr) < len(prev):
             print(f"[guard] 강제 재생성이나 AI 작성 실패(템플릿) — 더 긴 기존 파일을 보존합니다: {relfile}")
             return 0
+
+    # ── 품질 게이트(사고#8 재발 방지) ──────────────────────────────
+    # 개장/마감은 '분석 본문'이 핵심이라, 재시도로도 AI가 못 살아난 경우(주로 ANTHROPIC 잔액 소진)
+    # 짧은 템플릿(숫자만)을 그대로 자동발행하지 않는다. 런을 실패(비0)시켜 운영자에게 알리고,
+    # 수동 상세본(인수인계서 12.3)으로 가게 한다. 의도된 템플릿 발행/테스트는 ALLOW_TEMPLATE=1.
+    allow_template = os.environ.get("ALLOW_TEMPLATE", "").strip() == "1"
+    if (not used_ai) and mode in ("open", "close") and not allow_template:
+        sys.stderr.write(
+            f"[ALERT] AI 작성 실패 → {mode} 템플릿(간단본) 자동발행 중단({now:%Y-%m-%d}). "
+            "수동 상세본 발행 필요(인수인계서 12.3). "
+            "원인 점검: ANTHROPIC_API_KEY 잔액/일시오류. "
+            "의도된 템플릿 발행이면 ALLOW_TEMPLATE=1 로 재실행.\n")
+        return 2
 
     with open(abspath, "w", encoding="utf-8") as f:
         f.write(htmlstr)
