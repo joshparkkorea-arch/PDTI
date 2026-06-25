@@ -19,6 +19,7 @@
   커밋/푸시는 워크플로(daily-news.yml)가 담당.
 """
 import json, os, sys, time, html, subprocess, urllib.request, urllib.error
+import re
 from datetime import datetime, timezone, timedelta
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -536,10 +537,13 @@ AI_CLASSES = (
     " - <p class=\"small\">…</p> : 작은 보조설명·출처\n"
     " - <hr class=\"rule\"> : 구분선\n"
     " - 출처 링크: <a href=\"URL\" target=\"_blank\" rel=\"noopener\">매체명</a>\n"
-    "\n[강조 규칙 — 색=역할 1:1 고정]\n"
-    " · 빨강(up)·파랑(down)은 오직 '등락률 수치'에만. 일반 강조에 색을 섞지 말 것(색이 흔해지면 안 읽힘).\n"
-    " · 키워드 환기=.key(골드밑줄), 중요 숫자=.num(세리프), 섹션 결론=.takeaway 1개로 역할을 나눠 쓸 것.\n"
-    " · 강조는 절제(문단당 .key 1~2개): 다 강조하면 위계가 사라진다. 평문이 기본, 강조는 포인트.\n"
+    "\n[강조 규칙 — 색=역할 1:1 고정 · 강조는 '필수']\n"
+    " · 본문에 강조가 하나도 없으면 안 됩니다. 평문만 늘어놓지 말고 아래 4종을 기사 전체에 골고루 반드시 적용하세요.\n"
+    " · 빨강(up)·파랑(down)은 오직 '일간 등락률 수치'에만 — 본문에 등장하는 모든 등락률(%)은 빠짐없이 .up/.down으로 감쌀 것(필수).\n"
+    " · .key(골드밑줄): 각 섹션 본문에서 핵심 사건명·키워드를 반드시 표시(문단당 1~2개까지, 그 이상 남발은 금지).\n"
+    " · .num(세리프): 지수 레벨·중요 금액·종목수 같은 핵심 '절대수치'가 본문에 나오면 반드시 .num으로 환기(등락률(%)엔 쓰지 말 것 — 그건 up/down).\n"
+    " · .takeaway: 각 섹션은 가장 중요한 결론 1문장을 .takeaway 콜아웃으로 마무리(섹션당 1개 권장, 최대 1개).\n"
+    " · 원칙은 '평문이 기본, 강조는 포인트'지만 포인트가 0개여서는 안 됩니다 — 색이 흔해지지 않게 절제하되, 각 종류가 최소 1회 이상은 쓰여야 합니다.\n"
 )
 
 
@@ -607,6 +611,7 @@ def _ai_user_prompt(mode, date_kst, items, asof, vol, rank_up, rank_dn, flows):
         "9) 미국 지수·지표·기관 알파벳 병기: 처음 나올 때 알파벳/약어를 괄호로 함께 적습니다(예: 나스닥(NASDAQ), 연준(Fed), 연방공개시장위원회(FOMC), 소비자물가(CPI), 점도표(dot plot)).\n"
         "10) 실적 발표·경제지표 등 '시각이 정해진' 일정을 언급할 때는 항상 한국시간(KST)으로 환산해 원래 시간과 함께 병기합니다(예: '미 동부 오후 4시 30분(한국시간 익일 새벽 5시 30분)'). 미국은 서머타임 적용 여부에 따라 한국과의 시차가 13/14시간으로 달라지니, web_search로 해당 일정의 정확한 KST를 확인해 적습니다. 분 단위가 공시되지 않은 '장 마감 후(after market close)' 같은 표현은 그대로 옮기되, 콘퍼런스콜 등 구체 시각이 있으면 그 시각을 KST로 병기합니다.\n\n"
         f"{AI_CLASSES}\n"
+        "[발행 전 자가점검] 출력하기 전에 본문을 스스로 점검하세요: ⑴ 모든 등락률(%)이 .up/.down으로 감싸졌는가, ⑵ 핵심 키워드·사건명에 .key가 (기사 전체 3개 이상) 들어갔는가, ⑶ 중요한 절대수치(지수레벨·금액)에 .num을 썼는가, ⑷ 각 섹션이 .takeaway로 마무리됐는가. 하나라도 비어 있으면 강조를 보강해 다시 작성한 뒤 출력하세요.\n\n"
         "[출력 형식] 아래 형식 '그대로' 출력하세요. 각 구분선(===...===)을 정확히 쓰고 그 사이에 내용만 넣으세요. "
         "마크다운 코드펜스(```)나 형식 밖의 다른 말은 절대 쓰지 마세요. body_html은 위 클래스만 쓴 순수 HTML입니다.\n"
         "===TITLE===\n"
@@ -998,6 +1003,29 @@ def build_html(mode, date_kst, items, asof, rank_up, rank_dn, flows):
     return "".join(parts), title, summary
 
 
+def enrich_highlights(body_html):
+    """강조 누락 안전망: 본문 산문에 들어간 '맨몸 등락률(±%)'을 자동으로 .up/.down 으로 감싼다.
+    - 표(<table>…</table>)와 기존 <span>…</span> 안은 절대 건드리지 않는다(중복 래핑·표 훼손 방지).
+    - 부호 없는 값(기준금리·물가율·지수 레벨 등)은 손대지 않는다(부호 있는 일간 등락률만 대상)."""
+    if not body_html:
+        return body_html
+    protect = re.compile(r'(<table\b.*?</table>|<span\b.*?</span>)', re.S | re.I)
+    # 부호(+/-/−)로 시작하는 퍼센트 토큰. 앞이 단어문자면(범위 '15%' 등) 제외.
+    pct = re.compile(r'(?<![\w.])([+\-−]\d[\d,]*(?:\.\d+)?\s?%)')
+
+    def wrap(seg):
+        def repl(m):
+            tok = m.group(1)
+            cls = "down" if tok.lstrip()[0] in "-−" else "up"
+            return f'<span class="{cls}">{tok}</span>'
+        return pct.sub(repl, seg)
+
+    parts = protect.split(body_html)        # [free, protected, free, protected, ...]
+    for i in range(0, len(parts), 2):       # 보호 블록(홀수 인덱스)은 건너뜀
+        parts[i] = wrap(parts[i])
+    return "".join(parts)
+
+
 def render_ai(mode, date_kst, meta):
     """Claude가 쓴 {title, subtitle, summary, body_html}을 기존 디자인에 입힌다."""
     d = date_kst
@@ -1012,7 +1040,7 @@ def render_ai(mode, date_kst, meta):
         toplabel = "데일리 · " + tag
     title = str(meta["title"]).strip()
     subtitle = str(meta.get("subtitle", "")).strip()
-    body_html = str(meta["body_html"])
+    body_html = enrich_highlights(str(meta["body_html"]))
     disc = ('본 리포트는 시장 정보 제공 및 분석 목적이며 특정 종목의 매수·매도 권유가 아닙니다. 본문의 뉴스·수치는 '
             '작성 시점 web 검색 및 공개 데이터를 근거로 하며 출처를 표기했으나, 속보성 사안은 이후 정정될 수 있습니다. '
             '전망·시나리오는 작성 시점 판단으로 실제와 다를 수 있습니다. 모든 투자 결정은 투자자 본인의 판단과 책임 '
