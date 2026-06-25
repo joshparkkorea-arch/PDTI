@@ -1,5 +1,5 @@
 {
-  "asof": "2026-06-26 06:45 KST (자동·KIS+Twelve Data)",
+  "asof": "2026-06-26 07:00 KST (자동·KIS+Twelve Data)",
   "items": [
     {
       "name": "KOSPI",
@@ -15,15 +15,15 @@
     },
     {
       "name": "USD/KRW",
-      "value": "1,544.8",
-      "change": "-0.3",
+      "value": "1,544.6",
+      "change": "-0.5",
       "dir": "down"
     },
     {
       "name": "WTI",
       "value": "$71.47",
-      "change": "+1.61%",
-      "dir": "up"
+      "change": "-0.63%",
+      "dir": "down"
     },
     {
       "name": "S&P 500",
@@ -39,8 +39,8 @@
     },
     {
       "name": "달러인덱스",
-      "value": "101.46",
-      "change": "-0.15%",
+      "value": "101.42",
+      "change": "-0.19%",
       "dir": "down"
     }
   ]
