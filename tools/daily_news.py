@@ -609,9 +609,11 @@ def _ai_user_prompt(mode, date_kst, items, asof, vol, rank_up, rank_dn, flows):
         "7) 등락률 표기 통일: 전일 대비 '일간 등락률'에는 항상 +/− 부호를 붙입니다(예: <span class=\"up\">+1.2%</span>, <span class=\"down\">−9.99%</span>). 단, 기준금리·물가율·지수 레벨처럼 '변동이 아닌 값'에는 부호를 붙이지 마세요.\n"
         "8) 쉬운 풀이: 중학생이 모를 만한 경제·금융 용어는 처음 나올 때 괄호로 짧게 뜻을 병기하세요(예: 서킷브레이커(주가가 급락하면 거래를 잠시 멈추는 제도), 밸류에이션(기업가치 대비 주가 수준)). 한 용어당 한 번만, 간결하게.\n"
         "9) 미국 지수·지표·기관 알파벳 병기: 처음 나올 때 알파벳/약어를 괄호로 함께 적습니다(예: 나스닥(NASDAQ), 연준(Fed), 연방공개시장위원회(FOMC), 소비자물가(CPI), 점도표(dot plot)).\n"
-        "10) 실적 발표·경제지표 등 '시각이 정해진' 일정을 언급할 때는 항상 한국시간(KST)으로 환산해 원래 시간과 함께 병기합니다(예: '미 동부 오후 4시 30분(한국시간 익일 새벽 5시 30분)'). 미국은 서머타임 적용 여부에 따라 한국과의 시차가 13/14시간으로 달라지니, web_search로 해당 일정의 정확한 KST를 확인해 적습니다. 분 단위가 공시되지 않은 '장 마감 후(after market close)' 같은 표현은 그대로 옮기되, 콘퍼런스콜 등 구체 시각이 있으면 그 시각을 KST로 병기합니다.\n\n"
+        "10) 실적 발표·경제지표 등 '시각이 정해진' 일정을 언급할 때는 항상 한국시간(KST)으로 환산해 원래 시간과 함께 병기합니다(예: '미 동부 오후 4시 30분(한국시간 익일 새벽 5시 30분)'). 미국은 서머타임 적용 여부에 따라 한국과의 시차가 13/14시간으로 달라지니, web_search로 해당 일정의 정확한 KST를 확인해 적습니다. 분 단위가 공시되지 않은 '장 마감 후(after market close)' 같은 표현은 그대로 옮기되, 콘퍼런스콜 등 구체 시각이 있으면 그 시각을 KST로 병기합니다.\n"
+        "11) '역사적'이라는 표현은 해당 지표가 역사상 5위 이내임이 확인될 때만 사용하세요. 그 외에는 쓰지 말고 사실대로 순화합니다. '역대급'·'최근 수년간 손에 꼽히는'·'사상 최대' 같은 희소성·최상급 표현도 카운트나 공식 자료로 검증된 경우에만 쓰고, 아니면 쓰지 마세요. '어닝 쇼크'는 실적이 기대를 밑돈 경우에만 쓰고, 호실적 서프라이즈에는 쓰지 마세요(정반대 의미).\n"
+        "12) 지수의 '급등/급락/약세/강세 출발(개장 기사)' 또는 '마감(마감 기사)'은 반드시 '금일 시초가' 또는 '금일 종가'의 실제 부호로만 판단해 적습니다. '전일 종가'의 등락률을 오늘의 개장/마감 등락률로 절대 재사용하지 마세요(예: 전일 종가 +5.42%를 '오늘 +5.42% 급등 출발'로 쓰면 안 됨). 표와 본문에서 '전일 종가'와 '금일 시초가/종가'를 항상 구분해 명시하고, 금일 시초가 데이터가 없으면 방향(급등/급락 등)을 단정하지 마세요.\n\n"
         f"{AI_CLASSES}\n"
-        "[발행 전 자가점검] 출력하기 전에 본문을 스스로 점검하세요: ⑴ 모든 등락률(%)이 .up/.down으로 감싸졌는가, ⑵ 핵심 키워드·사건명에 .key가 (기사 전체 3개 이상) 들어갔는가, ⑶ 중요한 절대수치(지수레벨·금액)에 .num을 썼는가, ⑷ 각 섹션이 .takeaway로 마무리됐는가. 하나라도 비어 있으면 강조를 보강해 다시 작성한 뒤 출력하세요.\n\n"
+        "[발행 전 자가점검] 출력하기 전에 본문을 스스로 점검하세요: ⑴ 모든 등락률(%)이 .up/.down으로 감싸졌는가, ⑵ 핵심 키워드·사건명에 .key가 (기사 전체 3개 이상) 들어갔는가, ⑶ 중요한 절대수치(지수레벨·금액)에 .num을 썼는가, ⑷ 각 섹션이 .takeaway로 마무리됐는가, ⑸ '역사적·역대급·사상 최대' 등 미검증 최상급을 쓰지 않았는가(규칙 11), ⑹ '급등/약세 출발' 등 방향을 '전일 종가'가 아닌 '금일 시초가/종가'의 실제 부호로 적었는가(규칙 12). 하나라도 어긋나면 고쳐 다시 작성한 뒤 출력하세요.\n\n"
         "[출력 형식] 아래 형식 '그대로' 출력하세요. 각 구분선(===...===)을 정확히 쓰고 그 사이에 내용만 넣으세요. "
         "마크다운 코드펜스(```)나 형식 밖의 다른 말은 절대 쓰지 마세요. body_html은 위 클래스만 쓴 순수 HTML입니다.\n"
         "===TITLE===\n"
@@ -829,8 +831,8 @@ HEAD_B = (' · INVEST STORY</title>\n'
           + ART_CSS + '\n</head><body>\n')
 
 
-def head_html(title_esc):
-    return HEAD_A + title_esc + HEAD_B
+def head_html(title_esc, og_block=""):
+    return HEAD_A + title_esc + HEAD_B.replace('</title>\n', '</title>\n' + og_block, 1)
 
 TOC_JS = r"""<script>
 (function(){
@@ -1045,7 +1047,15 @@ def render_ai(mode, date_kst, meta):
             '작성 시점 web 검색 및 공개 데이터를 근거로 하며 출처를 표기했으나, 속보성 사안은 이후 정정될 수 있습니다. '
             '전망·시나리오는 작성 시점 판단으로 실제와 다를 수 있습니다. 모든 투자 결정은 투자자 본인의 판단과 책임 '
             '하에 이루어져야 하며, Josh Park Invest는 본 자료를 활용한 투자 결과에 어떠한 책임도 지지 않습니다.')
-    parts = [head_html(esc(title))]
+    og_desc = esc(str(meta.get("summary") or subtitle or title)[:200])
+    og_url = f"https://investstory.co.kr/newsletters/{d.strftime('%Y-%m-%d')}-{mode}.html"
+    og_block = ('<meta property="og:type" content="article">\n'
+                '<meta property="og:site_name" content="INVEST STORY">\n'
+                f'<meta property="og:title" content="{esc(title)}">\n'
+                f'<meta property="og:description" content="{og_desc}">\n'
+                f'<meta property="og:url" content="{og_url}">\n'
+                '<meta name="twitter:card" content="summary">\n')
+    parts = [head_html(esc(title), og_block)]
     parts.append(f'<div class="topbar"><div class="topbar-in"><a class="home" href="/">INVEST STORY</a>'
                  f'<span class="tag">{toplabel} · {d.strftime("%Y-%m-%d")}</span></div></div>\n')
     parts.append('<main>\n')
