@@ -202,12 +202,12 @@ def fetch_investors(token, app_key, app_secret):
         return None
 
 
-def fetch_volume_rank(token, app_key, app_secret, n=5):
-    """국내 거래량 상위 종목 — best-effort. 실패 시 None."""
+def fetch_value_rank(token, app_key, app_secret, n=5):
+    """국내 거래대금(거래금액) 상위 종목 — best-effort. 저가주 쏠림 방지 위해 거래량 대신 거래대금 기준. 실패 시 None."""
     try:
         params = {
             "fid_cond_mrkt_div_code": "J", "fid_cond_scr_div_code": "20171",
-            "fid_input_iscd": "0000", "fid_div_cls_code": "0", "fid_blng_cls_code": "0",
+            "fid_input_iscd": "0000", "fid_div_cls_code": "0", "fid_blng_cls_code": "3",  # 3=거래금액(거래대금)순
             "fid_trgt_cls_code": "111111111", "fid_trgt_exls_cls_code": "0000000000",
             "fid_input_price_1": "", "fid_input_price_2": "", "fid_vol_cnt": "",
             "fid_input_date_1": "",
@@ -224,11 +224,12 @@ def fetch_volume_rank(token, app_key, app_secret, n=5):
                 "price": o.get("stck_prpr", "—"),
                 "ctrt": o.get("prdy_ctrt", "—"),
                 "vol": o.get("acml_vol", "—"),
+                "val": o.get("acml_tr_pbmn", "—"),   # 누적 거래대금
                 "sign": o.get("prdy_vrss_sign", "3"),
             })
         return out or None
     except Exception as e:
-        sys.stderr.write(f"[vol] 거래량순위 실패: {e}\n")
+        sys.stderr.write(f"[val] 거래대금순위 실패: {e}\n")
         return None
 
 
@@ -499,6 +500,37 @@ def fmp_quotes(tickers, fmp_key):
             out[sym] = _fmp_fmt(arr[0])
     return out
 
+def fetch_us_movers(fmp_key, n=5):
+    """간밤 미국장 거래활발(거래대금) 상위 종목 — FMP most-actives. 실패 시 None."""
+    if not fmp_key:
+        return None
+    k = urllib.parse.quote(fmp_key)
+    for u in (f"https://financialmodelingprep.com/stable/most-actives?apikey={k}",
+              f"https://financialmodelingprep.com/api/v3/stock_market/actives?apikey={k}"):
+        try:
+            arr = _fmp_get(u)
+            if isinstance(arr, dict):
+                if arr.get("Error Message") or arr.get("error"):
+                    continue
+                arr = arr.get("mostActiveStock") or arr.get("data") or []
+            if not arr:
+                continue
+            out = []
+            for q in arr[:n]:
+                sym = q.get("symbol") or q.get("ticker") or ""
+                if not sym:
+                    continue
+                price = q.get("price")
+                chg, _ = _pct_disp(q.get("changesPercentage", q.get("changePercentage")))
+                out.append({"symbol": sym, "name": q.get("name", ""),
+                            "price": (f"${float(price):,.2f}" if price is not None else "—"), "chg": chg})
+            if out:
+                return out
+        except Exception as e:
+            sys.stderr.write(f"[us_movers] 실패: {e}\n")
+    return None
+
+
 def inject_stock_tables(body, token, key, sec):
     """본문의 {{STOCK|시장|식별자|종목명}} 토큰을 공식 4줄 표로 치환.
     미국 종목은 콤마로 묶어 1회만 호출(분당 제한 회피), 한국 종목은 KIS로 개별 조회."""
@@ -577,7 +609,7 @@ AI_CLASSES = (
 )
 
 
-def _ai_user_prompt(mode, date_kst, items, asof, vol, rank_up, rank_dn, flows):
+def _ai_user_prompt(mode, date_kst, items, asof, vol, rank_up, rank_dn, flows, us_movers=None):
     d = date_kst
     dstr = f'{d.year}년 {d.month}월 {d.day}일({WEEKDAY_KR[d.weekday()]})'
     lines = [f'[확정 데이터 — 아래 숫자는 그대로 사용, 추가 사실은 web_search로 확인]',
@@ -590,8 +622,8 @@ def _ai_user_prompt(mode, date_kst, items, asof, vol, rank_up, rank_dn, flows):
     if idx:
         lines.append("지수/지표: " + ", ".join(idx))
     if vol:
-        lines.append("거래량 상위(한국): " + "; ".join(
-            f'{x["name"]}({x.get("code","")}) 현재가 {x["price"]} 등락 {x["ctrt"]}% 거래량 {x["vol"]}' for x in vol))
+        lines.append("거래대금 상위(한국): " + "; ".join(
+            f'{x["name"]}({x.get("code","")}) 현재가 {x["price"]} 등락 {x["ctrt"]}% 거래대금 {x.get("val","—")}' for x in vol))
     if rank_up:
         lines.append("등락률 상위: " + ", ".join(f'{x["name"]}({x.get("code","")}) {x["ctrt"]}%' for x in rank_up))
     if rank_dn:
@@ -601,19 +633,22 @@ def _ai_user_prompt(mode, date_kst, items, asof, vol, rank_up, rank_dn, flows):
     if flows:
         lines.append("수급(외국인/기관/개인 순매수): " + "; ".join(
             f'{m} 외 {v.get("frgn")} 기 {v.get("orgn")} 개 {v.get("indv")}' for m, v in flows.items()))
+    if us_movers:
+        lines.append("미국 주목 종목(간밤 거래활발 상위, 거래대금 기준): " + "; ".join(
+            f'{x["symbol"]} {x.get("name","")} {x.get("price","")} {x.get("chg","")}' for x in us_movers))
 
     if mode == "close":
         focus = (
             "이번은 '한국 증시 마감 시황'입니다. 한국 뉴스 위주로 구성하되, 밤사이/장중 한국 증시에 "
-            "영향을 준 해외(특히 미국) 이슈가 있으면 반드시 포함하세요. 거래량 상위 5종목(한국)은 각각 "
+            "영향을 준 해외(특히 미국) 이슈가 있으면 반드시 포함하세요. 거래대금 상위 5종목(한국)은 각각 "
             "오늘 주가 흐름 + 관련 뉴스 + 수급(외국인·기관)을 엮어 분석하고, 근거를 댄 향후 주가 시나리오를 제시하세요.")
         sections = ("마감 요약(lead-para) → 지수 마감표(table.grid) → 오늘의 주요 뉴스(출처 명시) → "
-                    "거래량 상위 5종목 분석(종목별 흐름·뉴스·수급·향후 시나리오) → 외국인·기관 수급 분석 → "
+                    "거래대금 상위 5종목 분석(종목별 흐름·뉴스·수급·향후 시나리오) → 외국인·기관 수급 분석 → "
                     "내일 관전 포인트·전망(근거 명시)")
     else:
         focus = (
             "이번은 '개장 브리핑'입니다. 간밤 미국 증시·주요 미국 뉴스 위주로 구성하되, 한국 장에 큰 영향을 "
-            "줄 이슈가 있으면 포함하세요. 미국 거래량/주목 상위 5종목을 web_search로 확인해 흐름·뉴스를 분석하고 "
+            "줄 이슈가 있으면 포함하세요. 위 '미국 주목 종목'(제공된 간밤 거래활발 상위 미국 종목)을 중심으로 각 종목의 흐름·뉴스·향후 시나리오를 분석하되, 본문에 {{STOCK|us|티커|한글명}} 토큰을 넣어 표가 자동으로 채워지게 하고(최신 보조정보는 web_search로 보강), "
             "전망을 제시하세요. 한국 코스피·코스닥은 전 거래일 종가 기준으로 출발 환경을 짚어주세요. "
             "간밤 미국 지수표에는 S&P500·나스닥·다우존스를 모두 넣되, 종가(레벨) 칸을 비우거나 '—'로 두지 말고 "
             "확정 데이터에 없으면 web_search로 확인한 마감 지수를 채우세요.")
@@ -732,7 +767,7 @@ def parse_article(txt):
     return {"title": title, "subtitle": subtitle, "summary": summary, "body_html": body}
 
 
-def compose_with_claude(api_key, mode, date_kst, items, asof, vol, rank_up, rank_dn, flows):
+def compose_with_claude(api_key, mode, date_kst, items, asof, vol, rank_up, rank_dn, flows, us_movers=None):
     system = (
         "당신은 한국의 데일리 투자 뉴스레터 '투자이야기(INVEST STORY)'의 증시 전문 기자입니다. "
         "기사는 '박철웅 기자' 명의로 공개 발행됩니다. 정확성과 출처 표기를 최우선으로 하며, 확인되지 않은 "
@@ -740,7 +775,7 @@ def compose_with_claude(api_key, mode, date_kst, items, asof, vol, rank_up, rank
         "web_search로 직접 확인해 출처를 답니다. 한국 증시 색상 관례(상승=빨강, 하락=파랑)를 따릅니다. "
         "반드시 지정된 구분자 형식으로만 출력합니다."
     )
-    user = _ai_user_prompt(mode, date_kst, items, asof, vol, rank_up, rank_dn, flows)
+    user = _ai_user_prompt(mode, date_kst, items, asof, vol, rank_up, rank_dn, flows, us_movers)
     last_err = None
     for attempt in range(1, 3):  # 파싱 실패(형식 깨짐) 시 1회 더 재생성
         raw = call_anthropic(api_key, system, user)
@@ -1150,8 +1185,8 @@ def selftest(token, key, sec):
         print("등락률 상위:", "OK " + ", ".join(x["name"] for x in up) if up else "실패(섹션 생략됨)")
         dn = fetch_fluctuation(token, key, sec, "1", 3)
         print("등락률 하위:", "OK" if dn else "실패(섹션 생략됨)")
-        vol = fetch_volume_rank(token, key, sec, 3)
-        print("거래량 상위:", "OK " + ", ".join(x["name"] for x in vol) if vol else "실패(섹션 생략됨)")
+        vol = fetch_value_rank(token, key, sec, 3)
+        print("거래대금 상위:", "OK " + ", ".join(x["name"] for x in vol) if vol else "실패(섹션 생략됨)")
         fl = fetch_investors(token, key, sec)
         print("수급(외국인/기관):", "OK" if fl else "실패(섹션 생략됨)")
     print("=== 끝 (파일은 만들지 않았습니다) ===")
@@ -1205,22 +1240,25 @@ def main():
         else:
             print("[daily_news] 다우존스 종가 미확보(FMP) — AI가 web_search로 채움")
 
-    rank_up = rank_dn = flows = vol = None
+    rank_up = rank_dn = flows = vol = us_movers = None
+    if mode == "open":
+        us_movers = fetch_us_movers(os.environ.get("FMP_API_KEY", "").strip(), 5)
+        print(f"[daily_news] 미국주목종목={'O' if us_movers else 'X'}")
     if token:
         if mode == "close":
             topcap = fetch_topcap_codes(token, key, sec, 100)   # 시총 상위 100위 집합
             rank_up = fetch_fluctuation(token, key, sec, "0", 5, allow=topcap)
             rank_dn = fetch_fluctuation(token, key, sec, "1", 5, allow=topcap)
-            vol = fetch_volume_rank(token, key, sec, 5)
+            vol = fetch_value_rank(token, key, sec, 5)
             flows = fetch_investors(token, key, sec)
-            print(f"[daily_news] 시총상위100={'O' if topcap else 'X'} 거래량상위={'O' if vol else 'X'} 등락상위={'O' if rank_up else 'X'} "
+            print(f"[daily_news] 시총상위100={'O' if topcap else 'X'} 거래대금상위={'O' if vol else 'X'} 등락상위={'O' if rank_up else 'X'} "
                   f"등락하위={'O' if rank_dn else 'X'} 수급={'O' if flows else 'X'}")
 
     api_key = os.environ.get("ANTHROPIC_API_KEY", "").strip()
     htmlstr = title = summary = None
     if api_key:
         try:
-            meta = compose_with_claude(api_key, mode, now, items, asof, vol, rank_up, rank_dn, flows)
+            meta = compose_with_claude(api_key, mode, now, items, asof, vol, rank_up, rank_dn, flows, us_movers)
             try:
                 meta["body_html"] = inject_stock_tables(meta["body_html"], token, key, sec)
             except Exception as e:
