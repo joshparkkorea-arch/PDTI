@@ -113,8 +113,33 @@ def trading_day(date_kst, token, app_key, app_secret):
     return True, "백업(주말·휴장표 제외)"
 
 
-def fetch_fluctuation(token, app_key, app_secret, sort_code, n=5):
-    """등락률 순위. sort_code: '0'=상승률 상위, '1'=하락률 상위. 실패 시 None."""
+def fetch_topcap_codes(token, app_key, app_secret, n=100):
+    """시가총액 상위 n위 종목코드 집합 — 등락률 상하위 필터용. 실패 시 None."""
+    try:
+        params = {
+            "fid_cond_mrkt_div_code": "J", "fid_cond_scr_div_code": "20174",
+            "fid_input_iscd": "0000", "fid_div_cls_code": "0",
+            "fid_trgt_cls_code": "0", "fid_trgt_exls_cls_code": "0",
+            "fid_input_price_1": "", "fid_input_price_2": "", "fid_vol_cnt": "",
+        }
+        data = kis_get("/uapi/domestic-stock/v1/ranking/market-cap", "FHPST01740000",
+                       params, token, app_key, app_secret)
+        if data.get("rt_cd") != "0":
+            return None
+        codes = set()
+        for o in data.get("output", [])[:n]:
+            c = o.get("mksc_shrn_iscd") or o.get("stck_shrn_iscd") or ""
+            if c:
+                codes.add(c)
+        return codes or None
+    except Exception as e:
+        sys.stderr.write(f"[topcap] 시총상위 실패: {e}\n")
+        return None
+
+
+def fetch_fluctuation(token, app_key, app_secret, sort_code, n=5, allow=None):
+    """등락률 순위. sort_code: '0'=상승률 상위, '1'=하락률 상위. 실패 시 None.
+    allow가 주어지면(시총 상위 코드집합) 그 안의 종목만 채택."""
     try:
         params = {
             "fid_cond_mrkt_div_code": "J", "fid_cond_scr_div_code": "20170",
@@ -130,14 +155,19 @@ def fetch_fluctuation(token, app_key, app_secret, sort_code, n=5):
         if data.get("rt_cd") != "0":
             return None
         out = []
-        for o in data.get("output", [])[:n]:
+        for o in data.get("output", []):
+            code = o.get("stck_shrn_iscd") or o.get("mksc_shrn_iscd") or ""
+            if allow is not None and code not in allow:
+                continue
             out.append({
                 "name": o.get("hts_kor_isnm", "—"),
-                "code": o.get("stck_shrn_iscd") or o.get("mksc_shrn_iscd") or "",
+                "code": code,
                 "price": o.get("stck_prpr", "—"),
                 "ctrt": o.get("prdy_ctrt", "—"),   # 등락률(%)
                 "sign": o.get("prdy_vrss_sign", "3"),
             })
+            if len(out) >= n:
+                break
         return out or None
     except Exception as e:
         sys.stderr.write(f"[rank] 등락률({sort_code}) 실패: {e}\n")
@@ -530,7 +560,7 @@ AI_CLASSES = (
     " - <div class=\"src-cat\">소제목</div> : 표/블록 위 작은 소제목\n"
     " - <table class=\"grid\"><thead><tr><th>…</th></tr></thead><tbody><tr><td>…</td></tr></tbody></table> : 데이터 표\n"
     " - 등락은 <span class=\"up\">+1.2%</span> / <span class=\"down\">-0.8%</span> (한국식: 상승=빨강 up, 하락=파랑 down)\n"
-    " - <span class=\"key\">핵심 구절</span> : 꼭 읽혀야 할 핵심 키워드·사건명에 골드 밑줄 강조. 한 문단에 1~2개까지만(남발 금지).\n"
+    " - <span class=\"key\">핵심 구절</span> : 꼭 읽혀야 할 핵심 키워드·사건명·핵심 수치 구절에 골드 밑줄 강조. 한 문단에 1~3개까지 적극적으로(단, 한 문단을 통째로 칠하는 남발은 금지).\n"
     " - <span class=\"num\">8,203.84</span> : 본문 속 중요한 '절대 수치'(지수 레벨·금액·종목수 등)를 세리프로 환기. 등락률(%)에는 쓰지 말 것 — 그건 up/down.\n"
     " - <p class=\"takeaway\">섹션 핵심 한 줄</p> : 섹션마다 가장 중요한 결론 1문장을 콜아웃 박스로(섹션당 최대 1개, 보통 섹션 끝에).\n"
     " - <strong>…</strong> : 부차(약) 강조. key/num에 해당 안 되는 일반 강조용.\n"
@@ -540,7 +570,7 @@ AI_CLASSES = (
     "\n[강조 규칙 — 색=역할 1:1 고정 · 강조는 '필수']\n"
     " · 본문에 강조가 하나도 없으면 안 됩니다. 평문만 늘어놓지 말고 아래 4종을 기사 전체에 골고루 반드시 적용하세요.\n"
     " · 빨강(up)·파랑(down)은 오직 '일간 등락률 수치'에만 — 본문에 등장하는 모든 등락률(%)은 빠짐없이 .up/.down으로 감쌀 것(필수).\n"
-    " · .key(골드밑줄): 각 섹션 본문에서 핵심 사건명·키워드를 반드시 표시(문단당 1~2개까지, 그 이상 남발은 금지).\n"
+    " · .key(골드밑줄): 각 섹션 본문에서 핵심 사건명·키워드·중요 구절에 밑줄을 적극적으로 표시(문단당 2~3개까지 권장, 한 문단 통째 남발만 금지).\n"
     " · .num(세리프): 지수 레벨·중요 금액·종목수 같은 핵심 '절대수치'가 본문에 나오면 반드시 .num으로 환기(등락률(%)엔 쓰지 말 것 — 그건 up/down).\n"
     " · .takeaway: 각 섹션은 가장 중요한 결론 1문장을 .takeaway 콜아웃으로 마무리(섹션당 1개 권장, 최대 1개).\n"
     " · 원칙은 '평문이 기본, 강조는 포인트'지만 포인트가 0개여서는 안 됩니다 — 색이 흔해지지 않게 절제하되, 각 종류가 최소 1회 이상은 쓰여야 합니다.\n"
@@ -566,6 +596,8 @@ def _ai_user_prompt(mode, date_kst, items, asof, vol, rank_up, rank_dn, flows):
         lines.append("등락률 상위: " + ", ".join(f'{x["name"]}({x.get("code","")}) {x["ctrt"]}%' for x in rank_up))
     if rank_dn:
         lines.append("등락률 하위: " + ", ".join(f'{x["name"]}({x.get("code","")}) {x["ctrt"]}%' for x in rank_dn))
+    if rank_up or rank_dn:
+        lines.append("(위 등락률 상·하위 종목은 '시가총액 상위 100위 이내'로 이미 필터링된 목록입니다. 등락률 상·하위 섹션에는 제공된 이 종목들만 다루고, 100위권 밖 종목을 임의로 추가하지 마세요.)")
     if flows:
         lines.append("수급(외국인/기관/개인 순매수): " + "; ".join(
             f'{m} 외 {v.get("frgn")} 기 {v.get("orgn")} 개 {v.get("indv")}' for m, v in flows.items()))
@@ -614,7 +646,7 @@ def _ai_user_prompt(mode, date_kst, items, asof, vol, rank_up, rank_dn, flows):
         "12) 지수의 '급등/급락/약세/강세 출발(개장 기사)' 또는 '마감(마감 기사)'은 반드시 '금일 시초가' 또는 '금일 종가'의 실제 부호로만 판단해 적습니다. '전일 종가'의 등락률을 오늘의 개장/마감 등락률로 절대 재사용하지 마세요(예: 전일 종가 +5.42%를 '오늘 +5.42% 급등 출발'로 쓰면 안 됨). 표와 본문에서 '전일 종가'와 '금일 시초가/종가'를 항상 구분해 명시하고, 금일 시초가 데이터가 없으면 방향(급등/급락 등)을 단정하지 마세요.\n"
         "13) ===TITLE===(제목)과 ===SUBTITLE===(부제)에는 어떤 HTML 태그도 넣지 마세요. .up/.down/.key/.num 등 강조 span은 본문(===BODY===)에만 사용하고, 제목·부제는 순수 텍스트(숫자·기호는 그대로)로만 작성합니다.\n\n"
         f"{AI_CLASSES}\n"
-        "[발행 전 자가점검] 출력하기 전에 본문을 스스로 점검하세요: ⑴ 모든 등락률(%)이 .up/.down으로 감싸졌는가, ⑵ 핵심 키워드·사건명에 .key가 (기사 전체 3개 이상) 들어갔는가, ⑶ 중요한 절대수치(지수레벨·금액)에 .num을 썼는가, ⑷ 각 섹션이 .takeaway로 마무리됐는가, ⑸ '역사적·역대급·사상 최대' 등 미검증 최상급을 쓰지 않았는가(규칙 11), ⑹ '급등/약세 출발' 등 방향을 '전일 종가'가 아닌 '금일 시초가/종가'의 실제 부호로 적었는가(규칙 12), ⑺ 제목·부제에 HTML 태그(<span> 등)를 넣지 않았는가(규칙 13). 하나라도 어긋나면 고쳐 다시 작성한 뒤 출력하세요.\n\n"
+        "[발행 전 자가점검] 출력하기 전에 본문을 스스로 점검하세요: ⑴ 모든 등락률(%)이 .up/.down으로 감싸졌는가, ⑵ 핵심 키워드·사건명에 .key 밑줄이 (기사 전체 6개 이상) 충분히 들어갔는가, ⑶ 중요한 절대수치(지수레벨·금액)에 .num을 썼는가, ⑷ 각 섹션이 .takeaway로 마무리됐는가, ⑸ '역사적·역대급·사상 최대' 등 미검증 최상급을 쓰지 않았는가(규칙 11), ⑹ '급등/약세 출발' 등 방향을 '전일 종가'가 아닌 '금일 시초가/종가'의 실제 부호로 적었는가(규칙 12), ⑺ 제목·부제에 HTML 태그(<span> 등)를 넣지 않았는가(규칙 13). 하나라도 어긋나면 고쳐 다시 작성한 뒤 출력하세요.\n\n"
         "[출력 형식] 아래 형식 '그대로' 출력하세요. 각 구분선(===...===)을 정확히 쓰고 그 사이에 내용만 넣으세요. "
         "마크다운 코드펜스(```)나 형식 밖의 다른 말은 절대 쓰지 마세요. body_html은 위 클래스만 쓴 순수 HTML입니다.\n"
         "===TITLE===\n"
@@ -1176,11 +1208,12 @@ def main():
     rank_up = rank_dn = flows = vol = None
     if token:
         if mode == "close":
-            rank_up = fetch_fluctuation(token, key, sec, "0", 5)
-            rank_dn = fetch_fluctuation(token, key, sec, "1", 5)
+            topcap = fetch_topcap_codes(token, key, sec, 100)   # 시총 상위 100위 집합
+            rank_up = fetch_fluctuation(token, key, sec, "0", 5, allow=topcap)
+            rank_dn = fetch_fluctuation(token, key, sec, "1", 5, allow=topcap)
             vol = fetch_volume_rank(token, key, sec, 5)
             flows = fetch_investors(token, key, sec)
-            print(f"[daily_news] 거래량상위={'O' if vol else 'X'} 등락상위={'O' if rank_up else 'X'} "
+            print(f"[daily_news] 시총상위100={'O' if topcap else 'X'} 거래량상위={'O' if vol else 'X'} 등락상위={'O' if rank_up else 'X'} "
                   f"등락하위={'O' if rank_dn else 'X'} 수급={'O' if flows else 'X'}")
 
     api_key = os.environ.get("ANTHROPIC_API_KEY", "").strip()
