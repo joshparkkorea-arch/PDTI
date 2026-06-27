@@ -1,5 +1,5 @@
 {
-  "asof": "2026-06-27 12:15 KST (자동·KIS+Twelve Data)",
+  "asof": "2026-06-27 12:30 KST (자동·KIS+Twelve Data)",
   "items": [
     {
       "name": "KOSPI",
@@ -39,9 +39,9 @@
     },
     {
       "name": "달러인덱스",
-      "value": "101.36",
-      "change": "-0.25%",
-      "dir": "down"
+      "value": "101.37",
+      "change": "+0.01%",
+      "dir": "up"
     }
   ]
 }
