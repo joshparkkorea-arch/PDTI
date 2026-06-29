@@ -531,6 +531,102 @@ def fetch_us_movers(fmp_key, n=5):
     return None
 
 
+def _prem_disp(p):
+    """김치 프리미엄(%) → ('+1.2%'|'-0.8%'|'0.0%', 'up'|'down'|'flat'). 소수 1자리."""
+    try:
+        v = round(float(p), 1)
+    except Exception:
+        return (None, "flat")
+    if v > 0:
+        return (f"+{v:.1f}%", "up")
+    if v < 0:
+        return (f"{v:.1f}%", "down")
+    return ("0.0%", "flat")  # 반올림 후 0이면 보합(±0.0% 어색함 방지)
+
+
+def fetch_crypto_movers(td_key=None):
+    """업비트(원화)·바이낸스(USDT)·USD/KRW로 주요 코인 시세 + 김치 프리미엄 계산.
+    공개 시장 데이터(인증/키 불필요)만 사용. 업비트=api.upbit.com,
+    바이낸스=data-api.binance.vision(지역차단 회피). 실패 시 None(섹션 자동 생략)."""
+    SPECS = [
+        ("USDT", "테더",    "KRW-USDT", None),       # 스테이블코인: 기준환율 대비 프리미엄
+        ("BTC",  "비트코인", "KRW-BTC",  "BTCUSDT"),
+        ("ETH",  "이더리움", "KRW-ETH",  "ETHUSDT"),
+        ("XRP",  "리플",    "KRW-XRP",  "XRPUSDT"),
+    ]
+    # 1) USD/KRW 기준환율 (Twelve Data — 이미 보유한 키 재사용, 별도 Secret 불필요)
+    usdkrw = None
+    if td_key:
+        try:
+            k = urllib.parse.quote(td_key)
+            j = _fmp_get(f"https://api.twelvedata.com/price?symbol=USD/KRW&apikey={k}")
+            if isinstance(j, dict) and j.get("price"):
+                usdkrw = float(j["price"])
+        except Exception as e:
+            sys.stderr.write(f"[crypto] USD/KRW 환율 실패: {e}\n")
+    # 2) 업비트 원화 시세 (공개 quotation, 인증 불필요)
+    up = {}
+    try:
+        mk = ",".join(s[2] for s in SPECS)
+        arr = _fmp_get(f"https://api.upbit.com/v1/ticker?markets={urllib.parse.quote(mk)}")
+        for o in (arr or []):
+            up[o.get("market")] = o
+    except Exception as e:
+        sys.stderr.write(f"[crypto] 업비트 시세 실패: {e}\n")
+        return None
+    if not up:
+        return None
+    # 3) 바이낸스 USDT 시세 (data-api.binance.vision — 공개·미국IP 차단 회피)
+    bn = {}
+    try:
+        syms = [x[3] for x in SPECS if x[3]]
+        q = urllib.parse.quote(json.dumps(syms, separators=(",", ":")))
+        arr = _fmp_get(f"https://data-api.binance.vision/api/v3/ticker/price?symbols={q}")
+        for o in (arr or []):
+            try:
+                bn[o.get("symbol")] = float(o.get("price"))
+            except Exception:
+                pass
+    except Exception as e:
+        sys.stderr.write(f"[crypto] 바이낸스 시세 실패: {e}\n")
+    rows, headline = [], {}
+    for sym, kname, umk, bsym in SPECS:
+        uo = up.get(umk)
+        if not uo:
+            continue
+        krw = uo.get("trade_price")
+        try:
+            chg_disp, chg_dir = _pct_disp(float(uo.get("signed_change_rate", 0)) * 100.0)
+        except Exception:
+            chg_disp, chg_dir = (None, "flat")
+        prem_pct = prem_dir = None
+        binance_disp = "—"
+        if sym == "USDT":
+            binance_disp = "$1.00"
+            if usdkrw and krw:
+                pp = (float(krw) / usdkrw - 1.0) * 100.0
+                prem_pct, prem_dir = _prem_disp(pp); headline["USDT"] = pp
+        else:
+            bp = bn.get(bsym)
+            if bp:
+                binance_disp = (f"${bp:,.2f}" if bp >= 1 else f"${bp:,.4f}")
+                if usdkrw and krw:
+                    pp = (float(krw) / (bp * usdkrw) - 1.0) * 100.0
+                    prem_pct, prem_dir = _prem_disp(pp)
+                    if sym == "BTC":
+                        headline["BTC"] = pp
+        rows.append({
+            "sym": sym, "name": kname,
+            "krw": (f"₩{float(krw):,.0f}" if krw else "—"),
+            "chg": (chg_disp or "—"), "dir": chg_dir,
+            "binance": binance_disp,
+            "prem": prem_pct, "prem_dir": prem_dir,
+        })
+    if not rows:
+        return None
+    return {"usdkrw": usdkrw, "rows": rows, "headline": headline}
+
+
 def inject_stock_tables(body, token, key, sec):
     """본문의 {{STOCK|시장|식별자|종목명}} 토큰을 공식 4줄 표로 치환.
     미국 종목은 콤마로 묶어 1회만 호출(분당 제한 회피), 한국 종목은 KIS로 개별 조회."""
@@ -582,6 +678,50 @@ def inject_stock_tables(body, token, key, sec):
     return re.sub(pat, repl, body)
 
 
+def inject_crypto_table(body, crypto):
+    """본문의 {{CRYPTO_TABLE}} 토큰을 업비트·바이낸스·김프 5열 표로 치환.
+    crypto가 없으면 토큰만 제거(섹션 자동 생략). 공개 시세라 키 불필요."""
+    import re as _re
+    body = body or ""
+    pat = r"(?:<p>\s*)?\{\{\s*CRYPTO_TABLE\s*\}\}(?:\s*</p>)?"
+    if not crypto or not crypto.get("rows"):
+        return _re.sub(pat, "", body)
+    rows_html = []
+    for r in crypto["rows"]:
+        ch = r.get("chg")
+        if ch and ch != "—":
+            cc = _CHGCOLOR.get(r.get("dir", "flat"), "#1a1a1a")
+            chg_cell = f'<span style="color:{cc};font-weight:600">{esc(ch)}</span>'
+        else:
+            chg_cell = "—"
+        pr = r.get("prem")
+        if pr:
+            pc = _CHGCOLOR.get(r.get("prem_dir", "flat"), "#1a1a1a")
+            prem_cell = f'<span style="color:{pc};font-weight:700">{esc(pr)}</span>'
+        else:
+            prem_cell = "—"
+        rows_html.append(
+            "<tr>"
+            f'<td><strong>{esc(r.get("sym",""))}</strong> {esc(r.get("name",""))}</td>'
+            f'<td>{esc(r.get("krw","—"))}</td>'
+            f'<td>{chg_cell}</td>'
+            f'<td>{esc(r.get("binance","—"))}</td>'
+            f'<td>{prem_cell}</td>'
+            "</tr>")
+    fx = crypto.get("usdkrw")
+    fxnote = (f"기준환율 USD/KRW ₩{float(fx):,.2f} · " if fx else "")
+    table = (
+        '<div class="src-cat">암호화폐 시세 · 김치 프리미엄</div>'
+        '<table class="grid"><thead><tr>'
+        '<th>코인</th><th>업비트(₩)</th><th>24h</th><th>바이낸스($)</th><th>김프</th>'
+        '</tr></thead><tbody>' + "".join(rows_html) + '</tbody></table>'
+        f'<p class="small">{fxnote}김프(김치 프리미엄)=업비트 원화가가 '
+        '\u2018바이낸스 USDT가\u00d7기준환율\u2019 대비 얼마나 비싼지(테더는 기준환율 대비). '
+        '(+)=국내 프리미엄(빨강)\u00b7(\u2212)=역프리미엄(파랑). '
+        '출처: 업비트\u00b7바이낸스\u00b7Twelve Data, 작성시점 공개 시세.</p>')
+    return _re.sub(pat, table, body)
+
+
 # ----------------------------- Claude API 작성 -----------------------------
 ANTHROPIC_MODEL = "claude-sonnet-4-6"
 
@@ -609,7 +749,7 @@ AI_CLASSES = (
 )
 
 
-def _ai_user_prompt(mode, date_kst, items, asof, vol, rank_up, rank_dn, flows, us_movers=None):
+def _ai_user_prompt(mode, date_kst, items, asof, vol, rank_up, rank_dn, flows, us_movers=None, crypto=None):
     d = date_kst
     dstr = f'{d.year}년 {d.month}월 {d.day}일({WEEKDAY_KR[d.weekday()]})'
     lines = [f'[확정 데이터 — 아래 숫자는 그대로 사용, 추가 사실은 web_search로 확인]',
@@ -636,6 +776,19 @@ def _ai_user_prompt(mode, date_kst, items, asof, vol, rank_up, rank_dn, flows, u
     if us_movers:
         lines.append("미국 주목 종목(간밤 거래활발 상위, 거래대금 기준): " + "; ".join(
             f'{x["symbol"]} {x.get("name","")} {x.get("price","")} {x.get("chg","")}' for x in us_movers))
+    if crypto and crypto.get("rows"):
+        segs = []
+        for r in crypto["rows"]:
+            seg = f'{r["sym"]} 업비트 {r.get("krw","—")} 24h {r.get("chg","—")}'
+            if r.get("binance") and r["binance"] != "—":
+                seg += f' 바이낸스 {r["binance"]}'
+            if r.get("prem"):
+                seg += f' 김프 {r["prem"]}'
+            segs.append(seg)
+        fx = crypto.get("usdkrw")
+        lines.append("암호화폐(공개 시세·김치프리미엄, 아래 수치 그대로 사용): "
+                     + ((f"기준환율 USD/KRW {fx:,.2f}; ") if fx else "")
+                     + "; ".join(segs))
 
     if mode == "close":
         focus = (
@@ -655,11 +808,22 @@ def _ai_user_prompt(mode, date_kst, items, asof, vol, rank_up, rank_dn, flows, u
         sections = ("개장 요약(lead-para) → 간밤 미국 지수·지표표(table.grid) → 간밤 주요 뉴스(출처 명시) → "
                     "미국 주목 5종목 분석 → 오늘 한국 증시 관전 포인트·전망(근거 명시)")
 
+    crypto_block = ""
+    if crypto and crypto.get("rows"):
+        sections = sections + " → 암호화폐·김치 프리미엄 시황"
+        crypto_block = (
+            "\n[암호화폐 섹션 — 필수]\n"
+            " · 위 '암호화폐' 확정 수치로 짧은 시황 문단(2~4문장)을 쓰고, 비트코인·테더 김치 프리미엄의 부호와 의미"
+            "(+ = 국내 매수세 과열/역프 = 해외 대비 저평·차익 유인)를 풀어주세요. 개별 코인 가격·김프 수치를 본문에 길게 나열하지 말고 표는 토큰에 맡깁니다.\n"
+            " · 섹션 본문 안에 독립된 한 줄로 {{CRYPTO_TABLE}} 토큰을 넣으면 코드가 그 자리에 업비트·바이낸스·김프 표를 자동으로 채웁니다(절대 <p> 안에 넣지 말 것).\n"
+            " · 암호화폐 수치는 위에 제공된 값만 사용하고, 임의로 다른 코인·가격·김프를 만들어내지 마세요. 김프 부호는 상승=빨강(up)/하락=파랑(down) 원칙을 따릅니다.\n"
+        )
     body = "\n".join(lines)
     return (
         f"{body}\n\n"
         f"[작성 지침]\n{focus}\n\n"
         f"구성 순서: {sections}\n\n"
+        f"{crypto_block}"
         "요구사항:\n"
         "1) 모든 수치·뉴스·주장에 출처를 명시하세요(web_search로 확인한 매체명+가능하면 링크). 확인 안 된 사실은 쓰지 마세요.\n"
         "2) 전망/주가 예상은 반드시 '근거 → 결론' 순서로, 시나리오(상승/하락/횡보 등)와 트리거를 함께. 단정적 매수·매도 권유는 금지.\n"
@@ -767,7 +931,7 @@ def parse_article(txt):
     return {"title": title, "subtitle": subtitle, "summary": summary, "body_html": body}
 
 
-def compose_with_claude(api_key, mode, date_kst, items, asof, vol, rank_up, rank_dn, flows, us_movers=None):
+def compose_with_claude(api_key, mode, date_kst, items, asof, vol, rank_up, rank_dn, flows, us_movers=None, crypto=None):
     system = (
         "당신은 한국의 데일리 투자 뉴스레터 '투자이야기(INVEST STORY)'의 증시 전문 기자입니다. "
         "기사는 '박철웅 기자' 명의로 공개 발행됩니다. 정확성과 출처 표기를 최우선으로 하며, 확인되지 않은 "
@@ -775,7 +939,7 @@ def compose_with_claude(api_key, mode, date_kst, items, asof, vol, rank_up, rank
         "web_search로 직접 확인해 출처를 답니다. 한국 증시 색상 관례(상승=빨강, 하락=파랑)를 따릅니다. "
         "반드시 지정된 구분자 형식으로만 출력합니다."
     )
-    user = _ai_user_prompt(mode, date_kst, items, asof, vol, rank_up, rank_dn, flows, us_movers)
+    user = _ai_user_prompt(mode, date_kst, items, asof, vol, rank_up, rank_dn, flows, us_movers, crypto)
     last_err = None
     for attempt in range(1, 3):  # 파싱 실패(형식 깨짐) 시 1회 더 재생성
         raw = call_anthropic(api_key, system, user)
@@ -1240,10 +1404,12 @@ def main():
         else:
             print("[daily_news] 다우존스 종가 미확보(FMP) — AI가 web_search로 채움")
 
-    rank_up = rank_dn = flows = vol = us_movers = None
+    rank_up = rank_dn = flows = vol = us_movers = crypto = None
     if mode == "open":
         us_movers = fetch_us_movers(os.environ.get("FMP_API_KEY", "").strip(), 5)
         print(f"[daily_news] 미국주목종목={'O' if us_movers else 'X'}")
+    crypto = fetch_crypto_movers(os.environ.get("TWELVEDATA_API_KEY", "").strip())
+    print(f"[daily_news] 암호화폐={'O' if crypto else 'X'}")
     if token:
         if mode == "close":
             topcap = fetch_topcap_codes(token, key, sec, 100)   # 시총 상위 100위 집합
@@ -1258,11 +1424,15 @@ def main():
     htmlstr = title = summary = None
     if api_key:
         try:
-            meta = compose_with_claude(api_key, mode, now, items, asof, vol, rank_up, rank_dn, flows, us_movers)
+            meta = compose_with_claude(api_key, mode, now, items, asof, vol, rank_up, rank_dn, flows, us_movers, crypto)
             try:
                 meta["body_html"] = inject_stock_tables(meta["body_html"], token, key, sec)
             except Exception as e:
                 sys.stderr.write(f"[stock] 종목표 삽입 경고: {e}\n")
+            try:
+                meta["body_html"] = inject_crypto_table(meta["body_html"], crypto)
+            except Exception as e:
+                sys.stderr.write(f"[crypto] 코인표 삽입 경고: {e}\n")
             htmlstr, title, summary = render_ai(mode, now, meta)
             print(f"[daily_news] Claude API 작성 완료 · 제목: {title}")
         except Exception as e:
