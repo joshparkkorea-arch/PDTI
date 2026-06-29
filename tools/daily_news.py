@@ -544,6 +544,19 @@ def _prem_disp(p):
     return ("0.0%", "flat")  # 반올림 후 0이면 보합(±0.0% 어색함 방지)
 
 
+def _krw_big(won):
+    """원화 큰 금액 → '1.2조원' / '3,450억원' / '—'(국내 거래대금 표기용)."""
+    try:
+        v = float(won)
+    except Exception:
+        return None
+    if v >= 1e12:
+        return f"{v/1e12:.1f}조원"
+    if v >= 1e8:
+        return f"{v/1e8:,.0f}억원"
+    return f"{v:,.0f}원"
+
+
 def fetch_crypto_movers(td_key=None):
     """업비트(원화)·바이낸스(USDT)·USD/KRW로 주요 코인 시세 + 김치 프리미엄 계산.
     공개 시장 데이터(인증/키 불필요)만 사용. 업비트=api.upbit.com,
@@ -615,12 +628,14 @@ def fetch_crypto_movers(td_key=None):
                     prem_pct, prem_dir = _prem_disp(pp)
                     if sym == "BTC":
                         headline["BTC"] = pp
+        val24h = _krw_big(uo.get("acc_trade_price_24h"))   # 업비트 24h 거래대금(국내 수급 신호)
         rows.append({
             "sym": sym, "name": kname,
             "krw": (f"₩{float(krw):,.0f}" if krw else "—"),
             "chg": (chg_disp or "—"), "dir": chg_dir,
             "binance": binance_disp,
             "prem": prem_pct, "prem_dir": prem_dir,
+            "val24h": val24h,
         })
     if not rows:
         return None
@@ -784,6 +799,8 @@ def _ai_user_prompt(mode, date_kst, items, asof, vol, rank_up, rank_dn, flows, u
                 seg += f' 바이낸스 {r["binance"]}'
             if r.get("prem"):
                 seg += f' 김프 {r["prem"]}'
+            if r.get("val24h"):
+                seg += f' 업비트24h거래대금 {r["val24h"]}'
             segs.append(seg)
         fx = crypto.get("usdkrw")
         lines.append("암호화폐(공개 시세·김치프리미엄, 아래 수치 그대로 사용): "
@@ -810,13 +827,15 @@ def _ai_user_prompt(mode, date_kst, items, asof, vol, rank_up, rank_dn, flows, u
 
     crypto_block = ""
     if crypto and crypto.get("rows"):
-        sections = sections + " → 암호화폐·김치 프리미엄 시황"
+        sections = sections + " → 암호화폐 시황·수급·뉴스 분석"
         crypto_block = (
-            "\n[암호화폐 섹션 — 필수]\n"
-            " · 위 '암호화폐' 확정 수치로 짧은 시황 문단(2~4문장)을 쓰고, 비트코인·테더 김치 프리미엄의 부호와 의미"
-            "(+ = 국내 매수세 과열/역프 = 해외 대비 저평·차익 유인)를 풀어주세요. 개별 코인 가격·김프 수치를 본문에 길게 나열하지 말고 표는 토큰에 맡깁니다.\n"
-            " · 섹션 본문 안에 독립된 한 줄로 {{CRYPTO_TABLE}} 토큰을 넣으면 코드가 그 자리에 업비트·바이낸스·김프 표를 자동으로 채웁니다(절대 <p> 안에 넣지 말 것).\n"
-            " · 암호화폐 수치는 위에 제공된 값만 사용하고, 임의로 다른 코인·가격·김프를 만들어내지 마세요. 김프 부호는 상승=빨강(up)/하락=파랑(down) 원칙을 따릅니다.\n"
+            "\n[암호화폐 섹션 — 필수: 당일 시황·수급·뉴스 분석]\n"
+            " · 위 '암호화폐' 확정 수치를 토대로 당일 암호화폐 시장을 '수급'과 '뉴스' 중심으로 분석하는 섹션을 작성하세요(2~3문단). 단순 시세 나열이 아니라 '왜 이렇게 움직였는가'를 풀어야 합니다.\n"
+            " · [수급] ① 비트코인·테더 김치 프리미엄의 부호·의미(+ = 국내 매수세 과열/역프 = 해외 대비 저평·차익 유인), ② 업비트 24h 거래대금으로 본 국내 거래 활발도, ③ web_search로 확인되는 글로벌 수급 — 미국 현물 비트코인·이더리움 ETF 순유입/유출, 기관·고래 동향, 스테이블코인 수급 흐름을 엮어 해석하세요.\n"
+            " · [뉴스] 당일(또는 간밤) 암호화폐 시장을 움직인 주요 뉴스 — 규제·정책, 매크로(금리·달러), 거래소·온체인·주요 프로젝트 이슈 등을 web_search로 확인해 출처와 함께 1~3건 정리하세요(직접 인용 금지, 자신의 말로 요약).\n"
+            " · 마지막에 향후 관전 포인트를 한 줄로(예정 이벤트는 KST 병기). 단정적 매수·매도 권유는 금지.\n"
+            " · 표는 직접 쓰지 말고, 섹션 본문 안 독립된 한 줄로 {{CRYPTO_TABLE}} 토큰을 넣으면 코드가 업비트·바이낸스·김프 표를 자동으로 채웁니다(절대 <p> 안에 넣지 말 것).\n"
+            " · 확정 수치(가격·김프·거래대금)는 위 제공값만 사용하고 임의 생성 금지. ETF 자금·뉴스 등 web_search로 확인한 사실은 반드시 출처를 답니다. 김프/등락 부호 색상은 상승=빨강(up)/하락=파랑(down) 원칙.\n"
         )
     body = "\n".join(lines)
     return (
