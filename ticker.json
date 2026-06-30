@@ -1,5 +1,5 @@
 {
-  "asof": "2026-07-01 06:45 KST (자동·KIS+Twelve Data)",
+  "asof": "2026-07-01 07:00 KST (자동·KIS+Twelve Data)",
   "items": [
     {
       "name": "KOSPI",
@@ -22,8 +22,8 @@
     {
       "name": "WTI",
       "value": "$70.03",
-      "change": "-1.02%",
-      "dir": "down"
+      "change": "+0.76%",
+      "dir": "up"
     },
     {
       "name": "S&P 500",
@@ -39,8 +39,8 @@
     },
     {
       "name": "달러인덱스",
-      "value": "101.17",
-      "change": "+0.06%",
+      "value": "101.16",
+      "change": "+0.05%",
       "dir": "up"
     }
   ]
