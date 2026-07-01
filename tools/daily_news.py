@@ -1311,7 +1311,7 @@ ART_CSS = """<style>
  .up{color:var(--up);font-weight:700}
  .down{color:var(--down);font-weight:700}
  /* ===== 본문 강조 키트(색=역할 1:1) · 2026-06-23 추가 ===== */
- main .key{font-weight:700;color:var(--ink);background:linear-gradient(transparent 60%,rgba(201,166,84,.45) 60%);padding:0 1px;border-radius:1px}
+ main .key{font-weight:700;color:var(--ink);background:linear-gradient(transparent 60%,rgba(201,166,84,.32) 60%);padding:0 1px;border-radius:1px}
  main .num{font-family:var(--serif);font-weight:700;color:var(--navy);font-variant-numeric:tabular-nums}
  main strong{font-weight:700;color:var(--ink);letter-spacing:-.01em}
  p.takeaway{margin:16px 0 6px;padding:12px 15px;background:#FBF7EE;border-left:4px solid var(--gold);border-radius:0 7px 7px 0;font-family:var(--serif);font-weight:700;color:var(--navy);font-size:15px;line-height:1.62}
