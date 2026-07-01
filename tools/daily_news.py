@@ -572,6 +572,66 @@ def fetch_us_movers(fmp_key, n=5):
     return [{kk: vv for kk, vv in r.items() if kk != "_val"} for r in rows[:n]]
 
 
+
+def fetch_most_mentioned_us(fmp_key, lookback=120):
+    """최근 미국 주식 뉴스에서 가장 많이 언급된 대형주 1개 — 실패 시 None.
+    뉴스 목록의 종목 심볼 빈도를 세고, 상위 후보 중 대형주(주가 $5+·시총 100억$+)를 고른다."""
+    if not fmp_key:
+        return None
+    k = urllib.parse.quote(fmp_key)
+    arts = None
+    for u in (f"https://financialmodelingprep.com/stable/news/stock-latest?limit={lookback}&apikey={k}",
+              f"https://financialmodelingprep.com/api/v3/stock_news?limit={lookback}&apikey={k}"):
+        try:
+            arts = _fmp_get(u)
+            if isinstance(arts, dict):
+                arts = arts.get("data") or arts.get("content") or []
+            if arts:
+                break
+        except Exception as e:
+            sys.stderr.write(f"[most_mentioned] 뉴스 조회 실패: {e}\n")
+    if not arts:
+        return None
+    from collections import Counter
+    cnt = Counter()
+    for a in arts:
+        sym = str(a.get("symbol") or a.get("ticker") or "").strip().upper()
+        if sym and sym.isalpha() and 1 <= len(sym) <= 5:
+            cnt[sym] += 1
+    if not cnt:
+        return None
+    for sym, _n in cnt.most_common(8):
+        try:
+            q = (_fmp_get(f"https://financialmodelingprep.com/stable/quote?symbol={sym}&apikey={k}")
+                 or _fmp_get(f"https://financialmodelingprep.com/api/v3/quote/{sym}?apikey={k}"))
+            if isinstance(q, list) and q:
+                q = q[0]
+            if not isinstance(q, dict):
+                continue
+            price = float(q.get("price") or 0); mcap = float(q.get("marketCap") or 0)
+            if price < 5.0 or (mcap and mcap < 1.0e10):
+                continue
+            chg, _ = _pct_disp(q.get("changesPercentage", q.get("changePercentage")))
+            return {"symbol": sym, "name": q.get("name", ""),
+                    "price": f"${price:,.2f}", "chg": chg, "news": True, "mentions": _n}
+        except Exception:
+            continue
+    return None
+
+
+def combine_us_focus(base, news_pick, n=5):
+    """미국 주목 n종목 = 거래대금 상위 4 + 뉴스 최다 언급 1.
+    뉴스픽이 거래대금 상위4와 겹치거나 없으면 거래대금 5순위로 채운다."""
+    if not base:
+        return base
+    top = base[:4]
+    syms = {b.get("symbol") for b in top}
+    if news_pick and news_pick.get("symbol") and news_pick["symbol"] not in syms:
+        np = dict(news_pick); np["news"] = True
+        return top + [np]
+    return base[:n]  # 겹치거나 뉴스픽 없음 → 거래대금 상위 n
+
+
 def _prem_disp(p):
     """김치 프리미엄(%) → ('+1.2%'|'-0.8%'|'0.0%', 'up'|'down'|'flat'). 소수 1자리."""
     try:
@@ -911,6 +971,59 @@ def inject_charts(body, mode, items, rank_up=None, rank_dn=None, vol=None, us_mo
         return body
 
 
+
+# ----------------------------- 섹션 요약 카드(인라인 SVG) -----------------------------
+def _wrap_ko(text, maxchars):
+    out, cur = [], ""
+    for w in str(text).split(" "):
+        if not cur:
+            cur = w
+        elif len(cur) + 1 + len(w) <= maxchars:
+            cur += " " + w
+        else:
+            out.append(cur); cur = w
+        while len(cur) > maxchars:
+            out.append(cur[:maxchars]); cur = cur[maxchars:]
+    if cur:
+        out.append(cur)
+    return out[:4]
+
+def svg_summary_card(eyebrow, text, tone="neutral"):
+    """섹션 핵심을 한눈에 보여주는 요약 카드(SVG). 글자는 브라우저 폰트로 렌더."""
+    stripe = {"up": "#C0392B", "down": "#1B5E9B"}.get(tone, "#C9A654")
+    W = 660; padX = 28; lineH = 24; maxchars = 33
+    lines = _wrap_ko(text, maxchars) or [""]
+    body_top = 50
+    H = body_top + len(lines) * lineH + 18
+    p = [f'<svg viewBox="0 0 {W} {H}" xmlns="http://www.w3.org/2000/svg" role="img" '
+         f'aria-label="{_ch_esc(eyebrow)} 핵심 요약" '
+         f'style="width:100%;height:auto;max-width:660px;display:block;margin:0 auto;{_CH_FONT}">']
+    p.append(f'<rect x="1.5" y="1.5" width="{W-3}" height="{H-3}" rx="12" fill="#faf9f7" stroke="#ece7dc"/>')
+    p.append(f'<rect x="1.5" y="1.5" width="6" height="{H-3}" rx="3" fill="{stripe}"/>')
+    p.append(f'<text x="{padX}" y="31" font-size="12.5" font-weight="700" fill="{stripe}">{_ch_esc(eyebrow)} · 핵심 요약</text>')
+    for i, ln in enumerate(lines):
+        p.append(f'<text x="{padX}" y="{body_top+16+i*lineH}" font-size="15" fill="#1f2a44">{_ch_esc(ln)}</text>')
+    p.append('</svg>')
+    return "".join(p)
+
+def inject_section_cards(body):
+    """각 섹션의 마무리 문장(.takeaway)을 섹션별 '요약 카드' 이미지로 변환(섹션당 1장). 비치명."""
+    try:
+        def repl(m):
+            text = re.sub(r'<[^>]+>', '', m.group(1)).strip()
+            if not text:
+                return m.group(0)
+            pre = body[:m.start()]
+            hm = re.findall(r'<h2[^>]*>(.*?)</h2>', pre, re.S)
+            eyebrow = re.sub(r'<[^>]+>', '', hm[-1]).strip()[:22] if hm else "이 섹션"
+            card = svg_summary_card(eyebrow, text)
+            return f'<figure style="margin:18px 0">{card}</figure>'
+        return re.sub(r'<p class="takeaway">(.*?)</p>', repl, body, flags=re.S)
+    except Exception as e:
+        sys.stderr.write(f"[cards] 섹션 요약 카드 경고(무시): {e}\n")
+        return body
+
+
 # ----------------------------- Claude API 작성 -----------------------------
 ANTHROPIC_MODEL = "claude-sonnet-4-6"
 
@@ -963,8 +1076,10 @@ def _ai_user_prompt(mode, date_kst, items, asof, vol, rank_up, rank_dn, flows, u
         lines.append("수급(외국인/기관/개인 순매수): " + "; ".join(
             f'{m} 외 {v.get("frgn")} 기 {v.get("orgn")} 개 {v.get("indv")}' for m, v in flows.items()))
     if us_movers:
-        lines.append("미국 주목 종목(간밤 거래활발 상위, 거래대금 기준): " + "; ".join(
-            f'{x["symbol"]} {x.get("name","")} {x.get("price","")} {x.get("chg","")}' for x in us_movers))
+        lines.append("미국 주목 5종목(거래대금 상위 4 + 뉴스 최다 언급 1): " + "; ".join(
+            f'{x["symbol"]} {x.get("name","")} {x.get("price","")} {x.get("chg","")}'
+            + (" (뉴스 최다 언급)" if x.get("news") else "") for x in us_movers)
+            + " — '뉴스 최다 언급' 종목은 심층 분석에서 그 점을 명시하세요.")
     if crypto and crypto.get("rows"):
         segs = []
         for r in crypto["rows"]:
@@ -1599,8 +1714,12 @@ def main():
 
     rank_up = rank_dn = flows = vol = us_movers = crypto = None
     if mode == "open":
-        us_movers = fetch_us_movers(os.environ.get("FMP_API_KEY", "").strip(), 5)
-        print(f"[daily_news] 미국주목종목={'O' if us_movers else 'X'}")
+        _fk = os.environ.get("FMP_API_KEY", "").strip()
+        _base = fetch_us_movers(_fk, 6)                 # 거래대금 상위(여유분 6)
+        _news = fetch_most_mentioned_us(_fk)            # 뉴스 최다 언급 1
+        us_movers = combine_us_focus(_base, _news, 5)   # 거래대금4 + 뉴스1(겹치면 거래대금5위)
+        print(f"[daily_news] 미국주목종목={'O' if us_movers else 'X'} "
+              f"(거래대금4+뉴스1, 뉴스픽={_news.get('symbol') if _news else '-'})")
     crypto = fetch_crypto_movers(os.environ.get("TWELVEDATA_API_KEY", "").strip())
     print(f"[daily_news] 암호화폐={'O' if crypto else 'X'}")
     if token:
@@ -1630,6 +1749,10 @@ def main():
                 meta["body_html"] = inject_charts(meta["body_html"], mode, items, rank_up, rank_dn, vol, us_movers, crypto)
             except Exception as e:
                 sys.stderr.write(f"[charts] 자동 차트 삽입 경고: {e}\n")
+            try:
+                meta["body_html"] = inject_section_cards(meta["body_html"])
+            except Exception as e:
+                sys.stderr.write(f"[cards] 섹션 요약 카드 삽입 경고: {e}\n")
             htmlstr, title, summary = render_ai(mode, now, meta)
             print(f"[daily_news] Claude API 작성 완료 · 제목: {title}")
         except Exception as e:
