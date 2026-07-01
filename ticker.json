@@ -1,28 +1,28 @@
 {
-  "asof": "2026-07-02 06:45 KST (자동·KIS+Twelve Data)",
+  "asof": "2026-07-02 07:01 KST (자동·Twelve Data)",
   "items": [
     {
       "name": "KOSPI",
       "value": "8,303.41",
-      "change": "0.00%",
-      "dir": "flat"
+      "change": "-2.04%",
+      "dir": "down"
     },
     {
       "name": "KOSDAQ",
       "value": "929.35",
-      "change": "0.00%",
-      "dir": "flat"
+      "change": "+9.16%",
+      "dir": "up"
     },
     {
       "name": "USD/KRW",
-      "value": "1,553.1",
-      "change": "+2.1",
+      "value": "1,551.6",
+      "change": "+0.6",
       "dir": "up"
     },
     {
       "name": "WTI",
       "value": "$68.09",
-      "change": "-2.03%",
+      "change": "-0.71%",
       "dir": "down"
     },
     {
@@ -39,7 +39,7 @@
     },
     {
       "name": "달러인덱스",
-      "value": "101.39",
+      "value": "101.40",
       "change": "+0.21%",
       "dir": "up"
     }
