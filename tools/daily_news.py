@@ -501,10 +501,13 @@ def fmp_quotes(tickers, fmp_key):
     return out
 
 def fetch_us_movers(fmp_key, n=5):
-    """간밤 미국장 거래활발(거래대금) 상위 종목 — FMP most-actives. 실패 시 None."""
+    """간밤 미국장 '거래대금(주가×거래량)' 상위 대형주 — 페니주/소형주 배제. 실패 시 None.
+    most-actives(거래활발)로 후보를 받은 뒤 quote로 거래량·시총을 확보해 거래대금 기준 재정렬한다."""
     if not fmp_key:
         return None
     k = urllib.parse.quote(fmp_key)
+    # 1) 후보군: most-actives(거래활발 상위) — 최대 40종목
+    cands = []
     for u in (f"https://financialmodelingprep.com/stable/most-actives?apikey={k}",
               f"https://financialmodelingprep.com/api/v3/stock_market/actives?apikey={k}"):
         try:
@@ -515,20 +518,58 @@ def fetch_us_movers(fmp_key, n=5):
                 arr = arr.get("mostActiveStock") or arr.get("data") or []
             if not arr:
                 continue
-            out = []
-            for q in arr[:n]:
+            for q in arr[:40]:
                 sym = q.get("symbol") or q.get("ticker") or ""
-                if not sym:
-                    continue
-                price = q.get("price")
-                chg, _ = _pct_disp(q.get("changesPercentage", q.get("changePercentage")))
-                out.append({"symbol": sym, "name": q.get("name", ""),
-                            "price": (f"${float(price):,.2f}" if price is not None else "—"), "chg": chg})
-            if out:
-                return out
+                if sym and sym not in cands:
+                    cands.append(sym)
+            if cands:
+                break
         except Exception as e:
-            sys.stderr.write(f"[us_movers] 실패: {e}\n")
-    return None
+            sys.stderr.write(f"[us_movers] most-actives 실패: {e}\n")
+    if not cands:
+        return None
+    # 2) 후보 배치 시세(quote)로 거래량·시총 확보 → 거래대금 계산
+    syms = urllib.parse.quote(",".join(cands[:40]))
+    quotes = None
+    for u in (f"https://financialmodelingprep.com/stable/quote?symbol={syms}&apikey={k}",
+              f"https://financialmodelingprep.com/api/v3/quote/{syms}?apikey={k}"):
+        try:
+            quotes = _fmp_get(u)
+            if quotes:
+                break
+        except Exception as e:
+            sys.stderr.write(f"[us_movers] quote 실패: {e}\n")
+    if not quotes:
+        return None
+    rows = []
+    for q in quotes:
+        sym = q.get("symbol") or ""
+        if not sym:
+            continue
+        try:
+            price = float(q.get("price") or 0)
+            vol = float(q.get("volume") or 0)
+        except Exception:
+            continue
+        try:
+            mcap = float(q.get("marketCap") or 0)
+        except Exception:
+            mcap = 0.0
+        # 페니주·소형주 배제: 주가 $5 미만 또는 시총 100억달러 미만 제외(잡주 필터)
+        if price < 5.0:
+            continue
+        if mcap and mcap < 1.0e10:
+            continue
+        val = price * vol  # 거래대금(달러)
+        if val <= 0:
+            continue
+        chg, _ = _pct_disp(q.get("changesPercentage", q.get("changePercentage")))
+        rows.append({"symbol": sym, "name": q.get("name", ""),
+                     "price": f"${price:,.2f}", "chg": chg, "_val": val})
+    if not rows:
+        return None
+    rows.sort(key=lambda r: r["_val"], reverse=True)
+    return [{kk: vv for kk, vv in r.items() if kk != "_val"} for r in rows[:n]]
 
 
 def _prem_disp(p):
