@@ -778,6 +778,139 @@ def inject_crypto_table(body, crypto):
     return _re.sub(pat, table, body)
 
 
+
+# ----------------------------- 자동 막대 차트(인라인 SVG) -----------------------------
+# 브라우저 폰트로 한글 렌더 → matplotlib/폰트파일 의존 없음. 텍스트는 코드가 직접 써서 오타 통제.
+# 관례: 지수 일간 등락률=세로 막대, 종목/코인 순위=가로 막대(KRX 등락률 상하위 방식).
+_CH_FONT = "font-family:'Noto Sans KR','Malgun Gothic','Apple SD Gothic Neo',sans-serif"
+def _ch_esc(x):
+    return str(x).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+def _ch_col(d):
+    return {"up": "#C0392B", "down": "#1B5E9B"}.get(d, "#6b6b6b")
+
+def _parse_pct(s):
+    if s is None:
+        return None
+    t = str(s).replace("%", "").replace("\u2212", "-").replace("+", "").replace(",", "").strip()
+    if not t or t in ("\u2014", "-"):
+        return None
+    try:
+        v = float(t)
+    except Exception:
+        return None
+    return (v, "up" if v > 0 else ("down" if v < 0 else "flat"))
+
+def svg_bar_v(title, sub, data, note=""):
+    """세로 막대(지수 등락률 비교). data=[(label,pct,dir)]"""
+    W, H = 660, 368; padL, padR, padT, padB = 46, 24, 80, 60
+    plotW, plotH = W - padL - padR, H - padT - padB
+    vals = [d[1] for d in data]
+    vmax = max(vals + [0.0]); vmin = min(vals + [0.0]); span = (vmax - vmin) or 1.0
+    vmax += span * 0.20; vmin -= (span * 0.20 if vmin < 0 else 0.0); span = (vmax - vmin) or 1.0
+    def y(v): return padT + plotH * (vmax - v) / span
+    zeroY = y(0.0); n = len(data); slot = plotW / n; bw = min(slot * 0.46, 58)
+    p = [f'<svg viewBox="0 0 {W} {H}" xmlns="http://www.w3.org/2000/svg" role="img" '
+         f'style="width:100%;height:auto;max-width:660px;display:block;margin:0 auto;{_CH_FONT}">']
+    p.append(f'<rect width="{W}" height="{H}" fill="#ffffff"/>')
+    p.append(f'<text x="{padL-8}" y="30" font-size="19" font-weight="700" fill="#16335C">{_ch_esc(title)}</text>')
+    p.append(f'<rect x="{padL-8}" y="39" width="160" height="3" fill="#C9A654"/>')
+    if sub: p.append(f'<text x="{padL-8}" y="58" font-size="12" fill="#5b5b5b">{_ch_esc(sub)}</text>')
+    p.append(f'<line x1="{padL}" y1="{zeroY:.1f}" x2="{W-padR}" y2="{zeroY:.1f}" stroke="#cccccc" stroke-width="1"/>')
+    for i, (lab, v, d) in enumerate(data):
+        cx = padL + slot * i + slot / 2; c = _ch_col(d); yv = y(v)
+        top = min(yv, zeroY); h = max(abs(yv - zeroY), 1)
+        p.append(f'<rect x="{cx-bw/2:.1f}" y="{top:.1f}" width="{bw:.1f}" height="{h:.1f}" rx="2.5" fill="{c}"/>')
+        sign = "+" if v > 0 else ("\u2212" if v < 0 else "")
+        vy = (top - 7) if v >= 0 else (yv + 17)
+        p.append(f'<text x="{cx:.1f}" y="{vy:.1f}" font-size="13" font-weight="700" fill="{c}" text-anchor="middle">{sign}{abs(v):.2f}%</text>')
+        p.append(f'<text x="{cx:.1f}" y="{H-padB+24:.1f}" font-size="12.5" fill="#333333" text-anchor="middle">{_ch_esc(lab)}</text>')
+    p.append(f'<text x="{padL-8}" y="{H-12}" font-size="10" font-weight="700" fill="#C9A654">INVEST STORY</text>')
+    if note: p.append(f'<text x="{W-padR}" y="{H-12}" font-size="9.5" fill="#9a9a9a" text-anchor="end">{_ch_esc(note)}</text>')
+    p.append('</svg>'); return "".join(p)
+
+def svg_bar_h(title, sub, data, note="", decimals=1):
+    """가로 막대(종목/코인 등락·김프 순위). data=[(label,value,dir)]"""
+    W = 660; rowH = 36; padT = 82; padB = 46; padL = 176; padR = 76
+    H = padT + rowH * len(data) + padB; barMaxW = W - padL - padR
+    vmax = max([abs(d[1]) for d in data] + [0.001])
+    p = [f'<svg viewBox="0 0 {W} {H}" xmlns="http://www.w3.org/2000/svg" role="img" '
+         f'style="width:100%;height:auto;max-width:660px;display:block;margin:0 auto;{_CH_FONT}">']
+    p.append(f'<rect width="{W}" height="{H}" fill="#ffffff"/>')
+    p.append(f'<text x="{padL-24}" y="32" font-size="19" font-weight="700" fill="#16335C">{_ch_esc(title)}</text>')
+    p.append(f'<rect x="{padL-24}" y="41" width="160" height="3" fill="#C9A654"/>')
+    if sub: p.append(f'<text x="{padL-24}" y="60" font-size="12" fill="#5b5b5b">{_ch_esc(sub)}</text>')
+    for i, (lab, v, d) in enumerate(data):
+        cy = padT + rowH * i; c = _ch_col(d); bw = barMaxW * abs(v) / vmax
+        p.append(f'<text x="{padL-12}" y="{cy+rowH/2+4:.1f}" font-size="12.5" fill="#333333" text-anchor="end">{_ch_esc(lab)}</text>')
+        p.append(f'<rect x="{padL}" y="{cy+7:.1f}" width="{max(bw,1):.1f}" height="{rowH-16}" rx="2.5" fill="{c}"/>')
+        sign = "+" if v > 0 else ("\u2212" if v < 0 else "")
+        p.append(f'<text x="{padL+bw+9:.1f}" y="{cy+rowH/2+4:.1f}" font-size="12.5" font-weight="700" fill="{c}">{sign}{abs(v):.{decimals}f}%</text>')
+    p.append(f'<text x="{padL-24}" y="{H-12}" font-size="10" font-weight="700" fill="#C9A654">INVEST STORY</text>')
+    if note: p.append(f'<text x="{W-padR}" y="{H-12}" font-size="9.5" fill="#9a9a9a" text-anchor="end">{_ch_esc(note)}</text>')
+    p.append('</svg>'); return "".join(p)
+
+def _chart_fig(svg, cap):
+    return ('<figure style="margin:24px 0">' + svg +
+            '<figcaption style="margin-top:8px;font-size:12.5px;color:#6b6b6b;'
+            'text-align:center;line-height:1.5">' + _ch_esc(cap) + '</figcaption></figure>')
+
+def inject_charts(body, mode, items, rank_up=None, rank_dn=None, vol=None, us_movers=None, crypto=None):
+    """본문에 자동 막대 차트(주요 지수 등락률 + 종목/코인)를 삽입. 실패 시 원본 유지(비치명)."""
+    try:
+        top_figs, end_figs = [], []
+        # 차트1: 주요 지수 등락률(세로)
+        d1 = []
+        for nm in ("KOSPI", "KOSDAQ", "S&P 500", "나스닥", "다우존스", "러셀 2000"):
+            it = (items or {}).get(nm)
+            if not it:
+                continue
+            pr = _parse_pct(it.get("change"))
+            if pr:
+                d1.append((nm, pr[0], pr[1]))
+        if len(d1) >= 2:
+            top_figs.append(_chart_fig(
+                svg_bar_v("주요 지수 등락률", ("개장" if mode == "open" else "마감") + " 브리핑 · 전일 대비", d1, "출처: 지수 데이터"),
+                "그림. 주요 지수 일간 등락률(막대) — 상승=빨강/하락=파랑."))
+        # 차트2: 종목/코인(가로) — close: 등락상위 / open: 미국주목 / 폴백: 코인 김프
+        d2 = []; t2 = ""; s2 = ""; dec = 1
+        if mode == "close" and rank_up:
+            for r in rank_up[:5]:
+                pr = _parse_pct(r.get("ctrt")); nm = r.get("name", "")
+                if nm and pr:
+                    d2.append((nm[:12], pr[0], pr[1]))
+            t2, s2, dec = "등락률 상위 종목", "당일 상승률 상위(시총 100위 이내)", 2
+        if not d2 and us_movers:
+            for r in us_movers[:5]:
+                pr = _parse_pct(r.get("chg"))
+                nm = (str(r.get("symbol", "")) + " " + str(r.get("name", ""))).strip()
+                if nm and pr:
+                    d2.append((nm[:16], pr[0], pr[1]))
+            t2, s2, dec = "간밤 미국 주목 종목", "거래대금 상위 · 등락률", 2
+        if not d2 and crypto and crypto.get("rows"):
+            for r in crypto["rows"]:
+                pr = _parse_pct(r.get("prem"))
+                if pr:
+                    d2.append((f"{r.get('sym','')} {r.get('name','')}".strip(), pr[0], pr[1]))
+            t2, s2, dec = "암호화폐 김치 프리미엄", "(\u2212)=역프리미엄", 1
+        if len(d2) >= 2:
+            end_figs.append(_chart_fig(svg_bar_h(t2, s2, d2, "출처: 거래소 데이터", decimals=dec), f"그림. {t2}(막대)."))
+        if not top_figs and not end_figs:
+            return body
+        out = body
+        if top_figs:
+            m = re.search(r'(<p class="lead-para">.*?</p>)', out, re.S)
+            if m:
+                out = out[:m.end()] + "\n" + "".join(top_figs) + out[m.end():]
+            else:
+                out = "".join(top_figs) + out
+        if end_figs:
+            out = out + "\n" + "".join(end_figs)
+        return out
+    except Exception as e:
+        sys.stderr.write(f"[charts] 자동 차트 삽입 경고(무시): {e}\n")
+        return body
+
+
 # ----------------------------- Claude API 작성 -----------------------------
 ANTHROPIC_MODEL = "claude-sonnet-4-6"
 
@@ -1493,6 +1626,10 @@ def main():
                 meta["body_html"] = inject_crypto_table(meta["body_html"], crypto)
             except Exception as e:
                 sys.stderr.write(f"[crypto] 코인표 삽입 경고: {e}\n")
+            try:
+                meta["body_html"] = inject_charts(meta["body_html"], mode, items, rank_up, rank_dn, vol, us_movers, crypto)
+            except Exception as e:
+                sys.stderr.write(f"[charts] 자동 차트 삽입 경고: {e}\n")
             htmlstr, title, summary = render_ai(mode, now, meta)
             print(f"[daily_news] Claude API 작성 완료 · 제목: {title}")
         except Exception as e:
