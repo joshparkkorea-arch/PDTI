@@ -1284,7 +1284,7 @@ def cls(d):
 
 # ----------------------------- HTML -----------------------------
 ART_CSS = """<style>
- :root{--navy:#1B3C6E;--gold:#C9A654;--gold-d:#a98731;--ink:#1F2933;--mute:#6B7785;--line:#E2E6EC;
+ :root{--navy:#1B3C6E;--navy-bar:#2E4B77;--gold:#C9A654;--gold-d:#a98731;--ink:#1F2933;--mute:#6B7785;--line:#E2E6EC;
   --up:#C0392B;--down:#1B5E9B;
   --serif:'Noto Serif KR',serif;--latin:'Playfair Display',serif;
   --sans:'Pretendard','Pretendard Variable',system-ui,-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;}
@@ -1316,7 +1316,7 @@ ART_CSS = """<style>
  main strong{font-weight:700;color:var(--ink);letter-spacing:-.01em}
  p.takeaway{margin:16px 0 6px;padding:12px 15px;background:#FBF7EE;border-left:4px solid var(--gold);border-radius:0 7px 7px 0;font-family:var(--serif);font-weight:700;color:var(--navy);font-size:15px;line-height:1.62}
  table.grid{width:100%;border-collapse:collapse;margin:6px 0 18px;font-size:13.5px;border:1px solid var(--line);table-layout:fixed}
- table.grid th{background:var(--navy);color:#fff;font-weight:700;text-align:left;padding:9px 10px;font-size:12.5px;vertical-align:top}
+ table.grid th{background:var(--navy-bar);color:#fff;font-weight:700;text-align:left;padding:9px 10px;font-size:12.5px;vertical-align:top}
  table.grid td{padding:9px 10px;border-top:1px solid var(--line);vertical-align:top;word-break:keep-all}
  table.grid tbody tr:nth-child(even){background:#F4F6F8}
  table.kv{width:100%;border-collapse:collapse;margin:4px 0 16px;font-size:13.5px;border:1px solid var(--line)}
@@ -1330,7 +1330,7 @@ ART_CSS = """<style>
  a:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
  /* ===== 기사 요약 라벨(시안 C) + 모바일 표 호환 · 2026-06-22 추가 ===== */
  .art-hero + .lead-para{font-size:16px;line-height:1.78;border:1px solid #E2E6EC;border-radius:4px;background:#fff;padding:15px 18px 16px;margin:18px 0 24px;position:relative}
- .art-hero + .lead-para::before{content:"기사 요약";display:block;background:#1B3C6E;color:#fff;font-weight:700;font-size:12px;letter-spacing:.12em;padding:9px 18px;margin:-15px -18px 13px;border-left:4px solid #C9A654;border-radius:4px 4px 0 0}
+ .art-hero + .lead-para::before{content:"기사 요약";display:block;background:var(--navy-bar);color:#fff;font-weight:700;font-size:12px;letter-spacing:.12em;padding:9px 18px;margin:-15px -18px 13px;border-left:4px solid #C9A654;border-radius:4px 4px 0 0}
  table.grid td,table.grid th,table.kv td,table.kv th{overflow-wrap:anywhere}
  table.kv{table-layout:fixed}
  @media (max-width:560px){
