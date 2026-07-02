@@ -1547,11 +1547,11 @@ def build_html(mode, date_kst, items, asof, rank_up, rank_dn, flows):
 
 def enrich_highlights(body_html):
     """강조 누락 안전망: 본문 산문에 들어간 '맨몸 등락률(±%)'을 자동으로 .up/.down 으로 감싼다.
-    - 표(<table>…</table>)와 기존 <span>…</span> 안은 절대 건드리지 않는다(중복 래핑·표 훼손 방지).
+    - SVG(<svg>…</svg>)·표(<table>…</table>)·기존 <span>…</span> 안은 절대 건드리지 않는다(차트 파손·중복 래핑·표 훼손 방지).
     - 부호 없는 값(기준금리·물가율·지수 레벨 등)은 손대지 않는다(부호 있는 일간 등락률만 대상)."""
     if not body_html:
         return body_html
-    protect = re.compile(r'(<table\b.*?</table>|<span\b.*?</span>)', re.S | re.I)
+    protect = re.compile(r'(<svg\b.*?</svg>|<table\b.*?</table>|<span\b.*?</span>)', re.S | re.I)
     # 부호(+/-/−)로 시작하는 퍼센트 토큰. 앞이 단어문자면(범위 '15%' 등) 제외.
     pct = re.compile(r'(?<![\w.])([+\-−]\d[\d,]*(?:\.\d+)?\s?%)')
 
