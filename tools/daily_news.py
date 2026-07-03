@@ -25,6 +25,7 @@ from datetime import datetime, timezone, timedelta
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 NEWS_DIR = os.path.join(ROOT, "newsletters")
 MANIFEST = os.path.join(ROOT, "manifest.json")
+KIMCHI_HISTORY = os.path.join(ROOT, "data", "kimchi_history.json")
 TICKER   = os.path.join(ROOT, "ticker.json")
 KST = timezone(timedelta(hours=9))
 KIS_BASE = "https://openapi.koreainvestment.com:9443"
@@ -909,6 +910,124 @@ def svg_bar_h(title, sub, data, note="", decimals=1):
     if note: p.append(f'<text x="{W-padR}" y="{H-12}" font-size="9.5" fill="#9a9a9a" text-anchor="end">{_ch_esc(note)}</text>')
     p.append('</svg>'); return "".join(p)
 
+
+
+# ----------------------------- 김치 프리미엄 히스토리(90일 누적) -----------------------------
+_KIMCHI_COLORS = [("USDT", "#6B7785"), ("BTC", "#C9A654"), ("ETH", "#16335C"), ("XRP", "#7fb0e8")]
+
+def _load_kimchi_history():
+    """data/kimchi_history.json 로드. 없으면 []."""
+    try:
+        with open(KIMCHI_HISTORY, encoding="utf-8") as f:
+            h = json.load(f)
+        return h if isinstance(h, list) else []
+    except Exception:
+        return []
+
+def update_kimchi_history(crypto, mode):
+    """이번 발행분 김프를 히스토리에 추가(같은 날짜·모드는 교체), 90일 초과분 앞쪽 절삭 후 저장."""
+    try:
+        if not crypto or not crypto.get("rows"):
+            return _load_kimchi_history()
+        prem = {}
+        for r in crypto["rows"]:
+            s = str(r.get("sym", "")).strip()
+            m = re.search(r"([+\-\u2212]?\d+(?:\.\d+)?)\s*%", str(r.get("prem", "")))
+            if s and m:
+                prem[s] = float(m.group(1).replace("\u2212", "-"))
+        if not prem:
+            return _load_kimchi_history()
+        today = datetime.now(KST).strftime("%Y-%m-%d")
+        hist = [e for e in _load_kimchi_history()
+                if not (e.get("date") == today and e.get("mode") == mode)]
+        hist.append({"date": today, "mode": mode, "prem": prem})
+        hist.sort(key=lambda e: (e.get("date", ""), 0 if e.get("mode") == "open" else 1))
+        cutoff = (datetime.now(KST) - timedelta(days=90)).strftime("%Y-%m-%d")
+        hist = [e for e in hist if e.get("date", "") >= cutoff]
+        os.makedirs(os.path.dirname(KIMCHI_HISTORY), exist_ok=True)
+        with open(KIMCHI_HISTORY, "w", encoding="utf-8") as f:
+            json.dump(hist, f, ensure_ascii=False, indent=1)
+        print(f"[daily_news] 김프 히스토리 갱신: {len(hist)}건 (90일 롤링)")
+        return hist
+    except Exception as e:
+        sys.stderr.write(f"[kimchi] 히스토리 갱신 경고(무시): {e}\n")
+        return _load_kimchi_history()
+
+def svg_line_kimchi(hist):
+    """코인별 김치 프리미엄 추이 선 그래프(최근 90일). 데이터 2건 미만이면 None."""
+    hist = [e for e in (hist or []) if e.get("prem")]
+    if len(hist) < 2:
+        return None
+    import datetime as _d
+    def _x_of(e):
+        d = _d.datetime.strptime(e["date"], "%Y-%m-%d")
+        return d.toordinal() + (0.38 if e.get("mode") == "open" else 0.65)
+    xs = [_x_of(e) for e in hist]
+    x0, x1 = min(xs), max(xs)
+    if x1 - x0 < 1e-9:
+        x1 = x0 + 1.0
+    vals = [v for e in hist for v in e["prem"].values()]
+    vmax = max(vals + [0.0]) + 0.4
+    vmin = min(vals + [0.0]) - 0.4
+    span = (vmax - vmin) or 1.0
+    W, H = 660, 350
+    padL, padR, padT, padB = 56, 24, 96, 46
+    plotW, plotH = W - padL - padR, H - padT - padB
+    def X(x): return padL + plotW * (x - x0) / (x1 - x0)
+    def Y(v): return padT + plotH * (vmax - v) / span
+    p = [f'<svg viewBox="0 0 {W} {H}" xmlns="http://www.w3.org/2000/svg" role="img" '
+         f'style="width:100%;height:auto;max-width:{W}px;display:block;margin:0 auto;{_CH_FONT}">',
+         f'<rect width="{W}" height="{H}" fill="#ffffff"/>',
+         f'<text x="{padL-32}" y="30" font-size="19" font-weight="700" fill="#16335C">암호화폐 김치 프리미엄 추이</text>',
+         f'<rect x="{padL-32}" y="39" width="160" height="3" fill="#C9A654"/>',
+         f'<text x="{padL-32}" y="58" font-size="12" fill="#5b5b5b">자체 집계 · (\u2212)=역프리미엄 · 최근 90일 롤링</text>']
+    # 범례(최신값 포함)
+    last = hist[-1]["prem"]
+    lx = padL - 32
+    for sym, col in _KIMCHI_COLORS:
+        if not any(sym in e["prem"] for e in hist):
+            continue
+        lv = last.get(sym)
+        lab = f"{sym} {('+' if (lv or 0) > 0 else '')}{lv:.1f}%" if lv is not None else sym
+        p.append(f'<rect x="{lx}" y="70" width="10" height="10" rx="2" fill="{col}"/>')
+        p.append(f'<text x="{lx+15}" y="79" font-size="11.5" font-weight="700" fill="#333333">{lab}</text>')
+        lx += 15 + 9 * len(lab) + 18
+    # y 격자·라벨
+    step = 1.0 if span > 2.4 else 0.5
+    v = (int(vmin / step)) * step
+    while v <= vmax:
+        yy = Y(v)
+        if padT - 4 <= yy <= H - padB + 4:
+            if abs(v) > 1e-9:
+                p.append(f'<line x1="{padL}" y1="{yy:.1f}" x2="{W-padR}" y2="{yy:.1f}" stroke="#ececec"/>')
+            else:
+                p.append(f'<line x1="{padL}" y1="{yy:.1f}" x2="{W-padR}" y2="{yy:.1f}" stroke="#999999" stroke-dasharray="5 4"/>')
+            p.append(f'<text x="{padL-8}" y="{yy+4:.1f}" font-size="10.5" fill="#8a8a8a" text-anchor="end">{("+" if v>0 else "")}{v:.1f}%</text>')
+        v += step
+    # x 라벨(최대 6개 날짜)
+    seen = []
+    for e in hist:
+        if e["date"] not in seen:
+            seen.append(e["date"])
+    stepn = max(1, (len(seen) + 5) // 6)
+    for d in seen[::stepn]:
+        xx = X(_d.datetime.strptime(d, "%Y-%m-%d").toordinal() + 0.5)
+        if padL <= xx <= W - padR:
+            p.append(f'<text x="{xx:.1f}" y="{H-padB+22:.1f}" font-size="10.5" fill="#666666" text-anchor="middle">{d[5:].replace("-","/")}</text>')
+    # 코인별 선
+    for sym, col in _KIMCHI_COLORS:
+        pts = [(X(_x_of(e)), Y(e["prem"][sym])) for e in hist if sym in e["prem"]]
+        if len(pts) < 2:
+            continue
+        path = " ".join(f"{x:.1f},{y:.1f}" for x, y in pts)
+        p.append(f'<polyline points="{path}" fill="none" stroke="{col}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>')
+        p.append(f'<circle cx="{pts[-1][0]:.1f}" cy="{pts[-1][1]:.1f}" r="3.2" fill="{col}"/>')
+    p.append(f'<text x="{padL-32}" y="{H-10}" font-size="10" font-weight="700" fill="#C9A654">INVEST STORY</text>')
+    p.append(f'<text x="{W-padR}" y="{H-10}" font-size="9.5" fill="#9a9a9a" text-anchor="end">출처: 업비트·바이낸스 자체 집계</text>')
+    p.append('</svg>')
+    return "".join(p)
+
+
 def _chart_fig(svg, cap):
     return ('<figure style="margin:24px 0">' + svg +
             '<figcaption style="margin-top:8px;font-size:12.5px;color:#6b6b6b;'
@@ -946,14 +1065,13 @@ def inject_charts(body, mode, items, rank_up=None, rank_dn=None, vol=None, us_mo
                 if nm and pr:
                     d2.append((nm[:16], pr[0], pr[1]))
             t2, s2, dec = "간밤 미국 주목 종목", "거래대금 상위 · 등락률", 2
-        if not d2 and crypto and crypto.get("rows"):
-            for r in crypto["rows"]:
-                pr = _parse_pct(r.get("prem"))
-                if pr:
-                    d2.append((f"{r.get('sym','')} {r.get('name','')}".strip(), pr[0], pr[1]))
-            t2, s2, dec = "암호화폐 김치 프리미엄", "(\u2212)=역프리미엄", 1
+        # (변경 2026-07-03) 김프는 일간 막대 대신 아래 '추이 선 그래프'로 상시 표시
         if len(d2) >= 2:
             end_figs.append(_chart_fig(svg_bar_h(t2, s2, d2, "출처: 거래소 데이터", decimals=dec), f"그림. {t2}(막대)."))
+        if crypto and crypto.get("rows"):
+            _ksvg = svg_line_kimchi(_load_kimchi_history())
+            if _ksvg:
+                end_figs.append(_chart_fig(_ksvg, "그림. 암호화폐 김치 프리미엄 추이(선) — 코인별 색상, 최근 90일 자체 집계."))
         if not top_figs and not end_figs:
             return body
         out = body
@@ -1723,6 +1841,7 @@ def main():
               f"(거래대금4+뉴스1, 뉴스픽={_news.get('symbol') if _news else '-'})")
     crypto = fetch_crypto_movers(os.environ.get("TWELVEDATA_API_KEY", "").strip())
     print(f"[daily_news] 암호화폐={'O' if crypto else 'X'}")
+    update_kimchi_history(crypto, mode)
     if token:
         if mode == "close":
             topcap = fetch_topcap_codes(token, key, sec, 100)   # 시총 상위 100위 집합
