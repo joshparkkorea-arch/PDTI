@@ -96,25 +96,38 @@
 <hr class="rule">
 
 <section class="sec"><div class="eyebrow">SECTION 1 · 정체</div><h2>쌀알보다 10배 작은 댐 — MLCC는 무엇인가</h2></section>
-<p>MLCC는 배터리에서 온 전류를 가뒀다가 반도체가 필요로 하는 순간 흘려보내는 <span class="key">'전기의 댐'</span>이다. 이게 없으면 전자제품은 켜는 데 한참 걸리고 전원이 갑자기 나가버릴 수 있다. AI서버용 0603 제품은 가로 0.6㎜×세로 0.3㎜ — 쌀알(약 6×3㎜)의 10분의 1 크기 안에 세라믹과 전극을 <span class="num">수백 층</span> 쌓아 만든다(신동아). 산업통상부는 지난해 5월 MLCC를 <span class="key">국가핵심기술</span>로 지정했다.</p>
+<p>MLCC의 역할은 크게 둘이다. 하나는 배터리에서 온 전류를 가뒀다가 반도체가 필요로 하는 순간 흘려보내는 <span class="key">'전기의 댐'(전력 공급 안정화)</span>, 다른 하나는 회로의 <span class="key">신호를 다듬는 조절자(노이즈 제거)</span> 역할이다. 이게 없으면 전자제품은 켜는 데 한참 걸리고 전원이 갑자기 나가버릴 수 있다. 크기는 용도에 따라 스펙트럼이 넓다 — 신호용 초소형은 <span class="num">0603</span>(0.6×0.3㎜, 쌀알의 10분의 1)까지 작아지지만, 정작 이번 수요 폭증의 주인공인 <span class="key">전력 공급용('밥') 고용량품은 3216(3.2×1.6㎜)급이 주력</span>이고 대용량은 6153급 — <span class="key">쌀알만 하거나 더 크다</span>(현업 엔지니어 자문). 어느 쪽이든 그 안에 세라믹과 전극을 <span class="num">수백 층</span> 쌓아 만드는 건 같다(신동아). 산업통상부는 지난해 5월 MLCC를 <span class="key">국가핵심기술</span>로 지정했다.</p>
+<p class="small">※ 규격 표기 주의: 업계에선 미터법과 인치 코드가 혼용된다. 미터법 0603은 0.6×0.3㎜지만 인치 코드 0603은 미터법 1608(1.6×0.8㎜)에 해당하고, 미터법 1005(1.0×0.5㎜)가 인치 0402로 불리기도 한다. 해외 자료를 읽을 때 자주 헷갈리는 지점이다. 실무에선 범용성이 가장 높은 건 1608~3216이며, 0603은 전극 피치가 좁아 기판(PCB) 조립 난도가 높아 초고사양 외에는 잘 쓰이지 않고 소형화의 실질 범용 한계는 1005 수준이라는 게 현장의 감각이다.</p>
 <figure style="margin:18px 0">
-<svg viewBox="0 0 700 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="쌀알과 MLCC 크기 비교" style="width:100%;height:auto;max-width:700px;display:block;margin:0 auto;font-family:'Noto Sans KR','Malgun Gothic','Apple SD Gothic Neo',sans-serif">
-<rect width="700" height="300" fill="#0f1e35"/>
-<text x="350" y="36" font-size="14" font-weight="800" fill="#C9A654" text-anchor="middle">삽화 1 · '전자산업의 쌀' — 진짜 쌀알보다 10배 작다</text>
-<!-- 쌀알 (6x3mm 스케일: 1mm=28px) -->
-<ellipse cx="215" cy="150" rx="84" ry="42" fill="#f5efdd" stroke="#d9cfae" stroke-width="2"/>
-<ellipse cx="196" cy="138" rx="26" ry="11" fill="#ffffff" opacity="0.55"/>
-<text x="215" y="222" font-size="13" font-weight="700" fill="#dbe7f6" text-anchor="middle">쌀알 · 약 6.0 × 3.0 mm</text>
-<!-- MLCC 0603 (0.6x0.3mm → 같은 스케일 16.8x8.4px) -->
-<rect x="484" y="146" width="16.8" height="8.4" rx="1.5" fill="#C9A654" stroke="#a98731"/>
-<line x1="489" y1="146" x2="489" y2="154.4" stroke="#8a6f2a" stroke-width="1"/>
-<line x1="496" y1="146" x2="496" y2="154.4" stroke="#8a6f2a" stroke-width="1"/>
-<circle cx="492.4" cy="150.2" r="26" fill="none" stroke="#C9A654" stroke-dasharray="4 3" stroke-width="1.4"/>
-<text x="492" y="222" font-size="13" font-weight="700" fill="#dbe7f6" text-anchor="middle">AI서버용 0603 MLCC · 0.6 × 0.3 mm</text>
-<text x="492" y="243" font-size="11.5" fill="#9db4d4" text-anchor="middle">이 안에 세라믹·전극 수백 층</text>
-<text x="350" y="278" font-size="11" fill="#9aa5b1" text-anchor="middle">동일 축척 비교. 전류를 가뒀다 반도체에 흘려보내는 '댐' 역할 — 삼성전기·산업통상부(국가핵심기술 지정) 자료 기반.</text>
+<svg viewBox="0 0 700 330" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="쌀알과 MLCC 크기 비교" style="width:100%;height:auto;max-width:700px;display:block;margin:0 auto;font-family:'Noto Sans KR','Malgun Gothic','Apple SD Gothic Neo',sans-serif">
+<rect width="700" height="330" fill="#0f1e35"/>
+<text x="350" y="34" font-size="14" font-weight="800" fill="#C9A654" text-anchor="middle">삽화 1 · MLCC 크기 스펙트럼 — 'AI 서버의 밥솥'은 생각보다 크다</text>
+<line x1="40" y1="200" x2="660" y2="200" stroke="#2E4B77"/>
+<!-- 쌀알 (6.0x3.0) -->
+<ellipse cx="105" cy="172" rx="57" ry="28" fill="#f5efdd" stroke="#d9cfae" stroke-width="2"/>
+<text x="105" y="224" font-size="12" font-weight="700" fill="#dbe7f6" text-anchor="middle">쌀알</text>
+<text x="105" y="242" font-size="10.5" fill="#9db4d4" text-anchor="middle">약 6.0×3.0㎜ · 기준</text>
+<!-- 6153 (6.1x5.3) -->
+<rect x="182" y="99" width="116" height="101" rx="4" fill="#C9A654" stroke="#a98731"/>
+<text x="240" y="224" font-size="12" font-weight="700" fill="#ffe9b8" text-anchor="middle">6153 · 대용량 전력</text>
+<text x="240" y="242" font-size="10.5" fill="#9db4d4" text-anchor="middle">6.1×5.3㎜ · 쌀알보다 크다</text>
+<!-- 3216 (3.2x1.6) -->
+<rect x="352" y="170" width="61" height="30" rx="3" fill="#cf6b4e" stroke="#a1543b"/>
+<text x="382" y="224" font-size="12" font-weight="700" fill="#f6dcd8" text-anchor="middle">3216 · 전력('밥') 주력</text>
+<text x="382" y="242" font-size="10.5" fill="#9db4d4" text-anchor="middle">3.2×1.6㎜</text>
+<!-- 1608 (1.6x0.8) -->
+<rect x="485" y="185" width="30" height="15" rx="2" fill="#7fb0e8" stroke="#5d8ec4"/>
+<text x="500" y="224" font-size="12" font-weight="700" fill="#dbe7f6" text-anchor="middle">1608 · 범용</text>
+<text x="500" y="242" font-size="10.5" fill="#9db4d4" text-anchor="middle">1.6×0.8㎜</text>
+<!-- 0603 (0.6x0.3) -->
+<rect x="594" y="194" width="11" height="6" rx="1" fill="#ffffff" stroke="#c9d6e8"/>
+<circle cx="600" cy="197" r="16" fill="none" stroke="#7fb0e8" stroke-dasharray="4 3" stroke-width="1.2"/>
+<text x="600" y="224" font-size="12" font-weight="700" fill="#dbe7f6" text-anchor="middle">0603 · 신호용</text>
+<text x="600" y="242" font-size="10.5" fill="#9db4d4" text-anchor="middle">0.6×0.3㎜ · 쌀알의 1/10</text>
+<text x="350" y="278" font-size="11.5" fill="#dbe7f6" text-anchor="middle">전력 공급('밥')은 3216~6153급이 주력, 초소형 0603은 신호 조절용 — 동일 축척(미터법 코드).</text>
+<text x="350" y="306" font-size="10.5" fill="#9aa5b1" text-anchor="middle">자료: 삼성전기·신동아 + 현업 엔지니어 자문 반영. 인치 코드와 혼용 주의(인치 0603=미터 1608).</text>
 </svg></figure>
-<p class="takeaway">쌀알의 10분의 1 크기에 수백 층 — 이 <span class="key">공정 난도</span>가 뒤에 나올 '수율 40%' 공급 병목의 복선이다.</p>
+<p class="takeaway">초소형(신호용)부터 쌀알보다 큰 대용량(전력용)까지 — 어느 쪽이든 <span class="key">수백 층 적층의 공정 난도</span>가 뒤에 나올 '수율 40%' 공급 병목의 복선이다.</p>
 
 <hr class="rule">
 
@@ -183,7 +196,7 @@
 
 <section class="sec"><div class="eyebrow">SECTION 4 · 기업 지형</div><h2>누가 쌀가마니를 쥐고 있나</h2></section>
 <table class="grid"><thead><tr><th style="width:22%">기업</th><th style="width:44%">최근 실적·움직임</th><th style="width:34%">점유율·비고</th></tr></thead><tbody><tr><td>무라타(일)</td><td>1~3월 영업익 <span class="up">+73.1%</span> · 데이터센터 매출 가이던스 <span class="up">+83.9%</span> · 이즈모 신공장 가동(풀캐파 2027)</td><td>점유율 약 <span class="num">40%</span>(고용량 31.8%) · 주가 연중 <span class="up">+235%</span></td></tr><tr><td>삼성전기(한)</td><td>1분기 매출 <span class="num">3.21조원</span>(+17%, 분기 첫 3조 돌파) · 고성능 X6S 3월 양산 · <span class="num">$11억</span> 장기공급 계약</td><td>고용량 점유율 <span class="num">25~28%</span> · 주가 연중 <span class="up">+655%</span></td></tr><tr><td>타이요유덴(일)</td><td>FY2025 순이익 <span class="up">+536%</span> · 커패시터 BB비율 <span class="num">1.31</span> · AI서버 매출 +80% 전망</td><td>한국 서버 캐파 2027 완공</td></tr><tr><td>야게오·TDK 등</td><td>케멧 탄탈럼 3차 인상 · TDK 협상 중</td><td>팔로워 인상 합류</td></tr><tr><td>中 삼환·풍화</td><td>1분기 매출 <span class="up">+46%</span>(삼환) — 중저가 낙수 수혜</td><td>고성능 진입장벽은 여전</td></tr></tbody></table>
-<p>주목할 구도는 둘이다. 첫째, <span class="key">고성능은 사실상 무라타·삼성전기 2강</span>이다 — GB300급 전원 레일에서 무라타를 완전히 대체할 단일 공급사는 없고(Cosolvic), 삼성전기는 3월 X6S 양산 개시와 <span class="num">$11억</span> 장기계약으로 추격 중이다(One River). 둘째, 일·한 업체가 고급품에 캐파를 몰아주며 <span class="key">중저가 물량이 중국으로 낙수</span>하고 있다 — 삼환그룹 매출 +46%가 그 증거이지만, 고성능 진입장벽(수율·소재)은 여전히 높다(BigGo).</p>
+<p>주목할 구도는 둘이다. 첫째, <span class="key">고성능은 사실상 무라타·삼성전기 2강</span>이다 — GB300급 전원 레일에서 무라타를 완전히 대체할 단일 공급사는 없고(Cosolvic), 삼성전기는 3월 X6S 양산 개시와 <span class="num">$11억</span> 장기계약으로 추격 중이다(One River). 둘째, 한·일 업체가 고급품에 캐파를 몰아주며 <span class="key">중저가 물량이 중국으로 낙수</span>하고 있다 — 삼환그룹 매출 +46%가 그 증거이지만, 고성능 진입장벽(수율·소재)은 여전히 높다(BigGo).</p>
 <p class="takeaway">병목의 열쇠는 2강(무라타·삼성전기)의 <span class="key">신공장 가동 시점</span> — 이즈모·필리핀 모두 <span class="key">2027년</span>이 분수령이다.</p>
 
 <hr class="rule">
@@ -233,6 +246,7 @@
 <p class="takeaway">지금의 질문은 '싸냐'가 아니라 <span class="key">'구조론이 언제까지 증명되느냐'</span> — 위 5개 체크포인트가 유지되는 한 A·B, 무너지면 C다.</p>
 
 <hr class="rule">
+<p class="small">[보완: 2026-07-03 — 섹션 1의 MLCC 크기·용도 설명을 현업 엔지니어 피드백을 반영해 수정했습니다. 전력용 고용량품은 3216급 이상이 주력이며, 0603은 주로 신호용입니다.]</p>
 <p class="small">작성: 박철웅 기자 | 투자이야기(INVEST STORY) | 2026-07-03 KST | ※ 본 기사는 정보 제공 목적으로 작성됐으며, 특정 종목의 매수·매도를 권유하지 않습니다. 투자 판단과 책임은 투자자 본인에게 있습니다.</p>
 <hr class="rule">
 <p class="disc">본 리포트는 시장 정보 제공 및 분석 목적이며 특정 종목의 매수·매도 권유가 아닙니다. 본문의 뉴스·수치는 작성 시점 web 검색 및 공개 자료(신동아·TrendForce·Digitimes·Bloomberg 보도 재인용·Cosolvic·One River·36kr·BigGo·passive-components.eu 등)를 근거로 출처를 표기했으나, 스팟 가격·리드타임 등 속보성 수치는 이후 변동될 수 있습니다. 전망·시나리오는 작성 시점 판단으로 실제와 다를 수 있습니다. 모든 투자 결정은 투자자 본인의 판단과 책임 하에 이루어져야 하며, Josh Park Invest는 본 자료를 활용한 투자 결과에 어떠한 책임도 지지 않습니다.</p>
