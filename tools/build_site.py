@@ -142,6 +142,12 @@ def main():
 <meta property="og:title" content="INVEST STORY">
 <meta property="og:description" content="{esc(tagline)}">
 <meta property="og:type" content="website">
+<meta property="og:url" content="https://investstory.co.kr/">
+<meta property="og:image" content="https://investstory.co.kr/assets/og-default.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://investstory.co.kr/assets/og-default.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&family=Noto+Serif+KR:wght@600;700;900&display=swap" rel="stylesheet">

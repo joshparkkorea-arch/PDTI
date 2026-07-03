@@ -1713,7 +1713,11 @@ def render_ai(mode, date_kst, meta):
                 f'<meta property="og:title" content="{esc(title)}">\n'
                 f'<meta property="og:description" content="{og_desc}">\n'
                 f'<meta property="og:url" content="{og_url}">\n'
-                '<meta name="twitter:card" content="summary">\n')
+                '<meta property="og:image" content="https://investstory.co.kr/assets/og-default.png">\n'
+                '<meta property="og:image:width" content="1200">\n'
+                '<meta property="og:image:height" content="630">\n'
+                '<meta name="twitter:card" content="summary_large_image">\n'
+                '<meta name="twitter:image" content="https://investstory.co.kr/assets/og-default.png">\n')
     parts = [head_html(esc(title), og_block)]
     parts.append(f'<div class="topbar"><div class="topbar-in"><a class="home" href="/">INVEST STORY</a>'
                  f'<span class="tag">{toplabel} · {d.strftime("%Y-%m-%d")}</span></div></div>\n')
