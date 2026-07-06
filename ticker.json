@@ -1,5 +1,5 @@
 {
-  "asof": "2026-07-06 08:45 KST (자동·Twelve Data)",
+  "asof": "2026-07-06 09:01 KST (자동·Twelve Data)",
   "items": [
     {
       "name": "KOSPI",
@@ -21,8 +21,8 @@
     },
     {
       "name": "WTI",
-      "value": "$68.28",
-      "change": "-0.60%",
+      "value": "$68.25",
+      "change": "-0.64%",
       "dir": "down"
     },
     {
