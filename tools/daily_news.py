@@ -1272,9 +1272,10 @@ def _ai_user_prompt(mode, date_kst, items, asof, vol, rank_up, rank_dn, flows, u
         "10) 실적 발표·경제지표 등 '시각이 정해진' 일정을 언급할 때는 항상 한국시간(KST)으로 환산해 원래 시간과 함께 병기합니다(예: '미 동부 오후 4시 30분(한국시간 익일 새벽 5시 30분)'). 미국은 서머타임 적용 여부에 따라 한국과의 시차가 13/14시간으로 달라지니, web_search로 해당 일정의 정확한 KST를 확인해 적습니다. 분 단위가 공시되지 않은 '장 마감 후(after market close)' 같은 표현은 그대로 옮기되, 콘퍼런스콜 등 구체 시각이 있으면 그 시각을 KST로 병기합니다.\n"
         "11) '역사적'이라는 표현은 해당 지표가 역사상 5위 이내임이 확인될 때만 사용하세요. 그 외에는 쓰지 말고 사실대로 순화합니다. '역대급'·'최근 수년간 손에 꼽히는'·'사상 최대' 같은 희소성·최상급 표현도 카운트나 공식 자료로 검증된 경우에만 쓰고, 아니면 쓰지 마세요. '어닝 쇼크'는 실적이 기대를 밑돈 경우에만 쓰고, 호실적 서프라이즈에는 쓰지 마세요(정반대 의미).\n"
         "12) 지수의 '급등/급락/약세/강세 출발(개장 기사)' 또는 '마감(마감 기사)'은 반드시 '금일 시초가' 또는 '금일 종가'의 실제 부호로만 판단해 적습니다. '전일 종가'의 등락률을 오늘의 개장/마감 등락률로 절대 재사용하지 마세요(예: 전일 종가 +5.42%를 '오늘 +5.42% 급등 출발'로 쓰면 안 됨). 표와 본문에서 '전일 종가'와 '금일 시초가/종가'를 항상 구분해 명시하고, 금일 시초가 데이터가 없으면 방향(급등/급락 등)을 단정하지 마세요.\n"
-        "13) ===TITLE===(제목)과 ===SUBTITLE===(부제)에는 어떤 HTML 태그도 넣지 마세요. .up/.down/.key/.num 등 강조 span은 본문(===BODY===)에만 사용하고, 제목·부제는 순수 텍스트(숫자·기호는 그대로)로만 작성합니다.\n\n"
+        "13) ===TITLE===(제목)과 ===SUBTITLE===(부제)에는 어떤 HTML 태그도 넣지 마세요. .up/.down/.key/.num 등 강조 span은 본문(===BODY===)에만 사용하고, 제목·부제는 순수 텍스트(숫자·기호는 그대로)로만 작성합니다.\n"
+        "14) 기업·시장 이벤트 일정(실적발표·상장·공시·FOMC 등)의 '날짜'는 web_search로 교차 확인한 뒤에만 구체적으로 적습니다. ① 날짜에 요일을 병기할 때는 실제 달력과 일치하는지 반드시 확인하세요(날짜-요일 불일치는 자동 검산에 걸려 발행이 차단됩니다). ② 이벤트의 '성격'을 혼동하지 마세요 — 예: 상장일을 실적발표일로, 잠정실적 발표를 확정실적 발표로 쓰면 안 됩니다. ③ 날짜가 출처로 확인되지 않으면 구체 날짜·요일을 지어내지 말고 '이달 말 예정' 등으로 순화합니다.\n\n"
         f"{AI_CLASSES}\n"
-        "[발행 전 자가점검] 출력하기 전에 본문을 스스로 점검하세요: ⑴ 모든 등락률(%)이 .up/.down으로 감싸졌는가, ⑵ 핵심 키워드·사건명에 .key 밑줄이 (기사 전체 6개 이상) 충분히 들어갔는가, ⑶ 중요한 절대수치(지수레벨·금액)에 .num을 썼는가, ⑷ 각 섹션이 .takeaway로 마무리됐는가, ⑸ '역사적·역대급·사상 최대' 등 미검증 최상급을 쓰지 않았는가(규칙 11), ⑹ '급등/약세 출발' 등 방향을 '전일 종가'가 아닌 '금일 시초가/종가'의 실제 부호로 적었는가(규칙 12), ⑺ 제목·부제에 HTML 태그(<span> 등)를 넣지 않았는가(규칙 13). 하나라도 어긋나면 고쳐 다시 작성한 뒤 출력하세요.\n\n"
+        "[발행 전 자가점검] 출력하기 전에 본문을 스스로 점검하세요: ⑴ 모든 등락률(%)이 .up/.down으로 감싸졌는가, ⑵ 핵심 키워드·사건명에 .key 밑줄이 (기사 전체 6개 이상) 충분히 들어갔는가, ⑶ 중요한 절대수치(지수레벨·금액)에 .num을 썼는가, ⑷ 각 섹션이 .takeaway로 마무리됐는가, ⑸ '역사적·역대급·사상 최대' 등 미검증 최상급을 쓰지 않았는가(규칙 11), ⑹ '급등/약세 출발' 등 방향을 '전일 종가'가 아닌 '금일 시초가/종가'의 실제 부호로 적었는가(규칙 12), ⑺ 제목·부제에 HTML 태그(<span> 등)를 넣지 않았는가(규칙 13), ⑻ 본문의 모든 '날짜(요일)' 병기가 실제 달력과 일치하고 이벤트 성격(실적발표/상장/공시 등)을 원 출처 그대로 적었는가(규칙 14). 하나라도 어긋나면 고쳐 다시 작성한 뒤 출력하세요.\n\n"
         "[출력 형식] 아래 형식 '그대로' 출력하세요. 각 구분선(===...===)을 정확히 쓰고 그 사이에 내용만 넣으세요. "
         "마크다운 코드펜스(```)나 형식 밖의 다른 말은 절대 쓰지 마세요. body_html은 위 클래스만 쓴 순수 HTML입니다.\n"
         "===TITLE===\n"
@@ -1797,6 +1798,55 @@ def verify_index_figures(htmlstr, items, asof):
     hard = [x for x in issues if not x.startswith("(경고)")]
     return (len(hard) == 0), issues
 
+
+def _valid_date(y, mo, dd):
+    try:
+        datetime(y, mo, dd); return True
+    except ValueError:
+        return False
+
+
+def verify_event_weekdays(htmlstr, base_date):
+    """본문의 'M월 D일(요일)' / 'M월 D일 요일' 병기가 실제 달력과 일치하는지 검산.
+    (사고#14: SK하이닉스 '7월 10일 목요일 실적발표' 오보 — 실제 10일은 금요일이며
+    해당일은 나스닥 ADR 상장일. 요일 불일치는 AI가 일정을 지어냈다는 강한 신호다.)
+    연도 미표기 시 발행일 연도를 쓰되, 연말·연초 경계는 ±6개월 근접 연도로 해석.
+    반환: (ok, issues)."""
+    issues = []
+    text = re.sub(r"<[^>]+>", " ", htmlstr)
+    pat = re.compile(
+        r"(?:(\d{4})년\s*)?(\d{1,2})월\s*(\d{1,2})일\s*"
+        r"(?:\(([월화수목금토일])\)|([월화수목금토일])요일)")
+    for m in pat.finditer(text):
+        y, mo, dd = m.group(1), int(m.group(2)), int(m.group(3))
+        wk = m.group(4) or m.group(5)
+        cand_years = [int(y)] if y else [base_date.year - 1, base_date.year, base_date.year + 1]
+        dts = []
+        for cy in cand_years:
+            try:
+                dt = datetime(cy, mo, dd)
+            except ValueError:
+                continue
+            gap = abs((dt.date() - base_date.date()).days)
+            if y or gap <= 200:  # 연도 명시 시 그대로, 미표기 시 근접 후보만(반년 경계 ±약 3주 관용)
+                dts.append((gap, dt))
+        if not dts:
+            if y:  # 연도까지 명시했는데 달력에 없는 날짜
+                issues.append(f"존재하지 않는 날짜: '{m.group(0).strip()}'")
+            elif not any(True for cy in cand_years
+                         for _ in [0] if _valid_date(cy, mo, dd)):
+                issues.append(f"존재하지 않는 날짜: '{m.group(0).strip()}'")
+            continue  # 원거리 날짜는 연도 추정이 불확실해 판정 보류
+        # 연도 미표기 시 후보 중 '하나라도' 요일이 맞으면 통과(모호성은 관용)
+        if any(WEEKDAY_KR[dt.weekday()] == wk for _, dt in dts):
+            continue
+        dts.sort()
+        dt = dts[0][1]
+        issues.append(
+            f"날짜-요일 불일치: '{m.group(0).strip()}' — {dt.year}년 {mo}월 {dd}일의 실제 요일은 "
+            f"'{WEEKDAY_KR[dt.weekday()]}'. 일정 자체가 잘못됐을 가능성(웹 검색 재확인 필요)")
+    return (len(issues) == 0), issues
+
 # ----------------------------- manifest / build -----------------------------
 def update_manifest(date_str, time_str, mode, title, summary, relfile, tag="데일리"):
     with open(MANIFEST, encoding="utf-8") as f:
@@ -2004,6 +2054,20 @@ def main():
             sys.stderr.write(
                 f"[ALERT] 지수 검산 실패 → {mode} 발행 중단({now:%Y-%m-%d}). "
                 "본문 KOSPI/KOSDAQ 수치가 KIS/ticker 실데이터와 불일치. "
+                "확인 후 재실행하거나, 의도된 경우 ALLOW_UNVERIFIED=1 로 우회.\n")
+            return 2
+
+    # ── 날짜-요일 검산 게이트(사고#14: SK하이닉스 일정 오보 재발 방지) ─────────
+    # 본문의 '날짜(요일)' 병기가 실제 달력과 불일치하면 일정 자체를 지어냈을
+    # 가능성이 높으므로 발행을 중단한다(개장·마감 공통). 우회: ALLOW_UNVERIFIED=1
+    if used_ai and os.environ.get("ALLOW_UNVERIFIED", "").strip() != "1":
+        _ok2, _issues2 = verify_event_weekdays(htmlstr, now)
+        for _msg in _issues2:
+            print(f"[verify] {_msg}")
+        if not _ok2:
+            sys.stderr.write(
+                f"[ALERT] 날짜-요일 검산 실패 → {mode} 발행 중단({now:%Y-%m-%d}). "
+                "본문에 실제 달력과 다른 요일 병기가 있음(일정 오보 가능성). "
                 "확인 후 재실행하거나, 의도된 경우 ALLOW_UNVERIFIED=1 로 우회.\n")
             return 2
 
