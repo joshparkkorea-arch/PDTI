@@ -1266,6 +1266,7 @@ def _ai_user_prompt(mode, date_kst, items, asof, vol, rank_up, rank_dn, flows, u
         "7) 등락률 표기 통일: 전일 대비 '일간 등락률'에는 항상 +/− 부호를 붙입니다(예: <span class=\"up\">+1.2%</span>, <span class=\"down\">−9.99%</span>). 단, 기준금리·물가율·지수 레벨처럼 '변동이 아닌 값'에는 부호를 붙이지 마세요.\n"
         "8) 국가 병기 순서: 한국이 들어가는 국가 나열은 항상 한국을 맨 앞에 표기합니다(예: 한·일, 한·미, 한·중, 한·미·일). 일·한, 미·한 같은 표기는 금지합니다.\n"
         "9) 연휴·주말 후 첫 발행(월요일 개장 등): 섹션명은 '간밤'이 아니라 '주말간(또는 연휴간) 주요 뉴스'로 씁니다. 각 뉴스에 발생 날짜를 명시하고, 직전 호에서 이미 다룬 사건은 새 소식처럼 재보도하지 말고 '복습/요약'으로 구분해 표기합니다. 휴장으로 새 세션이 없으면 '간밤 마감'이라는 표현 자체를 금지합니다.\n"
+        "10) 지수 종가·등락률(코스피·코스닥 등)은 반드시 본 프롬프트에 제공된 실데이터 값을 그대로 사용합니다. 웹 검색으로 찾은 지수 수치로 대체하는 것을 금지하며, 실데이터와 불일치하는 기사는 자동 검산에 걸려 발행이 차단됩니다.\n"
         "8) 쉬운 풀이: 중학생이 모를 만한 경제·금융 용어는 처음 나올 때 괄호로 짧게 뜻을 병기하세요(예: 서킷브레이커(주가가 급락하면 거래를 잠시 멈추는 제도), 밸류에이션(기업가치 대비 주가 수준)). 한 용어당 한 번만, 간결하게.\n"
         "9) 미국 지수·지표·기관 알파벳 병기: 처음 나올 때 알파벳/약어를 괄호로 함께 적습니다(예: 나스닥(NASDAQ), 연준(Fed), 연방공개시장위원회(FOMC), 소비자물가(CPI), 점도표(dot plot)).\n"
         "10) 실적 발표·경제지표 등 '시각이 정해진' 일정을 언급할 때는 항상 한국시간(KST)으로 환산해 원래 시간과 함께 병기합니다(예: '미 동부 오후 4시 30분(한국시간 익일 새벽 5시 30분)'). 미국은 서머타임 적용 여부에 따라 한국과의 시차가 13/14시간으로 달라지니, web_search로 해당 일정의 정확한 KST를 확인해 적습니다. 분 단위가 공시되지 않은 '장 마감 후(after market close)' 같은 표현은 그대로 옮기되, 콘퍼런스콜 등 구체 시각이 있으면 그 시각을 KST로 병기합니다.\n"
@@ -1737,6 +1738,65 @@ def render_ai(mode, date_kst, meta):
     return "".join(parts), title, summary
 
 
+
+# ----------------------------- 지수 검산 가드(사고#12 재발 방지) -----------------------------
+def _g_num(s):
+    try:
+        return float(str(s).replace(",", "").replace("\u2212", "-").replace("%", "").replace("$", "").strip())
+    except Exception:
+        return None
+
+def verify_index_figures(htmlstr, items, asof):
+    """마감 기사 본문의 KOSPI/KOSDAQ 수치를 ticker(KIS) 실데이터와 검산.
+    (A) 실데이터 종가가 본문에 존재하는지(전체), (B) 리드 문단의 지수 인근 수치가
+    실데이터(종가·전일종가·등락포인트) 화이트리스트와 일치하는지 검사.
+    반환: (ok, issues). ticker가 오늘자가 아니면 검산 생략(경고만)."""
+    issues = []
+    today = datetime.now(KST).strftime("%Y-%m-%d")
+    if today not in str(asof):
+        return True, [f"(경고) ticker asof({asof})가 오늘자가 아니라 검산을 건너뜀"]
+    # 화이트리스트: 각 지수의 종가·(역산)전일종가·등락포인트
+    white = []
+    auth = {}
+    for name in ("KOSPI", "KOSDAQ"):
+        it = items.get(name) or {}
+        ap = _g_num(it.get("value")); ac = _g_num(it.get("change"))
+        if ap is None:
+            continue
+        auth[name] = (ap, ac)
+        white.append(ap)
+        if ac is not None and abs(1 + ac / 100) > 1e-6:
+            prev = ap / (1 + ac / 100)
+            white.append(prev); white.append(abs(ap - prev))
+    if not auth:
+        return True, ["(경고) ticker에 KOSPI/KOSDAQ 실데이터가 없어 검산 생략"]
+    # (A) 존재 검사 — 전체 본문
+    for name, (ap, ac) in auth.items():
+        pstr = f"{ap:,.2f}"
+        if pstr not in htmlstr:
+            issues.append(f"{name}: 본문에 실데이터 종가 {pstr} 미표기 — 웹 검색 수치로 대체됐을 가능성")
+    # (B) 근접 검사 — 리드 문단 한정
+    mlead = re.search(r'<p class="lead-para">(.*?)</p>', htmlstr, re.S)
+    if mlead:
+        lead = re.sub(r"<[^>]+>", " ", mlead.group(1))
+        for name, kws in (("KOSPI", ("코스피", "KOSPI")), ("KOSDAQ", ("코스닥", "KOSDAQ"))):
+            if name not in auth:
+                continue
+            for kw in kws:
+                for m in re.finditer(re.escape(kw), lead):
+                    seg = lead[m.end(): m.end() + 90]
+                    for cm in re.finditer(r"(\d{1,3}(?:,\d{3})*\.\d{2})", seg):
+                        tail = seg[cm.end(): cm.end() + 1]
+                        if tail in ("원", "%", "달", "p", "P"):
+                            continue  # 종목가·퍼센트·포인트 표기 등 지수 레벨이 아닌 수치
+                        cv = _g_num(cm.group(1))
+                        if cv is None or cv < 50:
+                            continue
+                        if not any(abs(cv - w) / max(w, 1e-9) <= 0.005 for w in white):
+                            issues.append(f"{name}: 리드의 '{kw}' 인근 수치 {cm.group(1)} — 실데이터와 불일치")
+    hard = [x for x in issues if not x.startswith("(경고)")]
+    return (len(hard) == 0), issues
+
 # ----------------------------- manifest / build -----------------------------
 def update_manifest(date_str, time_str, mode, title, summary, relfile, tag="데일리"):
     with open(MANIFEST, encoding="utf-8") as f:
@@ -1932,6 +1992,20 @@ def main():
             "원인 점검: ANTHROPIC_API_KEY 잔액/일시오류. "
             "의도된 템플릿 발행이면 ALLOW_TEMPLATE=1 로 재실행.\n")
         return 2
+
+    # ── 지수 검산 게이트(사고#12: 42호 코스닥 방향 오류 재발 방지) ─────────
+    # 마감 기사는 KOSPI/KOSDAQ 수치가 ticker(KIS) 실데이터와 일치해야 발행된다.
+    # 불일치 시 발행을 중단(비0)하고 로그로 상세를 남긴다. 우회: ALLOW_UNVERIFIED=1
+    if used_ai and mode == "close" and os.environ.get("ALLOW_UNVERIFIED", "").strip() != "1":
+        _ok, _issues = verify_index_figures(htmlstr, items, asof)
+        for _msg in _issues:
+            print(f"[verify] {_msg}")
+        if not _ok:
+            sys.stderr.write(
+                f"[ALERT] 지수 검산 실패 → {mode} 발행 중단({now:%Y-%m-%d}). "
+                "본문 KOSPI/KOSDAQ 수치가 KIS/ticker 실데이터와 불일치. "
+                "확인 후 재실행하거나, 의도된 경우 ALLOW_UNVERIFIED=1 로 우회.\n")
+            return 2
 
     with open(abspath, "w", encoding="utf-8") as f:
         f.write(htmlstr)
