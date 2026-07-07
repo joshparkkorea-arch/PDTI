@@ -552,6 +552,22 @@ def kis_stock(code, token, key, sec):
         sys.stderr.write(f"[kis-stock] {code} 실패: {e}\n")
         return None
 
+def yahoo_kr_stock_fallback(code):
+    """국내 종목 2차 폴백(KIS 장애 대비, 2026-07-07 신설) — 야후 {code}.KS→.KQ 순차 시도.
+    kis_stock과 동일 형태 {pc,c,chg,dir,vol,mcap} 반환. 시가총액은 미제공 '—'."""
+    for suf in (".KS", ".KQ"):
+        q = yahoo_chart_quote(f"{code}{suf}")
+        if q and q.get("prev"):
+            chg_disp, chg_dir = _pct_disp(((q["price"] / q["prev"]) - 1.0) * 100.0)
+            print(f"[yh] 국내 {code}{suf} 폴백 성공(시가총액 제외)")
+            return {"pc": (_ci(q["prev"]) + "원") if _ci(q["prev"]) else "—",
+                    "c": (_ci(q["price"]) + "원") if _ci(q["price"]) else "—",
+                    "chg": chg_disp, "dir": chg_dir,
+                    "vol": ((_ci(q.get("vol")) + "주") if _ci(q.get("vol")) else "—"),
+                    "mcap": "—"}
+    return None
+
+
 def std_stock_table(name, ident, d):
     """전일 종가 / 금일 종가(+등락률) / 거래량 / 시가총액 — 모든 종목 동일한 4줄 표."""
     if d is None:
@@ -930,7 +946,7 @@ def inject_stock_tables(body, token, key, sec):
             d = us_data.get(ident.upper())
         elif market == "kr":
             if ident not in kr_cache:
-                kr_cache[ident] = kis_stock(ident, token, key, sec)
+                kr_cache[ident] = kis_stock(ident, token, key, sec) or yahoo_kr_stock_fallback(ident)
             d = kr_cache[ident]
         else:
             d = None
