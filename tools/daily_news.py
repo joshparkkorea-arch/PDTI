@@ -385,7 +385,120 @@ def fmp_index(symbol, fmp_key):
             sys.stderr.write(f"[fmp-index] {symbol} 실패: {e}\n")
     return None
 
+
+# ---------------- 무료(야후) 미국 데이터 경로 — FMP 유료화 대응(2026-07-07) ----------------
+# FMP Free 플랜이 quote/most-actives/news를 402(Payment Required)로 막으면서 신설.
+# 야후 파이낸스 공개 엔드포인트(키·인증 불필요)를 폴백으로 사용한다. 호출 순서는
+# 항상 FMP 먼저 → 실패 시 야후. (추후 FMP 유료 전환 시 자동으로 FMP 경로 복귀)
+
+def _yahoo_get(url):
+    with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "application/json"}), timeout=20) as r:
+        return json.load(r)
+
+def yahoo_chart_quote(sym):
+    """야후 v8 chart(무키) → {'price','prev','vol','pct'} 또는 None."""
+    try:
+        j = _yahoo_get(f"https://query2.finance.yahoo.com/v8/finance/chart/{urllib.parse.quote(sym)}?range=1d&interval=1d")
+        meta = ((j.get("chart") or {}).get("result") or [{}])[0].get("meta") or {}
+        price = meta.get("regularMarketPrice")
+        prev = meta.get("chartPreviousClose") or meta.get("previousClose")
+        vol = meta.get("regularMarketVolume")
+        if price is None:
+            return None
+        pct = ((float(price) / float(prev)) - 1.0) * 100.0 if prev else None
+        return {"price": float(price), "prev": (float(prev) if prev else None),
+                "vol": (float(vol) if vol else 0.0), "pct": pct}
+    except Exception as e:
+        sys.stderr.write(f"[yh] {sym} chart 실패: {e}\n")
+        return None
+
+def yahoo_index(symbol):
+    """지수(예: ^DJI) → {value,change,dir}. fmp_index와 동일 형태. 실패 시 None."""
+    q = yahoo_chart_quote(symbol)
+    if not q or q.get("pct") is None:
+        return None
+    c = q["pct"]
+    return {"value": f"{q['price']:,.2f}",
+            "change": f"{'+' if c >= 0 else ''}{c:.2f}%",
+            "dir": "up" if c >= 0 else "down"}
+
+def yahoo_stock_fallback(sym):
+    """개별 미국 종목 3차 폴백 → std_stock_table용 dict. 시가총액은 미제공 '—'."""
+    q = yahoo_chart_quote(sym)
+    if not q:
+        return None
+    chg_disp, chg_dir = _pct_disp(q.get("pct"))
+    return {"pc": (f"${q['prev']:,.2f}" if q.get("prev") else "—"),
+            "c": f"${q['price']:,.2f}",
+            "chg": chg_disp, "dir": chg_dir,
+            "vol": ((_ci(q.get("vol")) + "주") if _ci(q.get("vol")) else "—"),
+            "mcap": "—"}
+
+# 무료 경로 후보 유니버스 — 미국 대형·초대형 유동성 상위 40종목(거래대금 상위권 상시 커버).
+# 시총 필터를 API 없이 대신하는 장치이므로, 신규 대형주 등장 시 여기에 추가할 것.
+US_UNIVERSE = [
+    ("NVDA","엔비디아"),("TSLA","테슬라"),("AAPL","애플"),("MSFT","마이크로소프트"),
+    ("AMZN","아마존"),("META","메타"),("GOOGL","알파벳"),("AVGO","브로드컴"),
+    ("AMD","AMD"),("MU","마이크론"),("INTC","인텔"),("PLTR","팔란티어"),
+    ("SMCI","슈퍼마이크로"),("QCOM","퀄컴"),("ARM","Arm"),("TSM","TSMC"),
+    ("COIN","코인베이스"),("MSTR","스트래티지"),("LRCX","램리서치"),("AMAT","어플라이드머티어리얼즈"),
+    ("KLAC","KLA"),("WDC","웨스턴디지털"),("STX","씨게이트"),("SNDK","샌디스크"),
+    ("DELL","델"),("ORCL","오라클"),("NFLX","넷플릭스"),("CRM","세일즈포스"),
+    ("PANW","팔로알토네트웍스"),("NOW","서비스나우"),("UBER","우버"),("HOOD","로빈후드"),
+    ("JPM","JP모건"),("XOM","엑슨모빌"),("LLY","일라이릴리"),("UNH","유나이티드헬스"),
+    ("WMT","월마트"),("COST","코스트코"),("VRT","버티브"),("CEG","컨스텔레이션에너지"),
+]
+US_KR_NAMES = dict(US_UNIVERSE)
+
+def fetch_us_movers_free(n=5):
+    """무료 경로: 유니버스 40종목을 야후 차트로 훑어 거래대금(주가×거래량) 상위 n 반환.
+    유니버스 자체가 대형주라 페니·소형주 필터가 내장된 셈. 실패 시 None."""
+    rows = []
+    for i, (sym, kr) in enumerate(US_UNIVERSE):
+        if i:
+            time.sleep(0.12)
+        q = yahoo_chart_quote(sym)
+        if not q or q["price"] < 5.0:
+            continue
+        val = q["price"] * (q.get("vol") or 0.0)
+        if val <= 0:
+            continue
+        chg, _ = _pct_disp(q.get("pct"))
+        rows.append({"symbol": sym, "name": kr,
+                     "price": f"${q['price']:,.2f}", "chg": chg, "_val": val})
+    if not rows:
+        return None
+    rows.sort(key=lambda r: r["_val"], reverse=True)
+    print(f"[yh] 무료 경로 거래대금 상위: {', '.join(r['symbol'] for r in rows[:n])}")
+    return [{k: v for k, v in r.items() if k != "_val"} for r in rows[:n]]
+
+def fetch_trending_us():
+    """무료 뉴스픽 대체: 야후 트렌딩(US) 상위 티커 중 대형·유동성 조건
+    (주가 $5+ · 당일 거래대금 $10억+) 통과 첫 종목. 실패 시 None."""
+    try:
+        j = _yahoo_get("https://query1.finance.yahoo.com/v1/finance/trending/US?count=10")
+        quotes = ((j.get("finance") or {}).get("result") or [{}])[0].get("quotes") or []
+        syms = [str(q.get("symbol") or "").strip().upper() for q in quotes]
+        syms = [s for s in syms if s and s.isalpha() and 1 <= len(s) <= 5]
+    except Exception as e:
+        sys.stderr.write(f"[yh] 트렌딩 조회 실패: {e}\n")
+        return None
+    for i, sym in enumerate(syms[:6]):
+        if i:
+            time.sleep(0.12)
+        q = yahoo_chart_quote(sym)
+        if not q or q["price"] < 5.0:
+            continue
+        if q["price"] * (q.get("vol") or 0.0) < 1.0e9:
+            continue
+        chg, _ = _pct_disp(q.get("pct"))
+        print(f"[yh] 화제성 픽(야후 트렌딩): {sym}")
+        return {"symbol": sym, "name": US_KR_NAMES.get(sym, ""),
+                "price": f"${q['price']:,.2f}", "chg": chg, "news": True}
+    return None
+
 def kis_stock(code, token, key, sec):
+
     """한국 종목 → {pc,c,vol,mcap}. 실패 시 None. (inquire-price FHKST01010100)"""
     if not token or not code:
         return None
@@ -773,7 +886,16 @@ def inject_stock_tables(body, token, key, sec):
                     print(f"[td] {sym} 보강 성공(시가총액 제외)")
         elif need and not td_key:
             sys.stderr.write("[td] TWELVEDATA_API_KEY 없음 — 폴백 불가(워크플로 env 확인)\n")
-        # 두 소스 모두 실패해 빈 표가 될 종목 경고(아침에 바로 눈에 띄게)
+        # Twelve Data 이후에도 빈 종목 → 야후 차트 3차 폴백
+        rem = sorted({s.upper() for s in us_syms if _is_blank(us_data.get(s.upper()))})
+        if rem:
+            print(f"[yh] 잔여 {len(rem)}종목 → 야후 차트 3차 폴백: {', '.join(rem)}")
+            for sym in rem:
+                yq = yahoo_stock_fallback(sym)
+                if yq and not _is_blank(yq):
+                    us_data[sym] = yq
+                    print(f"[yh] {sym} 보강 성공(시가총액 제외)")
+        # 세 소스 모두 실패해 빈 표가 될 종목 경고(아침에 바로 눈에 띄게)
         still = sorted({s.upper() for s in us_syms if _is_blank(us_data.get(s.upper()))})
         if still:
             sys.stderr.write(f"[stock][경고] FMP·TwelveData 모두 실패 → 빈 표: {', '.join(still)}\n")
@@ -1194,10 +1316,10 @@ def _ai_user_prompt(mode, date_kst, items, asof, vol, rank_up, rank_dn, flows, u
         lines.append("수급(외국인/기관/개인 순매수): " + "; ".join(
             f'{m} 외 {v.get("frgn")} 기 {v.get("orgn")} 개 {v.get("indv")}' for m, v in flows.items()))
     if us_movers:
-        lines.append("미국 주목 5종목(거래대금 상위 4 + 뉴스 최다 언급 1): " + "; ".join(
+        lines.append("미국 주목 5종목(거래대금 상위 4 + 뉴스·화제성 픽 1): " + "; ".join(
             f'{x["symbol"]} {x.get("name","")} {x.get("price","")} {x.get("chg","")}'
-            + (" (뉴스 최다 언급)" if x.get("news") else "") for x in us_movers)
-            + " — '뉴스 최다 언급' 종목은 심층 분석에서 그 점을 명시하세요.")
+            + (" (뉴스·화제성 픽)" if x.get("news") else "") for x in us_movers)
+            + " — '뉴스·화제성 픽' 종목은 심층 분석에서 그 점을 명시하세요.")
     if crypto and crypto.get("rows"):
         segs = []
         for r in crypto["rows"]:
@@ -1939,21 +2061,21 @@ def main():
         return 1
 
     if mode == "open":
-        dji = fmp_index("^DJI", os.environ.get("FMP_API_KEY", "").strip())
+        dji = fmp_index("^DJI", os.environ.get("FMP_API_KEY", "").strip()) or yahoo_index("^DJI")
         if dji:
             items["다우존스"] = dji
             print(f"[daily_news] 다우존스 종가 확보: {dji['value']}({dji['change']})")
         else:
-            print("[daily_news] 다우존스 종가 미확보(FMP) — AI가 web_search로 채움")
+            print("[daily_news] 다우존스 종가 미확보(FMP·야후) — AI가 web_search로 채움")
 
     rank_up = rank_dn = flows = vol = us_movers = crypto = None
     if mode == "open":
         _fk = os.environ.get("FMP_API_KEY", "").strip()
-        _base = fetch_us_movers(_fk, 6)                 # 거래대금 상위(여유분 6)
-        _news = fetch_most_mentioned_us(_fk)            # 뉴스 최다 언급 1
-        us_movers = combine_us_focus(_base, _news, 5)   # 거래대금4 + 뉴스1(겹치면 거래대금5위)
+        _base = fetch_us_movers(_fk, 6) or fetch_us_movers_free(6)   # FMP 실패 시 무료(야후) 경로
+        _news = fetch_most_mentioned_us(_fk) or fetch_trending_us()   # FMP 뉴스 실패 시 야후 트렌딩
+        us_movers = combine_us_focus(_base, _news, 5)   # 거래대금4 + 픽1(겹치면 거래대금5위)
         print(f"[daily_news] 미국주목종목={'O' if us_movers else 'X'} "
-              f"(거래대금4+뉴스1, 뉴스픽={_news.get('symbol') if _news else '-'})")
+              f"(거래대금4+픽1, 픽={_news.get('symbol') if _news else '-'})")
     crypto = fetch_crypto_movers(os.environ.get("TWELVEDATA_API_KEY", "").strip())
     print(f"[daily_news] 암호화폐={'O' if crypto else 'X'}")
     update_kimchi_history(crypto, mode)
