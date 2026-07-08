@@ -1328,7 +1328,7 @@ AI_CLASSES = (
 )
 
 
-def _ai_user_prompt(mode, date_kst, items, asof, vol, rank_up, rank_dn, flows, us_movers=None, crypto=None):
+def _ai_user_prompt(mode, date_kst, items, asof, vol, rank_up, rank_dn, flows, us_movers=None, crypto=None, correction_note=None):
     d = date_kst
     dstr = f'{d.year}년 {d.month}월 {d.day}일({WEEKDAY_KR[d.weekday()]})'
     lines = [f'[확정 데이터 — 아래 숫자는 그대로 사용, 추가 사실은 web_search로 확인]',
@@ -1530,7 +1530,7 @@ def compose_with_claude(api_key, mode, date_kst, items, asof, vol, rank_up, rank
         "web_search로 직접 확인해 출처를 답니다. 한국 증시 색상 관례(상승=빨강, 하락=파랑)를 따릅니다. "
         "반드시 지정된 구분자 형식으로만 출력합니다."
     )
-    user = _ai_user_prompt(mode, date_kst, items, asof, vol, rank_up, rank_dn, flows, us_movers, crypto)
+    user = _ai_user_prompt(mode, date_kst, items, asof, vol, rank_up, rank_dn, flows, us_movers, crypto, correction_note=correction_note)
     last_err = None
     for attempt in range(1, 3):  # 파싱 실패(형식 깨짐) 시 1회 더 재생성
         raw = call_anthropic(api_key, system, user)
