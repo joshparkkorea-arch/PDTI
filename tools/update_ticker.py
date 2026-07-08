@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 """update_ticker.py — INVEST STORY 배너 시세 자동 갱신기.
 
-야후 파이낸스 공개 차트 엔드포인트에서 지수/환율을 받아 ticker.json을 갱신한다.
-키가 필요 없고 서버(깃허브 액션)에서 실행하면 CORS 문제도 없다.
+지수/환율을 받아 ticker.json을 갱신한다. 우선순위(2026-07-08 재배열):
+  1) KIS(국내지수 실시간) → 2) 야후(무키·무제한) → 3) Twelve Data(야후 실패분만 lazy 보강)
+Twelve Data가 심볼 미지원·플랜 제한으로 축소되고 야후가 실측 신뢰도를 입증해 순서를 교체.
 한 종목이 실패하면 기존 ticker.json 값을 유지한다(절대 비우지 않음).
 
 로컬/액션 실행:  python tools/update_ticker.py
@@ -175,13 +176,7 @@ def main():
     key = os.environ.get("TWELVEDATA_API_KEY", "").strip()
     kis_key = os.environ.get("KIS_APP_KEY", "").strip()
     kis_secret = os.environ.get("KIS_APP_SECRET", "").strip()
-    td_data = {}
-    if key:
-        try:
-            td_data = fetch_td_all(key)
-            print(f"[update_ticker] Twelve Data {len(td_data)}/{len(SYMBOLS)} 수신")
-        except Exception as e:
-            sys.stderr.write(f"[warn] Twelve Data 실패: {e} — 야후로 폴백\n")
+
     kis_data = {}
     if kis_key and kis_secret:
         try:
@@ -189,26 +184,47 @@ def main():
             print(f"[update_ticker] KIS {len(kis_data)}/2 수신 (KOSPI·KOSDAQ)")
         except Exception as e:
             sys.stderr.write(f"[warn] KIS 실패: {e}\n")
+
+    # 1·2순위 수집: KIS → 야후. 실패분은 pending에 모아 TD로 lazy 보강.
+    quotes, pending, yh_ok = {}, [], 0
+    for name, sym, td, fmt in SYMBOLS:
+        if name in kis_data:
+            quotes[name] = kis_data[name]
+            continue
+        try:
+            quotes[name] = fetch_quote(sym)
+            yh_ok += 1
+            time.sleep(0.4)  # 야후 과호출 방지
+        except Exception as e:
+            sys.stderr.write(f"[warn] {name} ({sym}) 야후 실패: {e}\n")
+            pending.append((name, td))
+    if yh_ok:
+        print(f"[update_ticker] 야후 {yh_ok}/{len(SYMBOLS)} 수신")
+
+    # 3순위: 야후가 못 채운 종목만 Twelve Data로 보강(크레딧 절약형 lazy 호출)
+    td_used = 0
+    if pending and key:
+        try:
+            td_data = fetch_td_all(key)
+            for name, td in pending:
+                if td in td_data:
+                    quotes[name] = td_data[td]
+                    td_used += 1
+            print(f"[update_ticker] Twelve Data 보강 {td_used}/{len(pending)}종목")
+        except Exception as e:
+            sys.stderr.write(f"[warn] Twelve Data 실패: {e} — 기존값 유지\n")
+
     items, ok = [], 0
     for name, sym, td, fmt in SYMBOLS:
-        price = prev = None
-        if name in kis_data:                       # 1순위: KIS(국내지수 실시간)
-            price, prev = kis_data[name]
-        elif td in td_data:                        # 2순위: Twelve Data
-            price, prev = td_data[td]
-        else:                                      # 3순위: 야후
-            try:
-                price, prev = fetch_quote(sym)
-                time.sleep(0.4)  # 야후 과호출 방지
-            except Exception as e:
-                sys.stderr.write(f"[warn] {name} ({sym}) 야후 실패: {e} — 기존값 유지\n")
-        if price is not None and prev is not None:
+        if name in quotes:
+            price, prev = quotes[name]
             items.append(make_item(name, fmt, price, prev))
             ok += 1
         elif name in prev_by_name:
             items.append(prev_by_name[name])
         else:
             items.append({"name": name, "value": "—", "change": "확인 중", "dir": "flat"})
+
     if ok == 0:
         sys.stderr.write("[error] 모든 종목 실패 — ticker.json 변경 안 함\n")
         return 1
@@ -216,15 +232,15 @@ def main():
     parts = []
     if kis_data:
         parts.append("KIS")
-    if key and td_data:
-        parts.append("Twelve Data")
-    if not parts:
+    if yh_ok:
         parts.append("야후")
-    src = "+".join(parts)
-    out = {"asof": now + f" (자동·{src})", "items": items}
+    if td_used:
+        parts.append("Twelve Data")
+    src_label = "+".join(parts) if parts else "직전값"
+    out = {"asof": now + f" (자동·{src_label})", "items": items}
     with open(TICKER, "w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False, indent=2)
-    print(f"[update_ticker] {ok}/{len(SYMBOLS)} 갱신 · asof {now} · src {src}")
+    print(f"[update_ticker] {ok}/{len(SYMBOLS)} 갱신 · asof {now} · src {src_label}")
     return 0
 
 if __name__ == "__main__":
