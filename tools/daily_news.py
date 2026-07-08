@@ -1960,6 +1960,53 @@ def verify_index_figures(htmlstr, items, asof):
     return (len(hard) == 0), issues
 
 
+def fix_weekday_mismatches(htmlstr, base_date):
+    """요일'만' 틀린 날짜 병기를 실제 달력 요일로 결정적 교정(2026-07-08 신설).
+    재생성 피드백으로도 AI의 요일 계산 오류가 반복(두더지 게임)돼, 마지막 단계에서
+    괄호 속 요일 글자만 계산값으로 치환한다. 날짜 자체·이벤트 서술은 건드리지 않으며,
+    존재하지 않는 날짜는 교정하지 않는다(검산이 그대로 차단). 반환: (html, 교정목록)."""
+    fixes = []
+    pat = re.compile(
+        r"(?:(\d{4})년\s*)?(\d{1,2})월\s*(\d{1,2})일\s*"
+        r"(?:\(([월화수목금토일])\)|([월화수목금토일])요일)")
+
+    def _actual(y, mo, dd):
+        cand_years = [int(y)] if y else [base_date.year - 1, base_date.year, base_date.year + 1]
+        best = None
+        for cy in cand_years:
+            try:
+                dt = datetime(cy, mo, dd)
+            except ValueError:
+                continue
+            gap = abs((dt.date() - base_date.date()).days)
+            if (y or gap <= 200) and (best is None or gap < best[0]):
+                best = (gap, dt)
+        return best[1] if best else None
+
+    def _sub(m):
+        y, mo, dd = m.group(1), int(m.group(2)), int(m.group(3))
+        stated = m.group(4) or m.group(5)
+        # 후보 연도 중 하나라도 표기 요일과 일치하면 정상 → 유지(검산과 동일한 관용)
+        cand_years = [int(y)] if y else [base_date.year - 1, base_date.year, base_date.year + 1]
+        for cy in cand_years:
+            try:
+                dt = datetime(cy, mo, dd)
+            except ValueError:
+                continue
+            if (y or abs((dt.date() - base_date.date()).days) <= 200) and WEEKDAY_KR[dt.weekday()] == stated:
+                return m.group(0)
+        dt = _actual(y, mo, dd)
+        if dt is None:
+            return m.group(0)  # 존재하지 않는 날짜 등 — 교정 불가(검산이 차단)
+        correct = WEEKDAY_KR[dt.weekday()]
+        fixes.append(f"'{m.group(0).strip()}' → 요일 '{stated}'을 '{correct}'로 자동 정정({dt.year}-{mo:02d}-{dd:02d})")
+        if m.group(4):
+            return m.group(0).replace(f"({stated})", f"({correct})")
+        return m.group(0).replace(f"{stated}요일", f"{correct}요일")
+
+    return pat.sub(_sub, htmlstr), fixes
+
+
 def _valid_date(y, mo, dd):
     try:
         datetime(y, mo, dd); return True
@@ -2265,12 +2312,41 @@ def main():
                     _rok, _riss_i = verify_index_figures(_h2, items, asof)
                     for _msg in _riss_i:
                         print(f"[verify] (재생성) {_msg}")
+                if not _rok:
+                    # ── 최후 교정: 요일 글자만 결정적으로 정정(날짜·서술 불변) ──
+                    _fixed, _fixes = fix_weekday_mismatches(_h2, now)
+                    if _fixes:
+                        for _f in _fixes:
+                            print(f"[verify-fix] {_f}")
+                        _rok, _riss3 = verify_event_weekdays(_fixed, now)
+                        for _msg in _riss3:
+                            print(f"[verify] (교정 후) {_msg}")
+                        if _rok and mode == "close":
+                            _rok, _riss3i = verify_index_figures(_fixed, items, asof)
+                            for _msg in _riss3i:
+                                print(f"[verify] (교정 후) {_msg}")
+                        if _rok:
+                            _h2 = _fixed
+                            print("[daily_news] 요일 자동 정정 후 검산 통과")
                 if _rok:
                     htmlstr, title, summary = _h2, _t2, _s2
                     _ok2 = True
                     print(f"[daily_news] 재생성 성공 · 제목: {title}")
             except Exception as _e:
                 sys.stderr.write(f"[regen] 재생성 실패: {_e}\n")
+            # 재생성 자체가 예외로 죽은 경우: 원본에라도 요일 교정을 시도
+            if not _ok2:
+                _fixed0, _fixes0 = fix_weekday_mismatches(htmlstr, now)
+                if _fixes0:
+                    for _f in _fixes0:
+                        print(f"[verify-fix] (원본) {_f}")
+                    _rok0, _riss0 = verify_event_weekdays(_fixed0, now)
+                    if _rok0 and mode == "close":
+                        _rok0, _ = verify_index_figures(_fixed0, items, asof)
+                    if _rok0:
+                        htmlstr = _fixed0
+                        _ok2 = True
+                        print("[daily_news] (원본) 요일 자동 정정 후 검산 통과")
         if not _ok2:
             sys.stderr.write(
                 f"[ALERT] 날짜-요일 검산 실패(재생성 포함) → {mode} 발행 중단({now:%Y-%m-%d}). "
