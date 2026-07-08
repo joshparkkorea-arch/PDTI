@@ -1435,7 +1435,8 @@ def _ai_user_prompt(mode, date_kst, items, asof, vol, rank_up, rank_dn, flows, u
         "14) 기업·시장 이벤트 일정(실적발표·상장·공시·FOMC 등)의 '날짜'는 web_search로 교차 확인한 뒤에만 구체적으로 적습니다. ① 날짜에 요일을 병기할 때는 실제 달력과 일치하는지 반드시 확인하세요(날짜-요일 불일치는 자동 검산에 걸려 발행이 차단됩니다). ② 이벤트의 '성격'을 혼동하지 마세요 — 예: 상장일을 실적발표일로, 잠정실적 발표를 확정실적 발표로 쓰면 안 됩니다. ③ 날짜가 출처로 확인되지 않으면 구체 날짜·요일을 지어내지 말고 '이달 말 예정' 등으로 순화합니다.\n"
         "15) 미국 국채금리(10년물·30년물)가 실데이터로 제공되면 지수·지표표에 수록하고, 장기금리 레벨(예: 10년물 4.5%·30년물 5%)이 성장주·반도체 밸류에이션에 갖는 의미를 시황 분석에서 맥락화합니다. 금리 '레벨'에는 +/− 부호를 붙이지 않고, 일간 변동은 %p 또는 bp 단위로 표기합니다.\n\n"
         f"{AI_CLASSES}\n"
-        "[발행 전 자가점검] 출력하기 전에 본문을 스스로 점검하세요: ⑴ 모든 등락률(%)이 .up/.down으로 감싸졌는가, ⑵ 핵심 키워드·사건명에 .key 밑줄이 (기사 전체 6개 이상) 충분히 들어갔는가, ⑶ 중요한 절대수치(지수레벨·금액)에 .num을 썼는가, ⑷ 각 섹션이 .takeaway로 마무리됐는가, ⑸ '역사적·역대급·사상 최대' 등 미검증 최상급을 쓰지 않았는가(규칙 11), ⑹ '급등/약세 출발' 등 방향을 '전일 종가'가 아닌 '금일 시초가/종가'의 실제 부호로 적었는가(규칙 12), ⑺ 제목·부제에 HTML 태그(<span> 등)를 넣지 않았는가(규칙 13), ⑻ 본문의 모든 '날짜(요일)' 병기가 실제 달력과 일치하고 이벤트 성격(실적발표/상장/공시 등)을 원 출처 그대로 적었는가(규칙 14). 하나라도 어긋나면 고쳐 다시 작성한 뒤 출력하세요.\n\n"
+        + (("[긴급 정정 지시 — 최우선 준수] " + correction_note + "\n\n") if correction_note else "")
+        + "[발행 전 자가점검] 출력하기 전에 본문을 스스로 점검하세요: ⑴ 모든 등락률(%)이 .up/.down으로 감싸졌는가, ⑵ 핵심 키워드·사건명에 .key 밑줄이 (기사 전체 6개 이상) 충분히 들어갔는가, ⑶ 중요한 절대수치(지수레벨·금액)에 .num을 썼는가, ⑷ 각 섹션이 .takeaway로 마무리됐는가, ⑸ '역사적·역대급·사상 최대' 등 미검증 최상급을 쓰지 않았는가(규칙 11), ⑹ '급등/약세 출발' 등 방향을 '전일 종가'가 아닌 '금일 시초가/종가'의 실제 부호로 적었는가(규칙 12), ⑺ 제목·부제에 HTML 태그(<span> 등)를 넣지 않았는가(규칙 13), ⑻ 본문의 모든 '날짜(요일)' 병기가 실제 달력과 일치하고 이벤트 성격(실적발표/상장/공시 등)을 원 출처 그대로 적었는가(규칙 14). 하나라도 어긋나면 고쳐 다시 작성한 뒤 출력하세요.\n\n"
         "[출력 형식] 아래 형식 '그대로' 출력하세요. 각 구분선(===...===)을 정확히 쓰고 그 사이에 내용만 넣으세요. "
         "마크다운 코드펜스(```)나 형식 밖의 다른 말은 절대 쓰지 마세요. body_html은 위 클래스만 쓴 순수 HTML입니다.\n"
         "===TITLE===\n"
@@ -1521,7 +1522,7 @@ def parse_article(txt):
     return {"title": title, "subtitle": subtitle, "summary": summary, "body_html": body}
 
 
-def compose_with_claude(api_key, mode, date_kst, items, asof, vol, rank_up, rank_dn, flows, us_movers=None, crypto=None):
+def compose_with_claude(api_key, mode, date_kst, items, asof, vol, rank_up, rank_dn, flows, us_movers=None, crypto=None, correction_note=None):
     system = (
         "당신은 한국의 데일리 투자 뉴스레터 '투자이야기(INVEST STORY)'의 증시 전문 기자입니다. "
         "기사는 '박철웅 기자' 명의로 공개 발행됩니다. 정확성과 출처 표기를 최우선으로 하며, 확인되지 않은 "
@@ -2229,8 +2230,50 @@ def main():
         for _msg in _issues2:
             print(f"[verify] {_msg}")
         if not _ok2:
+            # ── 자동 재생성 1회(사고#14 만성화 대응, 2026-07-08) ─────────────
+            # 같은 요일 오류가 3일 연속 반복 → 규칙만으로는 부족. 검산이 잡아낸
+            # 오류 내용을 '정정 지시'로 프롬프트에 되먹여 1회 재작성한다.
+            print("[verify] 날짜-요일 검산 실패 — 오류 피드백을 포함해 1회 자동 재생성 시도")
+            _note = ("직전 초안에서 다음 날짜-요일 오류가 확인되었습니다: " + " / ".join(_issues2)
+                     + " — 해당 일정의 실제 날짜·요일과 이벤트 성격(실적발표/상장/공시 등)을 web_search로 "
+                       "재확인해 바로잡고, 확인되지 않으면 구체 날짜·요일 표기를 제거하세요. "
+                       "그 외 본문 구성과 품질은 그대로 유지합니다.")
+            try:
+                _meta2 = compose_with_claude(api_key, mode, now, items, asof, vol, rank_up,
+                                             rank_dn, flows, us_movers, crypto, correction_note=_note)
+                try:
+                    _meta2["body_html"] = inject_stock_tables(_meta2["body_html"], token, key, sec)
+                except Exception as _e:
+                    sys.stderr.write(f"[regen] 종목표 경고: {_e}\n")
+                try:
+                    _meta2["body_html"] = inject_crypto_table(_meta2["body_html"], crypto)
+                except Exception as _e:
+                    sys.stderr.write(f"[regen] 코인표 경고: {_e}\n")
+                try:
+                    _meta2["body_html"] = inject_charts(_meta2["body_html"], mode, items, rank_up, rank_dn, vol, us_movers, crypto)
+                except Exception as _e:
+                    sys.stderr.write(f"[regen] 차트 경고: {_e}\n")
+                try:
+                    _meta2["body_html"] = inject_section_cards(_meta2["body_html"])
+                except Exception as _e:
+                    sys.stderr.write(f"[regen] 카드 경고: {_e}\n")
+                _h2, _t2, _s2 = render_ai(mode, now, _meta2)
+                _rok, _riss = verify_event_weekdays(_h2, now)
+                for _msg in _riss:
+                    print(f"[verify] (재생성) {_msg}")
+                if _rok and mode == "close":
+                    _rok, _riss_i = verify_index_figures(_h2, items, asof)
+                    for _msg in _riss_i:
+                        print(f"[verify] (재생성) {_msg}")
+                if _rok:
+                    htmlstr, title, summary = _h2, _t2, _s2
+                    _ok2 = True
+                    print(f"[daily_news] 재생성 성공 · 제목: {title}")
+            except Exception as _e:
+                sys.stderr.write(f"[regen] 재생성 실패: {_e}\n")
+        if not _ok2:
             sys.stderr.write(
-                f"[ALERT] 날짜-요일 검산 실패 → {mode} 발행 중단({now:%Y-%m-%d}). "
+                f"[ALERT] 날짜-요일 검산 실패(재생성 포함) → {mode} 발행 중단({now:%Y-%m-%d}). "
                 "본문에 실제 달력과 다른 요일 병기가 있음(일정 오보 가능성). "
                 "확인 후 재실행하거나, 의도된 경우 ALLOW_UNVERIFIED=1 로 우회.\n")
             return 2
