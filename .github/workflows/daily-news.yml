@@ -73,20 +73,24 @@ jobs:
       # 기사·매니페스트·홈만 커밋하고, push가 거절되면 원격을 rebase한 뒤 최대 5회 재시도.
       - name: 변경분 커밋·푸시 (충돌 시 rebase 재시도)
         run: |
-          if git diff --quiet -- newsletters manifest.json index.html; then
+          # data(김프 히스토리) 포함 필수 — §5.4: 빠지면 매 런마다 히스토리 유실(2026-07-08 복구)
+          if git diff --quiet -- newsletters manifest.json index.html data; then
             echo "변경 없음(휴장일 등) — 커밋 생략"; exit 0
           fi
           git config user.name  "invest-story-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add newsletters manifest.json index.html
+          git add newsletters manifest.json index.html data
           git commit -m "feat(daily): ${{ steps.mode.outputs.mode }} 뉴스레터 자동 발행 [skip ci]"
+          # 커밋 대상 외 작업트리 잔여물(예: 시세 갱신 스텝의 ticker.json) 정리 —
+          # 남아 있으면 rebase가 'unstaged changes'로 거절됨(2026-07-08 푸시 5연속 실패 원인)
+          git checkout -- . || true
           for i in 1 2 3 4 5; do
             if git push origin HEAD:main; then
               echo "✅ 푸시 성공 (시도 $i)"; exit 0
             fi
             echo "⚠️ 푸시 거절(원격이 앞서감) — fetch+rebase 후 재시도 ($i/5)"
             git fetch origin main
-            if ! git rebase origin/main; then
+            if ! git rebase --autostash origin/main; then
               echo "rebase 충돌 — 중단하고 재시도"; git rebase --abort || true
             fi
             sleep $((i * 3))
