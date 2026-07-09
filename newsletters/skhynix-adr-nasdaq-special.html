@@ -40,6 +40,17 @@
   .notice{background:#fff8ec;border:1px solid var(--gold);border-left:4px solid var(--gold);
     border-radius:5px;padding:12px 15px;font-size:13.5px;color:#5c4a1e;margin:0 0 26px}
   .notice b{color:#4a3a12}
+  /* primer */
+  .eyebrow{font-size:12px;font-weight:800;letter-spacing:1.6px;color:var(--gold);
+    text-transform:uppercase;margin:30px 0 8px}
+  .primer{background:var(--card);border:1px solid var(--line);border-radius:10px;
+    padding:20px 22px 18px;margin:0 0 8px}
+  .primer h2{border-top:0;padding-top:0;margin:0 0 4px;font-size:21px}
+  .primer .row{margin:14px 0;font-size:14.5px}
+  .primer .lbl{display:inline-block;font-weight:800;color:var(--navy2);
+    background:#eef2f8;border-radius:4px;padding:1px 8px;margin-right:6px;font-size:13px}
+  .primer .why{background:#f2f5fa;border-left:4px solid var(--navy2);border-radius:5px;
+    padding:12px 15px;margin-top:14px;font-size:14px}
   /* section */
   h2{font-size:20.5px;color:var(--navy);letter-spacing:-.4px;margin:40px 0 6px;
     padding-top:20px;border-top:1px solid var(--line)}
@@ -113,6 +124,57 @@
 
   <div class="notice">
     <b>[기준 고지]</b> 본 특집은 <b>2026년 7월 9일(목) 오전</b> 시점 정보로 작성됐습니다. ①ADR 공모가는 뉴욕시간 9일 오후 확정 예정으로 <b>본문 작성 시점 미확정(확인 불가)</b>이며, ②거래 일정·규모는 감독기관 승인에 따라 변동될 수 있고, ③국내 본주 시세는 장중 변동분이 반영되지 않은 <b>전일(7/8) 종가 기준</b>입니다. 수치는 상장 직후 공식 공시와 대조 검수가 필요합니다.
+  </div>
+
+  <div class="eyebrow">먼저 짚고 가기 · 3분 개념정리</div>
+  <div class="primer">
+    <h2>ADR이란 무엇인가</h2>
+    <p>ADR(American Depositary Receipt·미국주식예탁증서)은 한마디로 <span class="key">"미국 증시에서 달러로 사고팔 수 있게 만든 외국 주식의 분신"</span>입니다. 한국에 상장된 SK하이닉스 주식(본주·원주)을 미국 투자자가 직접 사려면 환전·외국인 투자 절차가 번거로운데, ADR은 그 벽을 없애줍니다.</p>
+
+    <figure>
+      <svg viewBox="0 0 700 210" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ADR 작동 원리 도식">
+        <rect x="0" y="0" width="700" height="210" fill="#fffdf8"/>
+        <!-- box1 -->
+        <rect x="12" y="55" width="150" height="66" rx="8" fill="#eef2f8" stroke="#1B3C6E" stroke-width="1.5"/>
+        <text x="87" y="82" font-size="13" fill="#16335C" font-weight="700" text-anchor="middle">한국 유가증권시장</text>
+        <text x="87" y="102" font-size="12" fill="#5a6675" text-anchor="middle">SK하이닉스 본주</text>
+        <!-- arrow1 -->
+        <line x1="166" y1="88" x2="196" y2="88" stroke="#C9A654" stroke-width="2.5"/>
+        <polygon points="196,88 188,83 188,93" fill="#C9A654"/>
+        <!-- box2 -->
+        <rect x="200" y="55" width="150" height="66" rx="8" fill="#eef2f8" stroke="#1B3C6E" stroke-width="1.5"/>
+        <text x="275" y="82" font-size="13" fill="#16335C" font-weight="700" text-anchor="middle">미국 예탁은행</text>
+        <text x="275" y="102" font-size="12" fill="#5a6675" text-anchor="middle">본주 보관</text>
+        <!-- arrow2 -->
+        <line x1="354" y1="88" x2="384" y2="88" stroke="#C9A654" stroke-width="2.5"/>
+        <polygon points="384,88 376,83 376,93" fill="#C9A654"/>
+        <!-- box3 -->
+        <rect x="388" y="55" width="150" height="66" rx="8" fill="#16335C" stroke="#16335C" stroke-width="1.5"/>
+        <text x="463" y="82" font-size="13" fill="#ffffff" font-weight="700" text-anchor="middle">나스닥 상장</text>
+        <text x="463" y="102" font-size="12" fill="#d9cfae" text-anchor="middle">ADR 발행 · SKHY</text>
+        <!-- arrow3 -->
+        <line x1="542" y1="88" x2="572" y2="88" stroke="#C9A654" stroke-width="2.5"/>
+        <polygon points="572,88 564,83 564,93" fill="#C9A654"/>
+        <!-- box4 -->
+        <rect x="576" y="55" width="112" height="66" rx="8" fill="#eef2f8" stroke="#1B3C6E" stroke-width="1.5"/>
+        <text x="632" y="82" font-size="13" fill="#16335C" font-weight="700" text-anchor="middle">미국 투자자</text>
+        <text x="632" y="102" font-size="12" fill="#5a6675" text-anchor="middle">달러로 매매</text>
+        <!-- ratio note -->
+        <text x="350" y="165" font-size="13" fill="#C0392B" font-weight="700" text-anchor="middle">예탁비율 : ADR 1주 = SK하이닉스 본주 0.1주 (ADR 10주 ≈ 본주 1주)</text>
+        <text x="350" y="24" font-size="13" fill="#16335C" font-weight="800" text-anchor="middle">ADR은 이렇게 작동한다</text>
+      </svg>
+      <figcaption>미국 예탁은행이 본주를 보관하고 그 주식을 근거로 예탁증서(ADR)를 발행 → 나스닥에서 달러로 거래.</figcaption>
+    </figure>
+
+    <div class="row"><span class="lbl">작동 원리</span>미국 예탁은행이 SK하이닉스 본주를 보관하고, 그 주식을 담보로 예탁증서를 발행합니다. 미국 투자자는 이 증서를 나스닥에서 일반 주식처럼 달러로 사고팝니다. <span class="key">사실상 직상장과 비슷한 효과</span>지만, 형식은 '본주를 대표하는 증서'입니다.</div>
+
+    <div class="row"><span class="lbl">예탁비율</span>ADR과 본주는 정해진 비율로 묶입니다. 이번엔 <span class="key">ADR 1주 = 본주 0.1주</span> — ADR 10주가 본주 1주에 해당합니다. 본주가 200만 원대로 비싸다 보니, 미국 개인이 접근하기 쉽게 잘게 쪼갠 구조입니다.</div>
+
+    <div class="row"><span class="lbl">배당·의결권</span>배당은 예탁은행이 원화로 받아 달러로 바꿔 ADR 보유자에게 지급하고, 의결권도 예탁은행을 통해 대리 행사됩니다. 투자자는 환전·한국 계좌 없이 미국 브로커만으로 끝납니다.</div>
+
+    <div class="row"><span class="lbl">종류</span>ADR은 단순 장외거래(레벨1) → 거래소 상장(레벨2) → <span class="key">신규 자금까지 조달하는 상장(레벨3)</span>으로 나뉩니다. SK하이닉스는 신주를 발행해 자금을 조달하는 레벨3에 해당해 '상장'과 '증자'를 겸하며, 회사가 직접 주관한 '스폰서드(sponsored) ADR'입니다.</div>
+
+    <div class="why"><b>그래서 왜 하나?</b> ①한국 증시에 접근하기 어려웠던 미국 투자자의 접근성 확대, ②마이크론 등과 '같은 시장·같은 잣대'로 비교되며 밸류에이션 재평가 기대, ③용인·청주 반도체 투자를 위한 대규모 자금 조달 — 이 세 가지가 상장의 노림수입니다.</div>
   </div>
 
   <h2><span class="num">1</span>현상황 — D-1, 무엇이 확정됐나</h2>
