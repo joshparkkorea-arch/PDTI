@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<!-- INVEST_STORY_LOCKED -->
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SK하이닉스 나스닥 ADR 상장 — 프리미엄·리레이팅·시나리오별 대응 총정리</title>
+<meta property="og:type" content="article">
+<meta property="og:title" content="SK하이닉스 나스닥 ADR 상장 — 프리미엄·리레이팅·시나리오별 대응">
+<meta property="og:description" content="7배 초과청약 속 D-1. 상장 시 움직임, 국내 본주 영향, 발생확률로 계산한 3대 시나리오별 대응·중장기 전망.">
+<meta property="og:image" content="../assets/og-default.png">
+<style>
+  :root{
+    --navy:#16335C; --navy2:#1B3C6E; --navy-bar:#2E4B77;
+    --gold:#C9A654; --keyline:rgba(201,166,84,.32);
+    --up:#C0392B; --down:#1B5E9B;
+    --ink:#1c2430; --sub:#5a6675; --line:#e5e2d8; --bg:#faf8f2; --card:#fffdf8;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:'Pretendard','Apple SD Gothic Neo','Malgun Gothic',system-ui,sans-serif;
+    line-height:1.72;-webkit-text-size-adjust:100%}
+  .wrap{max-width:760px;margin:0 auto;padding:0 20px 64px}
+  /* masthead */
+  header.mast{border-bottom:3px solid var(--navy);margin-bottom:8px}
+  .mast-inner{max-width:760px;margin:0 auto;padding:18px 20px 14px;
+    display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  a.brand{font-weight:800;font-size:23px;letter-spacing:-.5px;color:var(--navy);
+    text-decoration:none;border:0}
+  a.brand span.i{color:var(--gold)}
+  a.brand:hover{text-decoration:none;color:var(--navy)}
+  .issueline{font-size:12.5px;color:var(--sub);letter-spacing:.2px}
+  /* badge + hero */
+  .badge{display:inline-block;background:var(--gold);color:#3d2f08;font-weight:800;
+    font-size:12px;letter-spacing:.4px;padding:4px 11px;border-radius:3px;margin:26px 0 14px}
+  h1{font-size:30px;line-height:1.28;letter-spacing:-.7px;margin:0 0 14px;color:var(--navy)}
+  .dek{font-size:16.5px;color:#37414f;margin:0 0 20px}
+  .key{background:linear-gradient(transparent 62%,var(--keyline) 62%);padding:0 1px;font-weight:700}
+  /* notice (3중 고지) */
+  .notice{background:#fff8ec;border:1px solid var(--gold);border-left:4px solid var(--gold);
+    border-radius:5px;padding:12px 15px;font-size:13.5px;color:#5c4a1e;margin:0 0 26px}
+  .notice b{color:#4a3a12}
+  /* section */
+  h2{font-size:20.5px;color:var(--navy);letter-spacing:-.4px;margin:40px 0 6px;
+    padding-top:20px;border-top:1px solid var(--line)}
+  h2 .num{color:var(--gold);font-weight:800;margin-right:8px}
+  h3{font-size:16px;color:var(--navy2);margin:24px 0 6px}
+  p{margin:12px 0}
+  .lead-note{font-size:13px;color:var(--sub);margin:-2px 0 14px}
+  /* fact grid */
+  .facts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:20px 0}
+  .fact{background:var(--card);border:1px solid var(--line);border-radius:7px;padding:13px 15px}
+  .fact .k{font-size:12px;color:var(--sub);margin-bottom:3px}
+  .fact .v{font-size:17px;font-weight:800;color:var(--navy);letter-spacing:-.3px}
+  .fact .v small{font-size:12px;font-weight:600;color:var(--sub);letter-spacing:0}
+  /* table */
+  table{width:100%;border-collapse:collapse;margin:16px 0;font-size:14px}
+  th,td{padding:9px 11px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+  th{background:var(--navy);color:#fff;font-weight:700;font-size:13px}
+  tr:nth-child(even) td{background:#fbf9f3}
+  td .up{color:var(--up);font-weight:700}
+  td .down{color:var(--down);font-weight:700}
+  /* scenario cards */
+  .scn{border:1px solid var(--line);border-radius:9px;padding:16px 17px;margin:14px 0;background:var(--card)}
+  .scn .hd{display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap}
+  .scn .tag{font-weight:800;font-size:14px;padding:3px 10px;border-radius:20px;color:#fff}
+  .scn .p{font-size:22px;font-weight:800;letter-spacing:-.5px}
+  .scn.a .tag{background:var(--up)} .scn.a .p{color:var(--up)}
+  .scn.b .tag{background:var(--navy-bar)} .scn.b .p{color:var(--navy-bar)}
+  .scn.c .tag{background:var(--down)} .scn.c .p{color:var(--down)}
+  .scn h4{margin:12px 0 4px;font-size:13.5px;color:var(--navy2);
+    text-transform:uppercase;letter-spacing:.5px}
+  .scn ul{margin:4px 0;padding-left:19px}
+  .scn li{margin:4px 0;font-size:14px}
+  .src{font-size:12px;color:var(--sub);font-style:normal}
+  figure{margin:22px 0;text-align:center}
+  figcaption{font-size:12px;color:var(--sub);margin-top:8px}
+  .callout{background:#f2f5fa;border-left:4px solid var(--navy2);border-radius:5px;
+    padding:13px 16px;margin:18px 0;font-size:14.5px}
+  .verdict{background:var(--navy);color:#f3ede0;border-radius:9px;padding:20px 22px;margin:30px 0}
+  .verdict h3{color:var(--gold);margin:0 0 8px}
+  .verdict p{margin:8px 0;color:#e9e3d5;font-size:14.5px}
+  .verdict .key{color:#fff;background:linear-gradient(transparent 62%,rgba(201,166,84,.5) 62%)}
+  /* editor note + footer */
+  .ednote{font-size:12.5px;color:var(--sub);border-top:1px solid var(--line);
+    margin-top:34px;padding-top:16px}
+  .ednote b{color:var(--ink)}
+  footer{text-align:center;margin-top:30px;padding-top:22px;border-top:3px solid var(--navy)}
+  a.home{display:inline-block;color:var(--navy2);font-weight:700;text-decoration:none;
+    font-size:15px;border-bottom:2px solid var(--keyline);padding-bottom:2px}
+  a.home:hover{color:var(--gold)}
+  .byline{font-size:12.5px;color:var(--sub);margin-top:14px}
+  @media(max-width:560px){
+    h1{font-size:25px}.facts{grid-template-columns:1fr}
+    .mast-inner{padding:14px 18px 12px}
+  }
+</style>
+</head>
+<body>
+
+<header class="mast">
+  <div class="mast-inner">
+    <a class="brand" href="/">INVEST<span class="i">STORY</span></a>
+    <div class="issueline">2026년 7월 9일 (목) · 특집 · 발행 박철웅 기자</div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="badge">SPECIAL · 반도체</div>
+  <h1>SK하이닉스, 나스닥에 서다 — 프리미엄·리레이팅, 그리고 국내 본주의 갈림길</h1>
+  <p class="dek">외국기업 미국상장 역대 <span class="key">2위 규모</span>, 수요예측 <span class="key">7배 초과청약</span>. 상장 첫날 무엇이 움직이고, <span class="key">국장 SK하이닉스 본주</span>는 어디로 가는가. 발생확률로 계산한 3대 시나리오와 대응·중장기 전망.</p>
+
+  <div class="notice">
+    <b>[기준 고지]</b> 본 특집은 <b>2026년 7월 9일(목) 오전</b> 시점 정보로 작성됐습니다. ①ADR 공모가는 뉴욕시간 9일 오후 확정 예정으로 <b>본문 작성 시점 미확정(확인 불가)</b>이며, ②거래 일정·규모는 감독기관 승인에 따라 변동될 수 있고, ③국내 본주 시세는 장중 변동분이 반영되지 않은 <b>전일(7/8) 종가 기준</b>입니다. 수치는 상장 직후 공식 공시와 대조 검수가 필요합니다.
+  </div>
+
+  <h2><span class="num">1</span>현상황 — D-1, 무엇이 확정됐나</h2>
+  <p class="lead-note">확정 사실과 미확정 항목을 구분해 정리합니다.</p>
+
+  <div class="facts">
+    <div class="fact"><div class="k">임시거래 개시</div><div class="v">7/10 (금)<small> · 현지시간 · SKHYV</small></div></div>
+    <div class="fact"><div class="k">정규거래 전환</div><div class="v">7/13 (월)<small> · 현지시간 · SKHY</small></div></div>
+    <div class="fact"><div class="k">공모 규모</div><div class="v">약 245억 달러<small> · 약 37조원(8일 종가 기준)</small></div></div>
+    <div class="fact"><div class="k">수요예측 결과</div><div class="v">7배 초과청약<small> · 청약대금 약 1,715억 달러(≈260조원)</small></div></div>
+    <div class="fact"><div class="k">발행 구조</div><div class="v">ADR 1주 = 본주 0.1주<small> · 신주 약 1,779만주(전체의 약 2.5%)</small></div></div>
+    <div class="fact"><div class="k">상장지</div><div class="v">나스닥 글로벌셀렉트<small> · 주관 BofA·씨티·골드만·JP모간 외 9곳</small></div></div>
+  </div>
+
+  <p>SK하이닉스 미국주식예탁증서(ADR)는 <span class="key">현지시간 7월 10일(금) 나스닥 글로벌셀렉트마켓에서 임시 종목코드 'SKHYV'로 조건부 거래</span>를 시작해, 7월 13일(월) 정규거래 전환과 함께 'SKHY'로 바뀝니다. 발행 구조는 <b>ADR 1주가 본주 0.1주를 대표</b>하는 방식으로, 이번 신주(원주) 발행은 약 1,779만 주(자료에 따라 1,771만 주, 전체 발행주식의 약 2.5% 수준)입니다. <span class="src">(출처: SEC 제출서류·블룸버그·ZDNet·MTN)</span></p>
+
+  <p>수요는 강했습니다. 수요예측에 <span class="key">공모 물량의 7배가 넘는 청약</span>이 몰렸고, 청약대금 기준 약 1,715억 달러(약 260조원)가 유입된 것으로 전해집니다. 베일리기포드·코튜매니지먼트·시추에이셔널 어웨어니스 3곳은 최대 70억 달러 매수 의향을 밝혔습니다. 다만 국내 본주 급락으로 조달 규모는 <b>당초 290억 달러 안팎에서 245~280억 달러로 축소</b>됐고, 이 경우 알리바바(250억 달러)에 이은 <b>외국기업 미국상장 역대 2위</b>가 됩니다. <span class="src">(출처: 블룸버그·로이터·연합뉴스·파이낸셜뉴스)</span></p>
+
+  <div class="callout">
+    <b>맥락:</b> SK하이닉스 본주는 6월 25일 사상 최고 298만7,000원을 찍은 뒤 7월 8일 종가 207만6,000원으로 <span class="down">고점 대비 약 30% 하락</span>했습니다(이달 −17%). 상장이 '고점'이 아니라 '급락 직후'에 진행된다는 점이 이번 이벤트의 성격을 규정합니다.
+  </div>
+
+  <h2><span class="num">2</span>상장 시 움직임 — ADR은 왜 '본주보다 비싸질' 수 있나</h2>
+
+  <h3>① 차익거래가 막혀 있다 → 프리미엄의 구조적 근거</h3>
+  <p>보통 같은 회사의 두 시장 가격은 차익거래로 수렴합니다. 그런데 <span class="key">한국은 본주-ADR 상호 전환이 구조적으로 어렵습니다.</span> 외국환거래법상 신고·증빙 의무, 역외 원화 결제 시스템 미정착 탓에 기관이 '본주 매수→ADR 전환' 재정거래를 자유롭게 할 수 없습니다. 전환이 막히면 미국 쪽 수요가 강할 때 <b>ADR 가격이 본주 환산가보다 높게(프리미엄) 벌어질 수 있습니다.</b> <span class="src">(출처: 한국경제·UBS 투자전략 노트)</span></p>
+  <p>선례가 있습니다. <span class="key">TSMC도 미국 ADR이 본주 대비 약 5~8% 비싸게 거래</span>됩니다. UBS는 이 논리로 "본주 매도, ADR 매수"를 권고했습니다. 단, 가격 차이는 나도 두 종목의 <b>방향성은 같이 움직인다</b>는 점이 핵심입니다. <span class="src">(출처: 한국경제)</span></p>
+
+  <h3>② 지수·ETF 편입 → 시간차를 둔 패시브 수급</h3>
+  <p>ADR이 상장되면 <span class="key">필라델피아 반도체지수(SOX) 편입 가능성이 매우 높습니다.</span> 미래에셋 윤재홍 연구원은 최대 상장 규모 기준 <b>반도체 지수 ETF에서 약 3.4억 달러, 나스닥 지수 추종 ETF에서 약 4.5억 달러(합계 약 7.9억 달러)</b>의 수요가 발생할 수 있다고 추산했습니다. 다만 즉각적이지 않습니다 — 반에크 SMH는 4분기, 아이쉐어즈 SOXX는 내년 9월경 편입이 예상돼, <b>재평가는 장기에 걸쳐 분산</b>됩니다. <span class="src">(출처: 헤럴드경제·MTN)</span></p>
+
+  <h3>③ 첫날 강세라는 '대형 IPO의 관성' — 다만 중기 검증은 별개</h3>
+  <p>2014년 알리바바 미국 IPO는 공모가 68달러로 출발해 첫날 시가총액 2,314억 달러를 기록하며 흥행했고, 이후 몇 년의 부침을 거쳐 장기적으로 크게 상승했습니다. 시장 격언대로 <b>대형 IPO의 진정한 가치 평가는 상장 1~2년이 지나야</b> 드러납니다. 7배 청약은 강한 초기 수요 신호지만, <span class="key">첫날 강세가 곧 본주의 안착을 보장하진 않습니다.</span> <span class="src">(출처: 한국경제·ZDNet·포춘코리아)</span></p>
+
+  <h2><span class="num">3</span>국장 SK하이닉스 본주에 미칠 영향 — 양날의 검</h2>
+  <p>ADR 상장은 국내 본주에 <b>서로 반대 방향으로 당기는 두 힘</b>을 동시에 겁니다.</p>
+
+  <table>
+    <tr><th>경로</th><th>본주에 미치는 힘</th><th>방향</th></tr>
+    <tr><td>밸류에이션 리레이팅</td><td>마이크론 대비 저평가(하이닉스 선행 PER 5.17배 vs 마이크론 7배*) 해소 기대, 글로벌 접근성 개선</td><td><span class="up">상승 압력 ▲</span></td></tr>
+    <tr><td>ADR 프리미엄 파급</td><td>ADR이 강세면 본주도 같은 방향으로 견인(방향성 동조)</td><td><span class="up">상승 압력 ▲</span></td></tr>
+    <tr><td>패시브 후속수급</td><td>SOX·나스닥 ETF 편입(약 7.9억 달러 추산)이 시차를 두고 유입</td><td><span class="up">상승 압력 ▲</span></td></tr>
+    <tr><td>매도자금 이동</td><td>글로벌 투자자가 본주 매도 자금 일부를 ADR 매수로 전환(UBS 권고)</td><td><span class="down">하락 압력 ▼</span></td></tr>
+    <tr><td>신주 희석</td><td>약 1,779만 주(약 2.5%) 신주 발행 — 자금은 회사로 유입(용인·청주 투자)되나 EPS 희석</td><td><span class="down">하락 압력 ▼</span></td></tr>
+  </table>
+  <p class="src">* 하이닉스 선행 PER은 자료·시점별로 상이(흥국증권 7/8 기준 5.17배 / 머니투데이 12개월 예상 기준 6.2배). 마이크론 7배도 시점에 따라 변동. 병기해 참고 바랍니다.</p>
+
+  <p>핵심은 <span class="key">"ADR로 갈 돈이 본주에서 빠진 돈인가, 아니면 새로 들어온 돈인가"</span>입니다. 한국 증시에 접근하기 어려웠던 미국 개인·기관의 <b>신규 수요</b>가 크면 본주에도 온기가 돌지만, 기존 본주 보유자가 갈아타는 <b>대체 수요</b>가 크면 본주엔 오히려 매도 압력이 됩니다. 상장 초기 며칠간 <span class="key">ADR 환산가와 본주의 괴리율(프리미엄/디스카운트)</span>이 이 질문의 실시간 답이 됩니다.</p>
+
+  <h2><span class="num">4</span>시나리오별 발생확률·대응·중장기 전망</h2>
+  <p class="lead-note">아래 확률은 편집자가 현 시점 정보로 판단한 <b>주관적 추정치(개념도)</b>이며, 세 시나리오 합은 100%입니다. 확정된 예측이 아니라 대응 설계를 위한 뼈대입니다.</p>
+
+  <figure>
+    <svg viewBox="0 0 700 380" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="SK하이닉스 본주 3대 시나리오 부채꼴 경로 개념도">
+      <rect x="0" y="0" width="700" height="380" fill="#fffdf8"/>
+      <!-- axes -->
+      <line x1="90" y1="40" x2="90" y2="330" stroke="#c9c3b5" stroke-width="1.5"/>
+      <line x1="90" y1="330" x2="660" y2="330" stroke="#c9c3b5" stroke-width="1.5"/>
+      <!-- baseline (current) -->
+      <line x1="90" y1="200" x2="660" y2="200" stroke="#d8d2c4" stroke-width="1" stroke-dasharray="4 4"/>
+      <text x="96" y="194" font-size="11" fill="#8a8272">현재가(207.6만원) 기준선</text>
+      <!-- event marker -->
+      <circle cx="180" cy="200" r="5" fill="#16335C"/>
+      <text x="180" y="352" font-size="11" fill="#5a6675" text-anchor="middle">상장 7/10</text>
+      <text x="90" y="352" font-size="11" fill="#5a6675" text-anchor="middle">현재</text>
+      <text x="420" y="352" font-size="11" fill="#5a6675" text-anchor="middle">1~4주</text>
+      <text x="640" y="352" font-size="11" fill="#5a6675" text-anchor="middle">중기(분기)</text>
+      <!-- Scenario A (up, red) -->
+      <path d="M180,200 C320,180 460,120 655,70" fill="none" stroke="#C0392B" stroke-width="3"/>
+      <text x="662" y="72" font-size="13" fill="#C0392B" font-weight="700" text-anchor="end">A</text>
+      <text x="500" y="108" font-size="12" fill="#C0392B" font-weight="700">프리미엄 리레이팅 · 40%</text>
+      <!-- Scenario B (sideways, navy) -->
+      <path d="M180,200 C320,205 460,210 655,212" fill="none" stroke="#2E4B77" stroke-width="3"/>
+      <text x="662" y="214" font-size="13" fill="#2E4B77" font-weight="700" text-anchor="end">B</text>
+      <text x="470" y="238" font-size="12" fill="#2E4B77" font-weight="700">셀온·디커플링 · 35%</text>
+      <!-- Scenario C (down, blue) -->
+      <path d="M180,200 C320,225 460,275 655,315" fill="none" stroke="#1B5E9B" stroke-width="3"/>
+      <text x="662" y="316" font-size="13" fill="#1B5E9B" font-weight="700" text-anchor="end">C</text>
+      <text x="480" y="300" font-size="12" fill="#1B5E9B" font-weight="700">업황악화 동반급락 · 25%</text>
+      <!-- title -->
+      <text x="90" y="26" font-size="13" fill="#16335C" font-weight="800">SK하이닉스 본주 경로 — 3대 시나리오 부채꼴(개념도)</text>
+    </svg>
+    <figcaption>※ 실제 주가 예측이 아닌 대응 설계용 개념도. 확률은 편집자 주관 추정, 합계 100%.</figcaption>
+  </figure>
+
+  <div class="scn a">
+    <div class="hd"><span class="tag">시나리오 A</span><span class="p">40%</span><b>프리미엄 리레이팅</b></div>
+    <p>ADR이 본주 환산가 대비 프리미엄(예: TSMC형 5~8%)으로 안착하고, SOX 편입 기대가 선반영되며 <span class="up">본주도 동반 강세</span>. 낙폭과대 반등장(7/9 오전 시작)과 맞물려 저평가 해소 내러티브가 힘을 받는 경우.</p>
+    <h4>발생 근거</h4>
+    <ul>
+      <li>7배 초과청약 = 강한 초기 수요, 앵커 3곳 70억 달러 의향</li>
+      <li>차익거래 제한 → 프리미엄 구조적 성립(한경·UBS)</li>
+      <li>선행 PER 5~6배대 = 금융위기 저점 수준의 밸류에이션 바닥론</li>
+    </ul>
+    <h4>대응 방안</h4>
+    <ul>
+      <li>본주 보유자: <b>분할 홀딩</b>. 프리미엄 확대 시 일부는 ADR/본주 스프레드 관찰하며 리밸런싱</li>
+      <li>신규 진입: 상장 첫 2~3거래일 <b>괴리율 안정 확인 후</b> 추격보다 눌림 대응</li>
+      <li>지수 편입은 시차(4분기·내년 9월)를 둔 이벤트 — 단기 급등 후 <b>편입일 전후 재수급</b> 노림</li>
+    </ul>
+  </div>
+
+  <div class="scn b">
+    <div class="hd"><span class="tag">시나리오 B</span><span class="p">35%</span><b>셀온·디커플링</b></div>
+    <p>ADR 상장 자체는 무난하나, <span class="down">본주는 '재료 소멸(셀온)'</span>로 약세. 글로벌 투자자가 본주 매도→ADR 매수로 갈아타며 <b>ADR은 뜨고 본주는 미지근한</b> 디커플링. 상장이 급락 직후라 '기대가 이미 반영됐다'는 인식.</p>
+    <h4>발생 근거</h4>
+    <ul>
+      <li>UBS의 "본주 매도·ADR 매수" 권고 = 대체수요가 신규수요를 상쇄</li>
+      <li>이달 본주 −17%로 이벤트 선반영 가능성</li>
+      <li>패시브 편입이 즉각적이지 않아 단기 수급 공백</li>
+    </ul>
+    <h4>대응 방안</h4>
+    <ul>
+      <li>본주 중심 보유자: <b>괴리율 모니터링</b>이 최우선. 프리미엄이 벌어지는데 본주만 눌리면 상대약세 확인 신호</li>
+      <li>스프레드에 민감한 자금은 세제·거래비용 감안해 <b>비중 조절</b>(국내 계좌 특성상 ADR 직접 대체는 신중)</li>
+      <li>중기 관점 유지: 편입 수급(약 7.9억 달러)은 <b>분기 단위</b>로 나눠 유입되므로 조급한 손절 지양</li>
+    </ul>
+  </div>
+
+  <div class="scn c">
+    <div class="hd"><span class="tag">시나리오 C</span><span class="p">25%</span><b>업황악화 동반급락</b></div>
+    <p>반도체 피크아웃 우려(메타 클라우드發 HBM 수요 의구심)와 미·이란 유가 리스크가 <span class="down">이벤트를 압도</span>. 130억 달러 규모 2배 레버리지 ETF의 기계적 매매가 변동성을 증폭시키며 ADR·본주 동반 약세.</p>
+    <h4>발생 근거</h4>
+    <ul>
+      <li>메타의 AI 연산자원 임대 → 필라델피아 반도체지수 이틀 10%+ 급락 전례</li>
+      <li>단일종목 레버리지 ETF의 구조적 변동성 증폭(SBS·업계 분석)</li>
+      <li>미·이란 재교전 → 유가·인플레·연준 매파 확률 상향(7월 25bp 인상 확률 26.7%→30.5%)</li>
+    </ul>
+    <h4>대응 방안</h4>
+    <ul>
+      <li><b>현금 비중 우선 확보</b>. 상장 이벤트를 반등 트리거로 오인한 추격매수 금지</li>
+      <li>레버리지 상품(SOXL 등) 보유자: 기계적 변동성 구간에서 <b>분할·리스크 축소</b>, 무한매수법 운용 시 회차·시드 관리 엄격화</li>
+      <li>업황 신뢰 회복(HBM 수요·마이크론 가이던스) 확인 전까지 <b>바닥 확인 후 대응</b></li>
+    </ul>
+  </div>
+
+  <div class="verdict">
+    <h3>중장기 전망 — 한 줄 요약</h3>
+    <p>ADR 상장은 <span class="key">단기 이벤트라기보다 '재평가의 시작점'</span>입니다. 첫날의 프리미엄·괴리율은 심리를, 분기 단위의 지수 편입 수급은 체력을 결정합니다.</p>
+    <p>본주의 중장기 방향은 결국 <span class="key">반도체 업황(HBM·메모리 사이클) 신뢰 회복 여부</span>에 달려 있습니다. 상장은 저평가 해소의 '통로'를 열 뿐, 물을 흐르게 하는 건 실적입니다. 밸류에이션은 이미 금융위기 저점 수준으로 낮아진 만큼, <span class="key">과도한 조정에 대한 반발 여지</span>도 그만큼 커진 국면입니다.</p>
+  </div>
+
+  <div class="ednote">
+    <p><b>편집자 주.</b> 본 특집은 2026년 7월 9일(목) 오전 시점 공개 정보 기반이며, 공모가 확정치·상장 첫날 실거래는 반영 전입니다. 확률은 편집자의 주관적 추정으로 투자 권유가 아니며, 최종 판단과 책임은 투자자 본인에게 있습니다. 상장 직후 공모가·괴리율·편입 일정은 공식 공시로 재검증하시기 바랍니다. 모든 수치는 본문 명시 출처(블룸버그·로이터·연합뉴스·한국경제·헤럴드경제·MTN·SBS·파이낸셜뉴스·ZDNet 등)를 따랐고, 상이한 값은 병기했습니다.</p>
+  </div>
+
+  <footer>
+    <a class="home" href="/">← 다른 리포트 보러가기</a>
+    <div class="byline">INVEST STORY · 박철웅 기자 · investstory.co.kr</div>
+  </footer>
+
+</div>
+</body>
+</html>
