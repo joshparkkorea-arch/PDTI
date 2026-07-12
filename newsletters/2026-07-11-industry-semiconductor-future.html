@@ -54,6 +54,11 @@
   .scn.b .tag{background:var(--navy2)}.scn.b .p{color:var(--navy2)}
   .scn.c .tag{background:var(--down)}.scn.c .p{color:var(--down)}
   .scn h4{margin:9px 0 3px;font-size:13px;color:var(--navy2);text-transform:uppercase;letter-spacing:.4px}
+  .scn table{font-size:12.5px;margin:6px 0}
+  .scn th{font-size:11.5px;padding:6px 8px}.scn td{padding:6px 8px}
+  .scn td:first-child{white-space:nowrap;color:var(--navy2);font-weight:700}
+  .scn .ind{font-size:12.5px;color:#4a4f57;margin:6px 0 2px}
+  .scn .ind b{color:var(--navy2)}
   .voice{border-radius:8px;padding:13px 16px;margin:12px 0;font-size:14.5px}
   .voice.bull{background:#fdf2f0;border-left:4px solid var(--up)}
   .voice.bear{background:#eef2f8;border-left:4px solid var(--down)}
@@ -111,6 +116,10 @@
     <p><b>승자독식</b> — 1등이 이익 대부분을 가져가고 2·3등은 남는 게 적은 구조.</p>
     <p><b>재정지배·금융억압</b> — 정부 빚이 너무 많아, 중앙은행이 금리를 마음껏 못 올리고 낮게 유지하는 상태. 그 사이 물가가 오르며 통장 속 현금의 &lsquo;실질 가치&rsquo;가 슬금슬금 줄어듭니다.</p>
     <p><b>실질금리</b> — 명목금리에서 물가상승률을 뺀 값. 마이너스면 은행에 넣어둔 돈이 실질적으로 손해입니다.</p>
+    <p><b>하이퍼스케일러</b> — 아마존·마이크로소프트·구글·메타처럼 초대형 데이터센터를 굴리는 클라우드 공룡들. 이들의 설비투자가 반도체 수요의 큰손입니다.</p>
+    <p><b>추론(inference)</b> — 다 학습된 AI를 실제 서비스에 써먹는 단계(예: 챗봇이 답을 내놓는 것). 앞으로 수요가 더 커질 영역입니다.</p>
+    <p><b>PER(주가수익비율)</b> — 주가를 1주당 이익으로 나눈 값. 낮을수록 &lsquo;이익 대비 주가가 싸다&rsquo;는 뜻입니다.</p>
+    <p><b>ROI(투자수익률)</b> — 투자한 돈 대비 얼마를 벌었는지. AI 투자가 &lsquo;돈값&rsquo;을 하느냐를 볼 때 핵심 잣대입니다.</p>
   </div>
 
   <h2><span class="num">1</span>과거 — 60년을 지배한 하나의 법칙</h2>
@@ -176,25 +185,80 @@
     <figcaption>점선 원=전망 구간. 출처: FinancialContent·Wikipedia ‘Moore’s law’ 종합, 자기 재구성</figcaption>
   </figure>
 
-  <h3>성장·정체·쇠락 — 3대 시나리오</h3>
-  <p class="src">아래 확률은 편집자가 현 근거로 판단한 주관 추정(개념)이며 합 100%. 확정 예측이 아니다.</p>
+  <h3>성장·정체·쇠락 — 3대 시나리오 (단계별 전개)</h3>
+  <p class="src">아래 확률·경로는 편집자가 현 근거로 판단한 주관 추정(개념)이며 합 100%. 확정 예측이 아니라 &lsquo;대응 설계용 뼈대&rsquo;다. 미래 수치는 전망·가정임을 명시한다.</p>
+
+  <figure>
+    <svg viewBox="0 0 720 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="시장 규모 3대 시나리오 경로">
+      <rect x="0" y="0" width="720" height="260" fill="#fffdf8"/>
+      <text x="20" y="24" font-size="14" fill="#16335C" font-weight="800">세계 반도체 시장 3대 시나리오 경로 (조 달러)</text>
+      <line x1="70" y1="215" x2="690" y2="215" stroke="#c9c3b5" stroke-width="1.2"/>
+      <line x1="70" y1="40" x2="70" y2="215" stroke="#c9c3b5" stroke-width="1.2"/>
+      <!-- y grid labels -->
+      <text x="60" y="215" font-size="10.5" fill="#8a8272" text-anchor="end">0.8</text>
+      <text x="60" y="150" font-size="10.5" fill="#8a8272" text-anchor="end">1.1</text>
+      <text x="60" y="85" font-size="10.5" fill="#8a8272" text-anchor="end">1.4</text>
+      <text x="60" y="48" font-size="10.5" fill="#8a8272" text-anchor="end">1.6</text>
+      <!-- x labels -->
+      <text x="90" y="232" font-size="11" fill="#5a6675">2024</text>
+      <text x="360" y="232" font-size="11" fill="#5a6675" text-anchor="middle">2027(전망)</text>
+      <text x="660" y="232" font-size="11" fill="#5a6675" text-anchor="end">2030(전망)</text>
+      <!-- start point 0.775 ~ y=200 -->
+      <circle cx="95" cy="200" r="5" fill="#16335C"/><text x="95" y="190" font-size="10.5" fill="#16335C" text-anchor="middle">0.78</text>
+      <!-- A to 1.6 (y=48) -->
+      <path d="M95,200 C300,150 480,90 675,45" fill="none" stroke="#C0392B" stroke-width="3"/>
+      <text x="678" y="46" font-size="12" fill="#C0392B" font-weight="800" text-anchor="end">A 1.6</text>
+      <!-- B to 1.05 (y~160) with wobble -->
+      <path d="M95,200 C240,168 320,150 400,168 C480,186 560,150 675,158" fill="none" stroke="#1B3C6E" stroke-width="3"/>
+      <text x="678" y="158" font-size="12" fill="#1B3C6E" font-weight="800" text-anchor="end">B 1.05</text>
+      <!-- C to ~0.85 (y~208) dip -->
+      <path d="M95,200 C230,150 300,120 360,150 C440,190 560,205 675,205" fill="none" stroke="#1B5E9B" stroke-width="3"/>
+      <text x="678" y="202" font-size="12" fill="#1B5E9B" font-weight="800" text-anchor="end">C 0.85</text>
+      <text x="360" y="252" font-size="10.5" fill="#8a8272" text-anchor="middle">A=성장지속 · B=순환정체(출렁임) · C=거품붕괴 · 2030 수치는 전망</text>
+    </svg>
+    <figcaption>출발점 2024년 약 0.78조 달러. 경로는 편집자 시나리오 가정(수치 근거: McKinsey·전통 전망). 실제와 다를 수 있음.</figcaption>
+  </figure>
+
   <div class="scn a">
-    <div class="hd"><span class="tag">시나리오 A</span><span class="p">50%</span><b>구조적 성장 지속 — ‘AI 산업혁명’</b></div>
-    <p>AI가 전기·인터넷급 범용기술로 자리 잡아 다년 캐펙스(설비투자) 슈퍼사이클이 이어진다. 시장은 2030년 1.6조 달러에 근접.</p>
-    <h4>근거</h4>
-    <p>McKinsey의 13% CAGR·1.6조 달러 전망, 엔비디아 DC 매출 4배, ‘소버린 AI(국가별 자체 AI 인프라)’ 확산, 자동차·로보틱스 등 신수요.</p>
+    <div class="hd"><span class="tag">시나리오 A · 50%</span><b>구조적 성장 지속 — &lsquo;AI 산업혁명&rsquo;</b></div>
+    <p>AI가 전기·인터넷급 범용기술로 정착해 다년 캐펙스(설비투자) 슈퍼사이클이 이어진다.</p>
+    <h4>전개 과정 (단계 · 숫자)</h4>
+    <table>
+      <tr><th>단계</th><th>진행 내용 · 숫자</th></tr>
+      <tr><td>1단계<br>2026~27</td><td>글로벌 AI 인프라 투자가 2025년 3,180억 달러에서 연 30%+ 증가해 <span class="up">4,000~5,000억 달러대</span> 진입(추정). 엔비디아 차세대(루빈) 양산, HBM 완판 지속. 산업 매출은 젠슨 황 예측대로 <span class="up">연 1조 달러를 조기 돌파</span>.</td></tr>
+      <tr><td>2단계<br>2028~29</td><td>추론(inference·학습된 AI를 실제 서비스에 쓰는 단계) 수요가 학습 수요를 추월. 소버린 AI(국가별 자체 AI 인프라)·기업용 AI 확산. 자동차(레벨4 자율차 반도체 <span class="up">약 4,000달러</span>로 레벨1의 8배)·로보틱스 신수요 가세.</td></tr>
+      <tr><td>3단계<br>2030</td><td>시장 <span class="up">약 1.6조 달러</span>(McKinsey 광의 정의, CAGR 13%). 컴퓨팅·저장 부문만 8,100억 달러.</td></tr>
+    </table>
+    <p class="ind"><b>주가·투자 함의</b> — 병목(파운드리·HBM·장비) 이익과 멀티플(주가수익배수)이 동반 확대, 대장주 고밸류가 정당화되는 국면.</p>
+    <p class="ind"><b>확인 지표</b> — 대형 클라우드 4사 캐펙스 가이던스 상향 / HBM 평균판가(ASP) 상승 / 파운드리 가동률 90%+.</p>
   </div>
+
   <div class="scn b">
-    <div class="hd"><span class="tag">시나리오 B</span><span class="p">35%</span><b>순환·정체 — ‘성장하되 출렁인다’</b></div>
-    <p>장기 우상향은 유지되나, 과잉투자→재고조정의 <span class="down">전통적 실리콘 사이클</span>이 재연돼 연 단위로 급등락. 2030년은 1.0조 달러대에 그침.</p>
-    <h4>근거</h4>
-    <p>반도체 산업의 고질적 주기성, 2nm 원가 반전으로 인한 수익성 압박, 지정학·수출통제·중국 자립에 따른 수요 파편화.</p>
+    <div class="hd"><span class="tag">시나리오 B · 35%</span><b>순환·정체 — &lsquo;성장하되 출렁인다&rsquo;</b></div>
+    <p>장기 우상향은 유지되나, 과잉투자→재고조정의 <span class="down">전통적 실리콘 사이클</span>(반도체 특유의 3~4년 호황·불황 주기)이 재연된다.</p>
+    <h4>전개 과정 (단계 · 숫자)</h4>
+    <table>
+      <tr><th>단계</th><th>진행 내용 · 숫자</th></tr>
+      <tr><td>1단계<br>2026~27</td><td>수요 우려에 대비한 &lsquo;이중 주문&rsquo;으로 재고 축적. 산업 매출 성장률이 <span class="down">두 자릿수에서 한 자릿수로 둔화</span>.</td></tr>
+      <tr><td>2단계<br>2027~28</td><td>재고조정 진입 — D램·낸드 현물가 하락, 파운드리 가동률 <span class="down">70%대</span>로 후퇴, 전년比 역성장 분기 출현. 주가는 이 구간에 <span class="down">고점 대비 30~50% 조정</span>.</td></tr>
+      <tr><td>3단계<br>2029~30</td><td>조정 소화 후 재반등하나, 2030 시장은 <span class="down">약 1.0~1.1조 달러</span>(전통 전망, CAGR 6~8%)에 그침.</td></tr>
+    </table>
+    <p class="ind"><b>주가·투자 함의</b> — 연 단위 ±20~40% 진폭. &lsquo;순환 하단에서 사서 상단에서 덜어내는&rsquo; 사이클 매매가 유효.</p>
+    <p class="ind"><b>확인 지표</b> — B/B(수주÷출하) 비율 1 하회 / 메모리 현물가 하락 전환 / 캐펙스 가이던스 하향.</p>
   </div>
+
   <div class="scn c">
-    <div class="hd"><span class="tag">시나리오 C</span><span class="p">15%</span><b>거품 붕괴·구조적 쇠락 위험</b></div>
-    <p>AI 투자수익(ROI)이 기대에 못 미쳐 하이퍼스케일러가 캐펙스를 급감, <span class="down">밸류에이션 붕괴</span>가 실물 투자로 전이.</p>
-    <h4>근거</h4>
-    <p>2026년 6월 브로드컴 가이던스發 필라델피아 반도체지수(미국 반도체 대표주 지수·SOX) −10.26% 급락 전례, ‘투자 대비 수익’ 논쟁, 단일종목(엔비디아) 쏠림 리스크.</p>
+    <div class="hd"><span class="tag">시나리오 C · 15%</span><b>거품 붕괴·구조적 쇠락 위험</b></div>
+    <p>AI 투자수익(ROI·투자 대비 수익)이 기대에 못 미쳐 대형 고객이 캐펙스를 급감, <span class="down">밸류에이션 붕괴</span>가 실물 투자로 전이된다.</p>
+    <h4>전개 과정 (단계 · 숫자)</h4>
+    <table>
+      <tr><th>단계</th><th>진행 내용 · 숫자</th></tr>
+      <tr><td>1단계<br>방아쇠</td><td>대형 고객의 실망스러운 가이던스 → 섹터 급락. 선례: <span class="down">2026년 6월 필라델피아 반도체지수(SOX) −10.26%</span>. 엔비디아의 AI 가속기 점유율 약 80% 쏠림이 낙폭을 증폭.</td></tr>
+      <tr><td>2단계<br>전이</td><td>하이퍼스케일러(대형 클라우드 업체) 캐펙스 컷 → HBM·파운드리 주문 취소 → 밸류체인 연쇄 하향. <span class="down">선행 PER(주가수익비율)이 반토막</span> 나는 재평가.</td></tr>
+      <tr><td>3단계<br>침체</td><td>2000년 닷컴 이후처럼 과잉설비 소화에 수년. 주가 <span class="down">고점 대비 50~70% 조정 후 다년 횡보</span> 가능, 2030 시장 정체/후퇴.</td></tr>
+    </table>
+    <p class="ind"><b>주가·투자 함의</b> — 현금·방어 포지션 우위. 낙폭 과대 반등을 노리되 &lsquo;바닥 확인 후 대응&rsquo;.</p>
+    <p class="ind"><b>확인 지표</b> — AI 매출화(수익 실현) 지표 부진 / 하이퍼스케일러 캐펙스 컷 발표 / 신용 스프레드(위험 가산금리) 확대.</p>
   </div>
 
   <h2><span class="num">4</span>목소리 — 강세론 vs 거품론 vs 학계</h2>
