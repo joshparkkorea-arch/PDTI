@@ -1471,7 +1471,9 @@ def call_anthropic(api_key, system, user, max_tokens=16000, max_searches=7, max_
                                               "anthropic-version": "2023-06-01",
                                               "User-Agent": UA}, method="POST")
         try:
-            with urllib.request.urlopen(req, timeout=240) as r:
+            # 사고#27·#28 대응: 폭락/폭등일 대용량 생성(web_search 포함)은 응답에 4분+ 소요될 수 있음.
+            # 240초에서 600초로 상향 — 서버가 응답을 완성할 때까지 read를 기다린다.
+            with urllib.request.urlopen(req, timeout=600) as r:
                 data = json.load(r)
             texts = [b.get("text", "") for b in data.get("content", []) if b.get("type") == "text"]
             out = "\n".join(t for t in texts if t).strip()
