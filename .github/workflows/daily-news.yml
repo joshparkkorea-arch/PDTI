@@ -4,7 +4,7 @@ name: daily-news
 # 거래일(휴장일) 판정은 daily_news.py가 KIS 휴장일 API로 직접 수행 → 휴장이면 스스로 건너뜀.
 on:
   schedule:
-    - cron: "5 0 * * 1-5"    # 09:05 KST = 00:05 UTC → 개장 브리핑
+    - cron: "50 23 * * 0-4"  # 08:50 KST = 23:50 UTC(전날) → 개장 브리핑
     - cron: "35 6 * * 1-5"   # 15:35 KST = 06:35 UTC → 마감 시황
   workflow_dispatch:
     inputs:
