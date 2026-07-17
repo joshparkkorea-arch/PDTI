@@ -15,31 +15,31 @@
     },
     {
       "name": "USD/KRW",
-      "value": "1,489.8",
-      "change": "+11.5",
+      "value": "1,489.5",
+      "change": "+11.2",
       "dir": "up"
     },
     {
       "name": "WTI",
-      "value": "$81.55",
-      "change": "+4.18%",
+      "value": "$81.53",
+      "change": "+4.15%",
       "dir": "up"
     },
     {
       "name": "S&P 500",
-      "value": "7,495.03",
+      "value": "7,495.33",
       "change": "-0.51%",
       "dir": "down"
     },
     {
       "name": "나스닥",
-      "value": "25,700.72",
+      "value": "25,699.78",
       "change": "-0.70%",
       "dir": "down"
     },
     {
       "name": "달러인덱스",
-      "value": "100.79",
+      "value": "100.78",
       "change": "+0.02%",
       "dir": "up"
     }
