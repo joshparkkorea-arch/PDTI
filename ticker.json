@@ -1,5 +1,5 @@
 {
-  "asof": "2026-07-18 09:15 KST (자동·야후)",
+  "asof": "2026-07-18 09:30 KST (자동·야후)",
   "items": [
     {
       "name": "KOSPI",
@@ -10,8 +10,8 @@
     {
       "name": "KOSDAQ",
       "value": "791.84",
-      "change": "-4.53%",
-      "dir": "down"
+      "change": "+1.00%",
+      "dir": "up"
     },
     {
       "name": "USD/KRW",
