@@ -1,5 +1,5 @@
 {
-  "asof": "2026-07-21 04:45 KST (자동·KIS+야후)",
+  "asof": "2026-07-21 05:00 KST (자동·KIS+야후)",
   "items": [
     {
       "name": "KOSPI",
@@ -21,21 +21,21 @@
     },
     {
       "name": "WTI",
-      "value": "$82.27",
-      "change": "+0.60%",
+      "value": "$82.44",
+      "change": "+0.81%",
       "dir": "up"
     },
     {
       "name": "S&P 500",
-      "value": "7,455.68",
-      "change": "-0.03%",
+      "value": "7,443.48",
+      "change": "-0.19%",
       "dir": "down"
     },
     {
       "name": "나스닥",
-      "value": "25,574.47",
-      "change": "+0.21%",
-      "dir": "up"
+      "value": "25,508.07",
+      "change": "-0.05%",
+      "dir": "down"
     },
     {
       "name": "달러인덱스",
