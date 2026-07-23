@@ -150,7 +150,7 @@ def fetch_kis(app_key, app_secret):
     """KIS로 KOSPI·KOSDAQ 조회 → {표시이름: (현재, 전일종가)}.
     토큰은 공용 캐시에서만 가져온다(여기서는 발급하지 않음). 유효 토큰이 없으면
     KIS 호출을 건너뛰고 {}를 돌려줘 직전 ticker.json 값이 유지되게 한다.
-    (실제 발급은 매일 9:05 개장 때 daily_news.py만 수행 → 한투 '1일 1회' 준수.)"""
+    (실제 발급은 매일 개장 브리핑(08:50 KST) 때 daily_news.py만 수행 → 한투 '1일 1회' 준수.)"""
     token = kis_auth.get_token(app_key, app_secret, allow_issue=False)
     if not token:
         sys.stderr.write("[kis] 유효 토큰 없음 — KIS 호출 생략(직전 값 유지)\n")
@@ -158,7 +158,17 @@ def fetch_kis(app_key, app_secret):
     out = {}
     for name, iscd in (("KOSPI", "0001"), ("KOSDAQ", "1001")):
         try:
-            out[name] = kis_index(token, app_key, app_secret, iscd)
+            price, prev = kis_index(token, app_key, app_secret, iscd)
+            # 사고#32 대응: 국내 증시 개장(09:00) 전에는 KIS가
+            #   현재지수 = 전일 종가, 전일대비 = 0 을 돌려준다.
+            # 이 값을 그대로 쓰면 '0.00% 보합'으로 박제되므로(08:50 개장호 빌드에서 발생),
+            # 야후 폴백에 위임한다. 야후는 chartPreviousClose를 주므로
+            # '전일 종가 + 그날의 실제 등락률'이 정상 표기된다.
+            if price == prev:
+                sys.stderr.write(
+                    f"[kis] {name} 전일대비 0 (개장 전 추정) — 야후 폴백에 위임\n")
+                continue
+            out[name] = (price, prev)
         except Exception as e:
             sys.stderr.write(f"[kis] {name} 실패: {e}\n")
     return out
