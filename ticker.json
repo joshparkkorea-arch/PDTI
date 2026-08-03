@@ -3,26 +3,26 @@
   "items": [
     {
       "name": "KOSPI",
-      "value": "6,310.02",
-      "change": "-4.33%",
+      "value": "6,314.41",
+      "change": "-4.26%",
       "dir": "down"
     },
     {
       "name": "KOSDAQ",
-      "value": "751.46",
-      "change": "+4.40%",
+      "value": "751.07",
+      "change": "+4.35%",
       "dir": "up"
     },
     {
       "name": "USD/KRW",
-      "value": "1,427.6",
-      "change": "-14.5",
+      "value": "1,427.4",
+      "change": "-14.6",
       "dir": "down"
     },
     {
       "name": "WTI",
-      "value": "$80.23",
-      "change": "-5.24%",
+      "value": "$80.25",
+      "change": "-5.22%",
       "dir": "down"
     },
     {
@@ -39,7 +39,7 @@
     },
     {
       "name": "달러인덱스",
-      "value": "99.71",
+      "value": "99.72",
       "change": "-0.20%",
       "dir": "down"
     }
