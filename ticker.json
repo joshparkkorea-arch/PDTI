@@ -1,5 +1,5 @@
 {
-  "asof": "2026-08-03 16:00 KST (자동·KIS+야후)",
+  "asof": "2026-08-03 16:15 KST (자동·KIS+야후)",
   "items": [
     {
       "name": "KOSPI",
@@ -15,14 +15,14 @@
     },
     {
       "name": "USD/KRW",
-      "value": "1,430.4",
-      "change": "-11.7",
+      "value": "1,429.4",
+      "change": "-12.6",
       "dir": "down"
     },
     {
       "name": "WTI",
-      "value": "$79.10",
-      "change": "-6.58%",
+      "value": "$79.42",
+      "change": "-6.20%",
       "dir": "down"
     },
     {
