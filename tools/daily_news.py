@@ -1334,12 +1334,19 @@ def _ai_user_prompt(mode, date_kst, items, asof, vol, rank_up, rank_dn, flows, u
     lines = [f'[확정 데이터 — 아래 숫자는 그대로 사용, 추가 사실은 web_search로 확인]',
              f'작성시각(KST): {asof or dstr}', f'발행일: {dstr}', f'모드: {mode}']
     idx = []
-    for nm in ["KOSPI", "KOSDAQ", "USD/KRW", "WTI", "S&P 500", "나스닥", "다우존스", "달러인덱스", "미국 10년물 금리", "미국 30년물 금리"]:
+    for nm in ["KOSPI", "KOSDAQ", "USD/KRW", "WTI", "S&P 500", "나스닥", "다우존스", "달러인덱스",
+               "미국 10년물 금리", "미국 30년물 금리", "KRX 금", "국제 금"]:
         it = items.get(nm)
         if it:
             idx.append(f'{nm} {it.get("value","")}({it.get("change","")})')
     if idx:
         lines.append("지수/지표: " + ", ".join(idx))
+    if items.get("KRX 금") or items.get("국제 금"):
+        lines.append("(금 표기 규칙 — 'KRX 금'은 한국거래소 금시장 '금 99.99_1Kg' 기준 원/그램(원/g), "
+                     "'국제 금'은 런던 현물 XAU/USD 기준 달러/트로이온스입니다. 본문에 쓸 때 단위를 반드시 "
+                     "함께 표기하고, 단위·통화가 다르므로 두 값을 직접 비교하지 마세요. 국제 금은 선물이 "
+                     "아니라 현물이므로 '금 선물'로 쓰지 마세요. 안전자산 선호·달러 흐름 맥락에서 한 문단 "
+                     "이내로 다루면 충분합니다.)")
     if vol:
         lines.append("거래대금 상위(한국): " + "; ".join(
             f'{x["name"]}({x.get("code","")}) 현재가 {x["price"]} 등락 {x["ctrt"]}% 거래대금 {x.get("val","—")}' for x in vol))
@@ -1700,21 +1707,35 @@ FOOT = ('<footer class="artfoot">\n'
         '</footer>\n' + TOC_JS + '</body></html>')
 
 
+# 표에 쓸 표시 라벨(단위 병기). ticker.json의 name은 짧게 유지하고 표기만 여기서 늘린다.
+INDEX_LABEL = {
+    "KRX 금": "KRX 금 (원/g)",
+    "국제 금": "국제 금 (현물, $/oz)",
+}
+
+
 def index_table(items, header):
-    order = ["KOSPI", "KOSDAQ", "USD/KRW", "WTI", "S&P 500", "나스닥", "달러인덱스"]
+    # 2026-08-24: 금 2종(KRX 금현물·국제 현물) 상시 수록.
+    order = ["KOSPI", "KOSDAQ", "USD/KRW", "WTI", "S&P 500", "나스닥", "달러인덱스",
+             "KRX 금", "국제 금"]
     rows = []
     for nm in order:
         it = items.get(nm)
         if not it:
             continue
         c = cls(it.get("dir", ""))
-        rows.append(f'<tr><td>{esc(nm)}</td><td>{esc(it.get("value","—"))}</td>'
+        rows.append(f'<tr><td>{esc(INDEX_LABEL.get(nm, nm))}</td><td>{esc(it.get("value","—"))}</td>'
                     f'<td class="{c}">{esc(it.get("change","—"))}</td></tr>')
     if not rows:
         return ""
+    note = ""
+    if items.get("KRX 금") or items.get("국제 금"):
+        note = ('<p class="small">금 시세는 한국거래소 금시장 \'금 99.99_1Kg\'(원/그램)와 '
+                '런던 현물 XAU/USD(달러/트로이온스) 기준입니다. 단위와 통화가 서로 다르므로 '
+                '두 수치를 직접 비교할 수 없습니다.</p>')
     return (f'<table class="grid"><colgroup><col style="width:40%"><col style="width:32%"><col style="width:28%"></colgroup>'
             f'<thead><tr><th>{esc(header)}</th><th>지수/가격</th><th>등락</th></tr></thead>'
-            f'<tbody>{"".join(rows)}</tbody></table>')
+            f'<tbody>{"".join(rows)}</tbody></table>' + note)
 
 
 def rank_table(rows, title):

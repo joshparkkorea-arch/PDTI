@@ -25,6 +25,12 @@ SYMBOLS = [
     ("S&P 500",   "%5EGSPC",   "GSPC",     "idx"),
     ("나스닥",     "%5EIXIC",   "IXIC",     "idx"),
     ("달러인덱스",  "DX-Y.NYB",  "DXY",      "dxy"),
+    # 2026-08-24 추가 — 금 2종.
+    #  · KRX 금: 한국거래소 금시장 '금 99.99_1Kg'(종목코드 04020000) 원/g.
+    #    야후·TD에 없는 국내 전용 데이터라 야후 심볼은 None이고 fetch_krx_gold()가 전담한다.
+    #  · 국제 금: 런던 현물 XAU/USD($/트로이온스). 선물(GC=F)이 아니라 '현물' 기준.
+    ("KRX 금",     None,        None,       "krxgold"),
+    ("국제 금",     "XAUUSD=X",  "XAU/USD",  "goldusd"),
 ]
 UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/124.0 Safari/537.36")
@@ -71,6 +77,12 @@ def make_item(name, fmt, price, prev):
     elif fmt == "dxy":
         value = comma(price, 2)
         change = f"{sign}{abs(pct):.2f}%"
+    elif fmt == "krxgold":   # KRX 금현물: 원/g 정수 + %
+        value = comma(price, 0)
+        change = f"{sign}{abs(pct):.2f}%"
+    elif fmt == "goldusd":   # 국제 금 현물: $/트로이온스 + %
+        value = f"${price:,.2f}"
+        change = f"{sign}{abs(pct):.2f}%"
     else:             # 지수: %
         value = comma(price, 2)
         change = f"{sign}{abs(pct):.2f}%"
@@ -78,7 +90,7 @@ def make_item(name, fmt, price, prev):
 
 def fetch_td_all(key):
     """Twelve Data /quote 일괄조회. {td_symbol: (close, prev)} 반환."""
-    syms = ",".join(td for _, _, td, _ in SYMBOLS)
+    syms = ",".join(td for _, _, td, _ in SYMBOLS if td)
     url = ("https://api.twelvedata.com/quote?symbol="
            + urllib.parse.quote(syms, safe=",/") + "&apikey=" + urllib.parse.quote(key))
     req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "application/json"})
@@ -173,6 +185,145 @@ def fetch_kis(app_key, app_secret):
             sys.stderr.write(f"[kis] {name} 실패: {e}\n")
     return out
 
+# ----------------------------- 금시세(2026-08-24 추가) -----------------------------
+# KRX 금은 야후·Twelve Data 어디에도 없어 전용 수집 경로가 필요하다.
+# 정책: 다중 폴백 + 절대 비우지 않기(전 경로 실패 시 예외 → main이 직전 ticker.json 값 유지).
+# 어느 경로가 살아있는지는 tools/check_gold.py 로 언제든 점검할 수 있다.
+
+KRX_ISU = "04020000"          # 금 99.99_1Kg (KRX 금시장 대표 종목)
+KRX_ISU_NAME = "금 99.99_1Kg"
+
+
+def _http(url, data=None, headers=None, timeout=15):
+    hd = {"User-Agent": UA, "Accept": "application/json, text/plain, */*",
+          "Accept-Language": "ko-KR,ko;q=0.9,en;q=0.8"}
+    if headers:
+        hd.update(headers)
+    body = None
+    if data is not None:
+        body = urllib.parse.urlencode(data).encode()
+        hd.setdefault("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
+    req = urllib.request.Request(url, data=body, headers=hd,
+                                 method=("POST" if body else "GET"))
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return r.read().decode("utf-8", "replace")
+
+
+def _f(x):
+    """'147,230' · '-1.23' · 147230 → float. 실패하면 None."""
+    if x is None:
+        return None
+    if isinstance(x, (int, float)):
+        return float(x)
+    t = str(x).strip().replace(",", "").replace("%", "").replace("원", "")
+    if t in ("", "-", "--"):
+        return None
+    try:
+        return float(t)
+    except Exception:
+        return None
+
+
+def _pick(d, *keys):
+    for k in keys:
+        if isinstance(d, dict) and d.get(k) not in (None, ""):
+            return d[k]
+    return None
+
+
+def krx_gold_from_krx():
+    """1순위 — KRX 정보데이터시스템 [금시장 일별매매정보].
+    당일 데이터가 아직 없으면(개장 전·휴장) 최대 7영업일 거슬러 올라간다.
+    반환: (현재가, 전일종가) 원/g."""
+    url = "https://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd"
+    ref = ("https://data.krx.co.kr/contents/MDC/MDI/mdiLoader/index.cmd"
+           "?menuId=MDC0201040603")
+    today = datetime.now(KST).date()
+    for back in range(0, 8):
+        d = today - timedelta(days=back)
+        if d.weekday() >= 5:          # 주말은 건너뜀
+            continue
+        try:
+            raw = _http(url, data={
+                "bld": "dbms/MDC/STAT/standard/MDCSTAT15001",
+                "trdDd": d.strftime("%Y%m%d"),
+                "share": "1", "money": "1", "csvxls_isNo": "false",
+            }, headers={"Referer": ref})
+            js = json.loads(raw)
+        except Exception as e:
+            raise RuntimeError(f"KRX 응답 실패: {e}")
+        rows = js.get("OutBlock_1") or js.get("output") or []
+        for row in rows:
+            code = str(row.get("ISU_CD", "")).strip()
+            name = str(row.get("ISU_NM", "")).strip()
+            if code != KRX_ISU and KRX_ISU_NAME not in name:
+                continue
+            close = _f(_pick(row, "TDD_CLSPRC", "CLSPRC", "TDD_CLSPRC_PRC"))
+            diff = _f(_pick(row, "CMPPREVDD_PRC"))
+            if close is None:
+                continue
+            if diff is None:
+                rt = _f(_pick(row, "FLUC_RT"))
+                if rt is None or rt == -100:
+                    raise RuntimeError("KRX 전일대비 없음")
+                prev = close / (1 + rt / 100.0)
+            else:
+                prev = close - diff
+            print(f"[gold] KRX 정보데이터시스템 수신 · {d} {name} {close:,.0f}원/g")
+            return close, prev
+    raise RuntimeError("KRX 금시장 데이터에서 대상 종목을 찾지 못함(최근 7영업일)")
+
+
+def krx_gold_from_naver():
+    """2순위 — 네이버 금융 국내 금시세(M04020000). 응답 스키마 변동에 대비해 방어적으로 파싱."""
+    last = None
+    for url in ("https://api.stock.naver.com/marketindex/metals/M04020000",
+                "https://m.stock.naver.com/api/marketindex/metals/M04020000"):
+        try:
+            js = json.loads(_http(url, headers={"Referer": "https://m.stock.naver.com/"}))
+        except Exception as e:
+            last = e
+            continue
+        d = js.get("result", js) if isinstance(js, dict) else js
+        if isinstance(d, list) and d:
+            d = d[0]
+        if not isinstance(d, dict):
+            continue
+        close = _f(_pick(d, "closePrice", "nowVal", "currentPrice", "tradePrice", "price"))
+        if close is None:
+            continue
+        pct = _f(_pick(d, "fluctuationsRatio", "changeRate", "fluctuationRate"))
+        if pct is not None and pct != -100:
+            prev = close / (1 + pct / 100.0)
+        else:
+            diff = _f(_pick(d, "compareToPreviousClosePrice", "changeVal", "change"))
+            if diff is None:
+                continue
+            # 네이버는 등락 부호를 별도 코드로 준다(2·1=상승, 5·4=하락). 없으면 상승으로 간주.
+            sgn = _pick(d, "compareToPreviousPrice")
+            code = str(sgn.get("code", "")) if isinstance(sgn, dict) else str(sgn or "")
+            if code in ("4", "5"):
+                diff = -abs(diff)
+            prev = close - diff
+        print(f"[gold] 네이버 금융 수신 · {close:,.0f}원/g")
+        return close, prev
+    raise RuntimeError(f"네이버 국내 금시세 파싱 실패: {last}")
+
+
+def fetch_krx_gold():
+    """KRX 금(원/g) — 정보데이터시스템 → 네이버 순으로 시도. 전부 실패하면 예외."""
+    errs = []
+    for fn in (krx_gold_from_krx, krx_gold_from_naver):
+        try:
+            price, prev = fn()
+            if price and prev and price > 0 and prev > 0:
+                return price, prev
+            errs.append(f"{fn.__name__}: 값 이상({price},{prev})")
+        except Exception as e:
+            errs.append(f"{fn.__name__}: {e}")
+    raise RuntimeError(" / ".join(errs))
+
+
 def load_prev_ticker():
     try:
         with open(TICKER, encoding="utf-8") as f:
@@ -196,10 +347,21 @@ def main():
             sys.stderr.write(f"[warn] KIS 실패: {e}\n")
 
     # 1·2순위 수집: KIS → 야후. 실패분은 pending에 모아 TD로 lazy 보강.
-    quotes, pending, yh_ok = {}, [], 0
+    quotes, pending, yh_ok, gold_src = {}, [], 0, ""
+    yh_total = sum(1 for _n, _s, _t, _f in SYMBOLS if _s)
     for name, sym, td, fmt in SYMBOLS:
         if name in kis_data:
             quotes[name] = kis_data[name]
+            continue
+        if fmt == "krxgold":
+            # KRX 금은 야후·TD에 없다 → 전담 폴백 체인. 실패해도 다른 종목 발행을 막지 않는다.
+            try:
+                quotes[name] = fetch_krx_gold()
+                gold_src = "KRX금"
+            except Exception as e:
+                sys.stderr.write(f"[warn] KRX 금 전 경로 실패: {e} — 직전값 유지\n")
+            continue
+        if not sym:
             continue
         try:
             quotes[name] = fetch_quote(sym)
@@ -207,9 +369,10 @@ def main():
             time.sleep(0.4)  # 야후 과호출 방지
         except Exception as e:
             sys.stderr.write(f"[warn] {name} ({sym}) 야후 실패: {e}\n")
-            pending.append((name, td))
+            if td:
+                pending.append((name, td))
     if yh_ok:
-        print(f"[update_ticker] 야후 {yh_ok}/{len(SYMBOLS)} 수신")
+        print(f"[update_ticker] 야후 {yh_ok}/{yh_total} 수신")
 
     # 3순위: 야후가 못 채운 종목만 Twelve Data로 보강(크레딧 절약형 lazy 호출)
     td_used = 0
@@ -246,6 +409,8 @@ def main():
         parts.append("야후")
     if td_used:
         parts.append("Twelve Data")
+    if gold_src:
+        parts.append(gold_src)
     src_label = "+".join(parts) if parts else "직전값"
     out = {"asof": now + f" (자동·{src_label})", "items": items}
     with open(TICKER, "w", encoding="utf-8") as f:

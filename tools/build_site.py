@@ -2,7 +2,8 @@
 """
 build_site.py — INVEST STORY 홈페이지 생성기 (v11 · 1면 재설계)
 manifest.json(발간 호 목록)과 ticker.json(시세 스트립)을 읽어 index.html을 만든다.
-- 핵심 지표: 정적 카드 2줄(코스피·코스닥·달러 / WTI·S&P·나스닥) + 달러인덱스 더보기.
+- 핵심 지표: 정적 카드 3줄 9종(코스피·코스닥·달러 / WTI·S&P·나스닥 / 달러인덱스·KRX 금·국제 금).
+  2026-08-24: '지표 더보기' 접기 UI 폐기 — 전 지표를 첫 화면에 한 번에 노출.
   (마퀴 폐기. 단, 장중 실시간 갱신 엔진 Twelve Data+야후는 그대로 유지 → 정적 카드를 patch.)
 - 카테고리 탭(전체·데일리·특집·기획·특보)으로 카드 그리드 필터(같은 페이지 JS).
 - 오늘의 리포트 = 대표 카드(최신 호). 색: 데일리 네이비 / 특집·기획 골드 / 특보 레드.
@@ -20,13 +21,13 @@ DOMAIN = "investstory.co.kr"
 WD = ["월","화","수","목","금","토","일"]
 KST = datetime.timezone(datetime.timedelta(hours=9))
 
-# 지표 표시 순서·한글 라벨 (ticker.json name → 라벨). 마지막 '달러인덱스'는 더보기.
+# 지표 표시 순서·한글 라벨 (ticker.json name → 라벨).
+# 2026-08-24: 접힘(더보기) 없이 9종 전부를 한 번에 노출. 3열 그리드에 정확히 3줄로 떨어진다.
 STAT_ORDER = [
     ("KOSPI", "코스피"), ("KOSDAQ", "코스닥"), ("USD/KRW", "달러·원"),
     ("WTI", "WTI 유가"), ("S&P 500", "S&P 500"), ("나스닥", "나스닥"),
-    ("달러인덱스", "달러인덱스"),
+    ("달러인덱스", "달러인덱스"), ("KRX 금", "KRX 금 (원/g)"), ("국제 금", "국제 금 ($/oz)"),
 ]
-STAT_MORE = {"달러인덱스"}  # 기본 접힘
 
 # 카테고리 버킷·색 (탭 필터 + 태그/악센트 색)
 def cat_of(tag):
@@ -65,9 +66,8 @@ def main():
         it = by_name.get(name, {})
         val = esc(it.get("value","—")); chg = esc(it.get("change","")); dr = esc(it.get("dir","flat"))
         arrow = "▲" if dr=="up" else ("▼" if dr=="down" else "·")
-        more = " more" if name in STAT_MORE else ""
         stat_cells.append(
-            f'<div class="stat{more}" data-n="{esc(name)}">'
+            f'<div class="stat" data-n="{esc(name)}">'
             f'<span class="stat-n">{esc(label)}</span>'
             f'<span class="stat-v">{val}</span>'
             f'<span class="stat-c {dr}">{arrow}&nbsp;{chg}</span></div>')
@@ -196,17 +196,12 @@ def main():
   .tk-live{{color:#1a8f4a;font-weight:700}} .tk-delay{{color:var(--gold-d);font-weight:700}}
   .stats{{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}}
   .stat{{background:var(--paper);border:1px solid var(--line);border-radius:7px;padding:12px 14px;display:flex;flex-direction:column;gap:2px}}
-  .stat.more{{display:none}}
-  .stat.show{{display:flex}}
   .stat-n{{font-size:11.5px;color:var(--mute)}}
   .stat-v{{font-size:clamp(17px,3.6vw,21px);font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.01em}}
   .stat-c{{font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums}}
   .stat-c.up{{color:var(--up)}} .stat-c.down{{color:var(--down)}} .stat-c.flat{{color:var(--mute)}}
   @keyframes stflash{{0%{{background:rgba(201,166,84,0)}}25%{{background:rgba(201,166,84,.22)}}100%{{background:rgba(201,166,84,0)}}}}
   .stat.flash{{animation:stflash 1s ease-out}}
-  .morebtn{{margin:10px 0 2px;appearance:none;background:none;border:1px dashed var(--line-2);border-radius:6px;
-    color:var(--mute);font-family:var(--sans);font-size:12.5px;cursor:pointer;padding:8px 14px}}
-  .morebtn:hover{{color:var(--ink);border-color:var(--gold)}}
 
   /* ---- 오늘의 리포트(대표 카드) ---- */
   .feature{{display:block;background:var(--paper);border:1px solid var(--line);border-left:5px solid var(--cat,var(--navy));
@@ -249,11 +244,13 @@ def main():
 
   @media (max-width:640px){{
     .stats{{grid-template-columns:1fr 1fr;gap:8px}}
+    /* 2열에서 지표 수가 홀수면 마지막 한 장이 반쪽으로 남는다 → 한 줄 전체로 펴서 마감. */
+    .stats .stat:last-child:nth-child(odd){{grid-column:1 / -1}}
     .cardgrid{{grid-template-columns:1fr}}
     .banner a{{justify-content:center;text-align:center}}
   }}
   @media (prefers-reduced-motion:reduce){{*{{transition:none!important;animation:none!important}}}}
-  a:focus-visible,.tab:focus-visible,.morebtn:focus-visible{{outline:3px solid var(--gold);outline-offset:2px;border-radius:3px}}
+  a:focus-visible,.tab:focus-visible{{outline:3px solid var(--gold);outline-offset:2px;border-radius:3px}}
 </style>
 </head>
 <body>
@@ -271,7 +268,6 @@ def main():
   <main class="wrap">
     <div class="tk-status"><span id="tk-asof">{asof}</span><span id="tk-live"></span></div>
     <div class="stats">{stat_cards_html}</div>
-    <button class="morebtn" id="morebtn" type="button">+ 지표 더보기</button>
 
     <div class="sec-k" id="feat-k">{init_label}</div>
     <div id="features">{features_html}</div>
@@ -310,7 +306,8 @@ def main():
     print(f"[build_site] index.html 생성 완료 · 발간 호 {len(issues)}건")
 
 
-# 탭 필터 + 더보기 + 시세 실시간 갱신(엔진 유지, 정적 카드를 patch) — f-string 밖 일반 문자열
+# 탭 필터 + 시세 실시간 갱신(엔진 유지, 정적 카드를 patch) — f-string 밖 일반 문자열
+# 2026-08-24: '지표 더보기' 토글 블록 제거(전 지표 상시 노출).
 SCRIPT = r"""
   <script>
   /* ===== 1) 카테고리 탭 필터 ===== */
@@ -347,21 +344,7 @@ SCRIPT = r"""
     });
   })();
 
-  /* ===== 2) 지표 더보기 ===== */
-  (function(){
-    var btn=document.getElementById('morebtn');
-    if(!btn) return;
-    var more=document.querySelectorAll('.stat.more');
-    if(!more.length){ btn.style.display='none'; return; }
-    var open=false;
-    btn.addEventListener('click',function(){
-      open=!open;
-      more.forEach(function(s){ s.classList.toggle('show',open); });
-      btn.textContent = open ? '− 지표 접기' : '+ 지표 더보기';
-    });
-  })();
-
-  /* ===== 3) 시세 실시간 갱신 (Twelve Data → 야후 → ticker.json) · 정적 카드 patch ===== */
+  /* ===== 2) 시세 실시간 갱신 (Twelve Data → 야후 → ticker.json) · 정적 카드 patch ===== */
   (function(){
     var CFG = {
       'KOSPI':     {sym:'^KS11',    td:'KS11',    dec:2, mode:'pct', mkt:'kr'},
@@ -370,7 +353,11 @@ SCRIPT = r"""
       'WTI':       {sym:'CL=F',     td:'WTI/USD', dec:2, mode:'pct', prefix:'$', mkt:'us'},
       'S&P 500':   {sym:'^GSPC',    td:'GSPC',    dec:2, mode:'pct', mkt:'us'},
       '\uB098\uC2A4\uB2E5':       {sym:'^IXIC', td:'IXIC', dec:2, mode:'pct', mkt:'us'},
-      '\uB2EC\uB7EC\uC778\uB371\uC2A4': {sym:'DX-Y.NYB', td:'DXY', dec:2, mode:'pct', mkt:'us'}
+      '\uB2EC\uB7EC\uC778\uB371\uC2A4': {sym:'DX-Y.NYB', td:'DXY', dec:2, mode:'pct', mkt:'us'},
+      /* 국제 금(현물 XAU/USD) — 24시간 거래라 국내·미국 어느 장이 열려도 갱신(mkt:'fx'). */
+      '\uAD6D\uC81C \uAE08': {sym:'XAUUSD=X', td:'XAU/USD', dec:2, mode:'pct', prefix:'$', mkt:'fx'}
+      /* 'KRX 금'은 브라우저에서 직접 칠 수 있는 무료 소스가 없어 CFG에 넣지 않는다.
+         → 서버(update_ticker.py)가 채운 ticker.json을 cycle()이 매번 patch해 갱신한다. */
     };
     var NBSP=String.fromCharCode(160);
     var PROXY=[function(u){return u;},
