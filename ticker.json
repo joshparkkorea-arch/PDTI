@@ -1,22 +1,22 @@
 {
-  "asof": "2026-08-27 14:00 KST (자동·KIS+야후+Twelve Data+KRX금)",
+  "asof": "2026-08-27 14:15 KST (자동·KIS+야후+Twelve Data+KRX금)",
   "items": [
     {
       "name": "KOSPI",
-      "value": "6,910.29",
-      "change": "+1.50%",
+      "value": "6,888.02",
+      "change": "+1.17%",
       "dir": "up"
     },
     {
       "name": "KOSDAQ",
-      "value": "835.24",
-      "change": "+1.01%",
+      "value": "835.73",
+      "change": "+1.07%",
       "dir": "up"
     },
     {
       "name": "USD/KRW",
-      "value": "1,380.5",
-      "change": "-4.9",
+      "value": "1,380.1",
+      "change": "-5.3",
       "dir": "down"
     },
     {
@@ -45,14 +45,14 @@
     },
     {
       "name": "KRX 금",
-      "value": "206,050",
-      "change": "-0.70%",
+      "value": "205,970",
+      "change": "-0.74%",
       "dir": "down"
     },
     {
       "name": "국제 금",
-      "value": "$4,618.50",
-      "change": "+0.52%",
+      "value": "$4,620.88",
+      "change": "+0.57%",
       "dir": "up"
     }
   ]
