@@ -1,5 +1,5 @@
 {
-  "asof": "2026-08-28 00:45 KST (자동·KIS+야후+Twelve Data+KRX금)",
+  "asof": "2026-08-28 01:01 KST (자동·KIS+야후+KRX금)",
   "items": [
     {
       "name": "KOSPI",
@@ -21,20 +21,20 @@
     },
     {
       "name": "WTI",
-      "value": "$82.43",
-      "change": "+0.24%",
+      "value": "$82.55",
+      "change": "+0.39%",
       "dir": "up"
     },
     {
       "name": "S&P 500",
-      "value": "7,712.97",
-      "change": "+0.49%",
+      "value": "7,724.58",
+      "change": "+0.64%",
       "dir": "up"
     },
     {
       "name": "나스닥",
-      "value": "26,408.34",
-      "change": "+1.06%",
+      "value": "26,470.45",
+      "change": "+1.30%",
       "dir": "up"
     },
     {
