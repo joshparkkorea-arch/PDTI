@@ -1,5 +1,5 @@
 {
-  "asof": "2026-08-29 08:30 KST (자동·KIS+야후+Twelve Data+KRX금)",
+  "asof": "2026-08-29 08:45 KST (자동·야후+KRX금)",
   "items": [
     {
       "name": "KOSPI",
@@ -10,7 +10,7 @@
     {
       "name": "KOSDAQ",
       "value": "838.41",
-      "change": "+0.09%",
+      "change": "+1.40%",
       "dir": "up"
     },
     {
