@@ -1932,6 +1932,11 @@ def _g_num(s):
     except Exception:
         return None
 
+# 실데이터 종가와 본문 수치의 허용 편차. 잠정↔확정 종가 괴리(통상 0.01% 미만)는
+# 흡수하되, 전혀 다른 지수 수치(오보)는 걸러내는 폭으로 잡는다.
+IDX_TOL = 0.003    # 0.30%  (코스피 6,900 기준 약 21포인트)
+
+
 def verify_index_figures(htmlstr, items, asof):
     """마감 기사 본문의 KOSPI/KOSDAQ 수치를 ticker(KIS) 실데이터와 검산.
     (A) 실데이터 종가가 본문에 존재하는지(전체), (B) 리드 문단의 지수 인근 수치가
@@ -1956,11 +1961,26 @@ def verify_index_figures(htmlstr, items, asof):
             white.append(prev); white.append(abs(ap - prev))
     if not auth:
         return True, ["(경고) ticker에 KOSPI/KOSDAQ 실데이터가 없어 검산 생략"]
-    # (A) 존재 검사 — 전체 본문
+    # (A) 존재 검사 — 실데이터 종가와 '충분히 가까운' 수치가 본문에 있으면 통과.
+    # 사고#34(2026-08-27) 대응: 마감 발행(15:35)은 KRX 종가 확정 직후라, KIS가 아직
+    # 잠정 종가를 주는 순간이 있다(8/27 KOSPI 잠정 6,911.70 → 확정 6,912.37, 편차 0.0097%).
+    # AI는 웹에서 확인한 '확정' 종가를 쓰므로, 정확한 문자열 일치를 요구하면
+    # 오히려 더 정확한 기사가 차단된다. 편차 IDX_TOL 이내면 확정 종가 반영으로 보고 통과시킨다.
+    # 완화한 만큼 (C) 방향 검사로 사고#12(코스닥 방향 오류) 차단력을 보강한다.
+    body_nums = [_g_num(x) for x in re.findall(r"\d{1,3}(?:,\d{3})*\.\d{2}", htmlstr)]
+    body_nums = [v for v in body_nums if v is not None and v >= 50]
     for name, (ap, ac) in auth.items():
         pstr = f"{ap:,.2f}"
-        if pstr not in htmlstr:
-            issues.append(f"{name}: 본문에 실데이터 종가 {pstr} 미표기 — 웹 검색 수치로 대체됐을 가능성")
+        if pstr in htmlstr:
+            continue
+        near = [v for v in body_nums if abs(v - ap) / max(ap, 1e-9) <= IDX_TOL]
+        if near:
+            best = min(near, key=lambda v: abs(v - ap))
+            issues.append(f"(경고) {name}: 실데이터 {pstr} 대신 {best:,.2f} 표기 — "
+                          f"편차 {abs(best - ap) / ap * 100:.3f}%, 확정 종가 반영으로 보고 통과")
+            continue
+        issues.append(f"{name}: 본문에 실데이터 종가 {pstr}에 근접한 수치가 없음"
+                      f"(허용오차 {IDX_TOL * 100:.2f}%) — 웹 검색 수치로 대체됐을 가능성")
     # (B) 근접 검사 — 리드 문단 한정
     mlead = re.search(r'<p class="lead-para">(.*?)</p>', htmlstr, re.S)
     if mlead:
@@ -1980,6 +2000,52 @@ def verify_index_figures(htmlstr, items, asof):
                             continue
                         if not any(abs(cv - w) / max(w, 1e-9) <= 0.005 for w in white):
                             issues.append(f"{name}: 리드의 '{kw}' 인근 수치 {cm.group(1)} — 실데이터와 불일치")
+    # (C) 방향 검사 — 리드의 지수 등락률 부호가 실데이터와 반대면 차단(사고#12).
+    # 등락 크기가 실데이터와 사실상 같은데 방향만 뒤집힌 경우만 잡는다.
+    if mlead:
+        for name, kws in (("KOSPI", ("코스피", "KOSPI")), ("KOSDAQ", ("코스닥", "KOSDAQ"))):
+            if name not in auth:
+                continue
+            ap, ac = auth[name]
+            if ac is None or abs(ac) < 0.01:
+                continue
+            for kw in kws:
+                for m in re.finditer(re.escape(kw), lead):
+                    seg = lead[m.end(): m.end() + 80]
+                    pm = re.search(r"([+\-\u2212]?)\s*(\d+\.\d{1,2})\s*%", seg)
+                    if not pm:
+                        continue
+                    mag = _g_num(pm.group(2))
+                    if mag is None or abs(mag - abs(ac)) > 0.05:
+                        continue          # 지수 등락률이 아닌 다른 수치 — 건너뜀
+                    sign = pm.group(1)
+                    if sign in ("-", "\u2212"):
+                        body_dir = -1
+                    elif sign == "+":
+                        body_dir = 1
+                    else:
+                        # 부호가 없으면 '그 수치 바로 옆'의 서술어로만 방향을 판정한다.
+                        # 문장 전체를 훑으면 뒤에 붙은 다른 지수의 서술어를 잘못 집는다
+                        # (예: "코스피는 1.53% 상승한 …, 코스닥도 1.24% 하락해").
+                        DOWN = r"(하락|내린|내려|밀린|밀려|급락|약세|떨어|하회|후퇴)"
+                        UP = r"(상승|오른|올라|뛴|뛰어|급등|강세|상회|반등)"
+                        after = seg[pm.end(): pm.end() + 12]
+                        before = seg[max(0, pm.start() - 12): pm.start()]
+                        body_dir = 0
+                        for win in (after, before):
+                            dn_ = re.search(DOWN, win)
+                            up_ = re.search(UP, win)
+                            if dn_ and (not up_ or dn_.start() < up_.start()):
+                                body_dir = -1; break
+                            if up_:
+                                body_dir = 1; break
+                        if body_dir == 0:
+                            continue
+                    if body_dir * ac < 0:
+                        issues.append(
+                            f"{name}: 리드 등락률 {sign}{mag}% 방향이 실데이터 {ac:+.2f}%와 반대 — 방향 오기")
+                    break
+
     hard = [x for x in issues if not x.startswith("(경고)")]
     return (len(hard) == 0), issues
 
