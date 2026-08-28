@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<!-- INVEST_STORY_LOCKED -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>[기획] 기준금리 3.0% 시대 — 금리 인상이 흔드는 자산 10곳, 영향이 큰 순서대로</title>
+<meta property="og:title" content="[기획] 기준금리 3.0% 시대 — 금리 인상이 흔드는 자산 10곳, 영향이 큰 순서대로">
+<meta property="og:description" content="8월 27일 한국은행이 기준금리를 2.75%에서 3.00%로 올렸다. 채권시장 참가자 79%가 동결을 점쳤던 자리에서 나온 2회 연속 인상. 가계부채·부동산·예금·채권·환율·증시·리츠·내수·원자재·가상자산까지 자산군 10곳을 영향력이 큰 순서로 해부하고, 3대 시나리오와 확률·트리거·대응 원칙을 정리했다.">
+<meta property="og:image" content="https://investstory.co.kr/assets/og-default.png">
+<meta property="og:type" content="article">
+<style>
+:root{--navy:#16335C;--navy2:#1B3C6E;--navy-bar:#2E4B77;--gold:#C9A654;--up:#C0392B;--down:#1B5E9B;--ink:#1c2431;--mut:#5b6675;--bg:#f6f7f9;--card:#ffffff;--line:#e3e7ee;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif;background:var(--bg);color:var(--ink);line-height:1.75;font-size:16.5px;-webkit-text-size-adjust:100%}
+.wrap{max-width:860px;margin:0 auto;padding:0 18px 64px}
+.masthead{background:var(--navy);color:#fff;padding:14px 18px;display:flex;justify-content:space-between;align-items:center}
+.masthead a.brand{color:#fff;text-decoration:none;font-weight:800;font-size:20px;letter-spacing:.4px}
+.masthead a.brand:visited{color:#fff}
+.masthead .sub{font-size:12.5px;opacity:.85}
+.flashbar{background:var(--navy2);color:#fff;text-align:center;font-weight:700;font-size:14px;padding:7px 10px;letter-spacing:.5px}
+h1{font-size:28px;line-height:1.38;margin:30px 0 10px;color:var(--navy);word-break:keep-all}
+.deck{font-size:18px;color:var(--mut);margin-bottom:14px;word-break:keep-all}
+.byline{font-size:13.5px;color:var(--mut);border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:10px 2px;margin-bottom:22px}
+h2{font-size:22px;color:var(--navy);margin:40px 0 14px;padding-left:12px;border-left:5px solid var(--gold);word-break:keep-all}
+h3{font-size:18px;color:var(--navy2);margin:26px 0 10px;word-break:keep-all}
+p{margin:0 0 15px;word-break:keep-all}
+.key{font-weight:700;box-shadow:inset 0 -0.55em 0 rgba(201,166,84,.32)}
+.up{color:var(--up);font-weight:700}
+.down{color:var(--down);font-weight:700}
+.num{font-weight:700;color:var(--navy);font-variant-numeric:tabular-nums}
+p.takeaway{margin:18px 0 8px;padding:13px 16px;background:#FBF7EE;border-left:4px solid var(--gold);border-radius:0 8px 8px 0;font-weight:700;color:var(--navy);font-size:15.5px;line-height:1.7}
+.lead-note{background:#fff8ec;border:1.5px solid var(--gold);border-radius:10px;padding:14px 16px;font-size:14.5px;margin:0 0 22px;color:#5a4a1e}
+.glossary{background:#fffdf7;border:1.5px solid var(--gold);border-radius:12px;padding:18px 20px;margin:0 0 30px}
+.glossary h3{margin:0 0 10px;font-size:16.5px;color:#8a6d1f}
+.glossary ul{list-style:none}
+.glossary li{font-size:14.5px;margin-bottom:7px;padding-left:14px;position:relative;word-break:keep-all}
+.glossary li::before{content:"▸";position:absolute;left:0;color:var(--gold)}
+table{width:100%;border-collapse:collapse;margin:16px 0 8px;font-size:15px;background:var(--card)}
+th{background:var(--navy);color:#fff;padding:10px 8px;font-weight:600;text-align:center;font-size:14px}
+td{padding:10px 8px;border-bottom:1px solid var(--line);text-align:center}
+td.l{text-align:left}
+.caption{font-size:13px;color:var(--mut);margin:4px 0 20px;text-align:center}
+.chart{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 14px 8px;margin:20px 0 6px}
+.chart svg{width:100%;height:auto;display:block}
+.callout{background:var(--card);border-left:5px solid var(--navy2);border-radius:0 10px 10px 0;padding:15px 18px;margin:18px 0;font-size:15.5px}
+.callout.red{border-left-color:var(--up);background:#fdf3f2}
+.callout.blue{border-left-color:var(--down);background:#f1f6fb}
+.rank{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin:18px 0}
+.rank h3{margin:0 0 4px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.rank .badge{display:inline-block;font-size:12px;font-weight:700;border-radius:20px;padding:2px 11px;color:#fff;vertical-align:middle}
+.rank .badge.neg{background:var(--down)} .rank .badge.pos{background:var(--up)}
+.rank .meta{font-size:13px;color:var(--mut);margin:0 0 11px;font-variant-numeric:tabular-nums}
+.scen{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin:16px 0}
+.scen h3{margin-top:0}
+.scen .prob{display:inline-block;background:var(--navy);color:#fff;font-size:13px;font-weight:700;border-radius:20px;padding:2px 12px;margin-left:8px;vertical-align:middle}
+.disc{background:#f0f1f4;border-radius:10px;padding:14px 16px;font-size:13px;color:var(--mut);margin:34px 0 10px}
+.homelink{display:block;text-align:center;margin:30px 0 0;font-size:15.5px}
+.homelink a{color:var(--navy2);font-weight:700;text-decoration:none;border-bottom:2px solid var(--gold)}
+ul.body-list{margin:0 0 15px 20px}
+ul.body-list li{margin-bottom:8px;word-break:keep-all}
+@media(max-width:560px){h1{font-size:22px}.deck{font-size:16px}body{font-size:15.5px}}
+</style>
+</head>
+<body>
+<div class="masthead">
+  <a class="brand" href="/">INVEST STORY</a>
+  <span class="sub">투자이야기 · 데일리 인베스트먼트 리포트</span>
+</div>
+<div class="flashbar">📊 기획 리포트 — 기준금리 3.0% 시대의 자산 지도</div>
+<div class="wrap">
+
+<h1>기준금리 3.0% 시대 — 금리 인상이 흔드는 자산 10곳, 영향이 큰 순서대로</h1>
+<p class="deck">채권시장 참가자 열에 여덟이 동결을 점쳤던 자리에서 한국은행은 두 달 연속 인상을 택했다. 가계부채부터 가상자산까지, 3.0%가 실제로 무엇을 때리는지 순서대로 짚고 대응까지 정리했다</p>
+<div class="byline">박철웅 기자 · 2026년 8월 28일 (금) 오후 · 제 131호 · 기획</div>
+
+<div class="lead-note">
+⏱ <b>본 기사는 8월 28일(금) 오후 4시 30분(KST) 기준</b>으로 작성됐습니다. 8월 27~28일 국내 지수·환율은 <b>확정 종가</b>, 미국 지수는 현지 27일 마감치입니다. <b>10월 금융통화위원회, 9월 15~16일 미 연방공개시장위원회(FOMC), 9월 중순 8월 코픽스 공시는 모두 발표 전</b>입니다. 자산군 순위와 시나리오 확률은 편집부 판단의 개념도이며, 특정 자산의 매수·매도 권유가 아닙니다.
+</div>
+
+<div class="glossary">
+<h3>📖 이 기사를 읽기 위한 핵심 용어</h3>
+<ul>
+<li><b>기준금리</b> — 한국은행이 정하는 나라의 기준 이자율. 예금·대출·채권 금리가 모두 여기서 출발합니다.</li>
+<li><b>점도표</b> — 금통위원들이 "앞으로 금리가 어디쯤 갈까"를 점으로 찍은 것. 이번엔 6개월 뒤 중간값이 3.25%로, 한 번 더 올릴 여지를 시사했습니다.</li>
+<li><b>코픽스(COFIX)</b> — 은행들이 돈을 조달한 평균 비용. 변동금리 주택담보대출이 이 숫자를 따라 움직입니다. 매월 15일경 공시됩니다.</li>
+<li><b>순이자마진(NIM)</b> — 은행이 대출로 받은 이자에서 예금에 준 이자를 뺀 마진. 금리가 오르면 보통 넓어집니다.</li>
+<li><b>역머니무브</b> — 주식·펀드에 있던 돈이 이자를 주는 예금으로 되돌아가는 흐름.</li>
+<li><b>신용융자</b> — 증권사에서 돈을 빌려 주식을 사는 것, 이른바 '빚투'. 금리가 오르면 이자 부담이 커집니다.</li>
+<li><b>리츠(REITs)</b> — 여러 사람의 돈을 모아 빌딩을 사서 임대료를 나눠주는 상장 부동산 회사.</li>
+<li><b>부동산 PF</b> — 아직 짓지 않은 건물의 사업성을 담보로 빌려주는 대출. 금리가 오르면 사업성이 약한 현장부터 흔들립니다.</li>
+<li><b>한미 금리차</b> — 미국 기준금리에서 한국 기준금리를 뺀 값. 미국이 높을수록 달러로 돈이 몰려 원화에 불리합니다.</li>
+<li><b>김치프리미엄</b> — 같은 코인이 국내에서 해외보다 비싼 정도. 요즘은 오히려 싼 '역프리미엄'이 흔합니다.</li>
+</ul>
+</div>
+
+<h2>① 무슨 일이 있었나 — 79%가 틀린 날</h2>
+
+<p>8월 27일(목) 오전, 한국은행 금융통화위원회는 기준금리를 <span class="key">연 2.75%에서 3.00%로 0.25%포인트 올렸다</span>. 7월 16일 인상(2.50→2.75%)에 이은 두 달 연속 인상이다. 연속 인상은 <b>3년 7개월 만</b>이고, 기준금리 3% 복귀는 1년 9개월 만이다. 표결은 7명 중 6명 찬성, 황건일 위원이 동결 소수의견을 냈다.</p>
+
+<p>중요한 건 이게 <b>예상 밖이었다</b>는 점이다. 금융투자협회 채권시장 설문에서 <span class="key">응답자의 79%가 '8월 동결'을 점쳤다</span>. 인상 전망은 20%에 그쳤다. 시장 포지션이 동결 쪽에 기울어 있던 자리에서 한은은 인상을 택했다.</p>
+
+<div class="chart">
+<svg viewBox="0 0 720 345" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="한국은행 기준금리 경로 2026년">
+<text x="360" y="26" text-anchor="middle" font-size="16" font-weight="700" fill="#16335C">한국은행 기준금리 경로 — 두 달 만에 0.50%p</text>
+<text x="360" y="46" text-anchor="middle" font-size="12.5" fill="#5b6675">2회 연속 인상은 3년 7개월 만 · 점선은 금통위 점도표 6개월 후 중간값(전망)</text>
+<line x1="70" y1="254.5" x2="680" y2="254.5" stroke="#eef0f4" stroke-width="1"/>
+<text x="62" y="258.5" text-anchor="end" font-size="11.5" fill="#8a93a3">2.50%</text>
+<line x1="70" y1="203.2" x2="680" y2="203.2" stroke="#eef0f4" stroke-width="1"/>
+<text x="62" y="207.2" text-anchor="end" font-size="11.5" fill="#8a93a3">2.75%</text>
+<line x1="70" y1="151.8" x2="680" y2="151.8" stroke="#eef0f4" stroke-width="1"/>
+<text x="62" y="155.8" text-anchor="end" font-size="11.5" fill="#8a93a3">3.00%</text>
+<line x1="70" y1="100.5" x2="680" y2="100.5" stroke="#eef0f4" stroke-width="1"/>
+<text x="62" y="104.5" text-anchor="end" font-size="11.5" fill="#8a93a3">3.25%</text>
+<polyline points="100.0,254.5 286.7,254.5 286.7,203.2 473.3,203.2 473.3,151.8" fill="none" stroke="#16335C" stroke-width="3.5" stroke-linejoin="round"/>
+<polyline points="473.3,151.8 660.0,151.8 660.0,100.5" fill="none" stroke="#C9A654" stroke-width="3.5" stroke-dasharray="7 5" stroke-linejoin="round"/>
+<circle cx="100.0" cy="254.5" r="6.5" fill="#16335C" stroke="#fff" stroke-width="2"/>
+<text x="100.0" y="239.5" text-anchor="middle" font-size="14" font-weight="700" fill="#16335C">2.50%</text>
+<text x="100.0" y="299" text-anchor="middle" font-size="12" fill="#1c2431">'25.5~'26.6</text>
+<text x="100.0" y="314" text-anchor="middle" font-size="11" fill="#8a93a3">13개월 동결</text>
+<circle cx="286.7" cy="203.2" r="6.5" fill="#16335C" stroke="#fff" stroke-width="2"/>
+<text x="286.7" y="188.2" text-anchor="middle" font-size="14" font-weight="700" fill="#16335C">2.75%</text>
+<text x="286.7" y="299" text-anchor="middle" font-size="12" fill="#1c2431">7/16</text>
+<text x="286.7" y="314" text-anchor="middle" font-size="11" fill="#8a93a3">만장일치 인상</text>
+<circle cx="473.3" cy="151.8" r="6.5" fill="#16335C" stroke="#fff" stroke-width="2"/>
+<text x="473.3" y="136.8" text-anchor="middle" font-size="14" font-weight="700" fill="#16335C">3.00%</text>
+<text x="473.3" y="299" text-anchor="middle" font-size="12" fill="#1c2431">8/27</text>
+<text x="473.3" y="314" text-anchor="middle" font-size="11" fill="#8a93a3">6:1 인상</text>
+<circle cx="660.0" cy="100.5" r="6.5" fill="#C9A654" stroke="#fff" stroke-width="2"/>
+<text x="660.0" y="85.5" text-anchor="middle" font-size="14" font-weight="700" fill="#C9A654">3.25%</text>
+<text x="660.0" y="299" text-anchor="middle" font-size="12" fill="#1c2431">6개월 후</text>
+<text x="660.0" y="314" text-anchor="middle" font-size="12" fill="#1c2431">(점도표 중간값)</text>
+<text x="660.0" y="329" text-anchor="middle" font-size="11" fill="#8a93a3">1회 추가 인상 시사</text>
+<line x1="70" y1="275" x2="680" y2="275" stroke="#c9cfd8" stroke-width="1"/>
+</svg>
+</div>
+<p class="caption">두 달 만에 0.50%포인트. 점선은 금통위 점도표의 6개월 후 중간값으로, 확정된 경로가 아니라 위원들의 전망이다.</p>
+
+<p>신현송 총재는 기자간담회에서 속담을 꺼냈다. <span class="key">"호미로 막을 것을 가래로 막는다"</span>는 말로 선제 대응을 정당화하며, "선제적 통화정책 대응은 뒤늦은 대응에 비해 기대인플레이션을 조속히 안정시킴으로써 긴축 강도와 기간을 줄이고 궁극적으로 성장 측면의 비용을 최소화할 수 있다"고 했다. 두 번 연속 인상은 <b>"관례를 벗어난 조치를 통해 시장에 강한 신호를 보낸 것"</b>이라고도 덧붙였다.</p>
+
+<p>배경에는 상향된 성장 전망이 있다. 한은은 2026년 성장률 전망을 5월 2.6%에서 <span class="num">3.3%</span>로, 2027년은 2.1%에서 <span class="num">2.9%</span>로 올렸다. 반도체가 끌어올린 숫자다. 소비자물가 전망은 2.7%로 유지했지만 <b>7월 근원물가가 2.6%로 31개월 만의 최고</b>를 찍은 것이 결정적이었다. 인상의 명분은 "물가 오름세의 확산을 방지"다.</p>
+
+<div class="callout blue">
+<b>💡 그런데 의결문에서 한 문장이 사라졌다</b><br>
+7월 의결문에 있던 <b>"향후 통화정책은 금리 인상 기조를 이어 나갈 필요가 있다"</b>는 표현이 8월엔 빠졌다. 대신 <span class="key">"추가 인상의 시기와 속도 등을 결정해 나갈 것"</span>으로 바뀌었다. 시장은 이를 '매파적 인상, 비둘기파적 예고'로 읽었다. 이 한 문장의 삭제가 이후 자산 반응 대부분을 설명한다.
+</div>
+
+<h2>② 자산군 10곳 — 영향력이 큰 순서로</h2>
+
+<p>순서는 <b>세 가지 기준</b>으로 매겼다. ⑴ 금리와의 인과가 얼마나 직접적인가 ⑵ 걸려 있는 돈의 규모가 얼마나 큰가 ⑶ 효과가 얼마나 확실한가. 그래서 '뉴스가 큰 순서'가 아니라 <b>'실제로 지갑이 바뀌는 순서'</b>다.</p>
+
+<div class="chart">
+<svg viewBox="0 0 720 470" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="한국은행 금리 인상의 자산군별 영향 지도">
+<text x="360" y="24" text-anchor="middle" font-size="16" font-weight="700" fill="#16335C">자산군별 영향 지도 — 영향력이 큰 순서</text>
+<text x="360" y="43" text-anchor="middle" font-size="12" fill="#5b6675">왼쪽(파랑)=압박 · 오른쪽(빨강)=수혜 · 막대 길이=영향 강도(편집부 판단)</text>
+<text x="340" y="62" text-anchor="middle" font-size="11.5" font-weight="700" fill="#1B5E9B">◀ 압박</text>
+<text x="520" y="62" text-anchor="middle" font-size="11.5" font-weight="700" fill="#C0392B">수혜 ▶</text>
+<rect x="255.0" y="74" width="175.0" height="22" rx="3" fill="#1B5E9B"/>
+<text x="247.0" y="90" text-anchor="end" font-size="12.5" font-weight="700" fill="#1c2431">① 가계부채·주택담보대출</text>
+<text x="438" y="90" font-size="11" fill="#8a93a3">2,019.8조 · 연 이자 +1.8조</text>
+<rect x="272.5" y="112" width="157.5" height="22" rx="3" fill="#1B5E9B"/>
+<text x="264.5" y="128" text-anchor="end" font-size="12.5" font-weight="700" fill="#1c2431">② 부동산(주택)</text>
+<text x="438" y="128" font-size="11" fill="#8a93a3">정책의 명시적 타깃</text>
+<rect x="430" y="150" width="157.5" height="22" rx="3" fill="#C0392B"/>
+<text x="595.5" y="166" font-size="12.5" font-weight="700" fill="#1c2431">③ 예금·현금성 자산</text>
+<text x="422" y="166" text-anchor="end" font-size="11" fill="#8a93a3">정기예금 991조 · 역머니무브</text>
+<rect x="430" y="188" width="140.0" height="22" rx="3" fill="#C0392B"/>
+<text x="578.0" y="204" font-size="12.5" font-weight="700" fill="#1c2431">④ 채권(국고채)</text>
+<text x="422" y="204" text-anchor="end" font-size="11" fill="#8a93a3">역설적 강세 — 3년 −6.1bp</text>
+<rect x="290.0" y="226" width="140.0" height="22" rx="3" fill="#1B5E9B"/>
+<text x="282.0" y="242" text-anchor="end" font-size="12.5" font-weight="700" fill="#1c2431">⑤ 원/달러·달러자산</text>
+<text x="438" y="242" font-size="11" fill="#8a93a3">한미 금리차 0.75%p로 축소</text>
+<rect x="430" y="264" width="122.5" height="22" rx="3" fill="#C0392B"/>
+<text x="560.5" y="280" font-size="12.5" font-weight="700" fill="#1c2431">⑥ 보험·은행주</text>
+<text x="422" y="280" text-anchor="end" font-size="11" fill="#8a93a3">보험 8월 +14.3% · 은행 +2.3%</text>
+<rect x="307.5" y="302" width="122.5" height="22" rx="3" fill="#1B5E9B"/>
+<text x="299.5" y="318" text-anchor="end" font-size="12.5" font-weight="700" fill="#1c2431">⑦ 성장주·반도체·레버리지</text>
+<text x="438" y="318" font-size="11" fill="#8a93a3">신용융자 30.9조</text>
+<rect x="325.0" y="340" width="105.0" height="22" rx="3" fill="#1B5E9B"/>
+<text x="317.0" y="356" text-anchor="end" font-size="12.5" font-weight="700" fill="#1c2431">⑧ 리츠·부동산 PF</text>
+<text x="438" y="356" font-size="11" fill="#8a93a3">조달금리 3.5~4.5% · PF 연체 4.65%</text>
+<rect x="342.5" y="378" width="87.5" height="22" rx="3" fill="#1B5E9B"/>
+<text x="334.5" y="394" text-anchor="end" font-size="12.5" font-weight="700" fill="#1c2431">⑨ 내수·소비·자영업주</text>
+<text x="438" y="394" font-size="11" fill="#8a93a3">취약차주 연체율 12.68%</text>
+<rect x="377.5" y="416" width="52.5" height="22" rx="3" fill="#1B5E9B"/>
+<text x="369.5" y="432" text-anchor="end" font-size="12.5" font-weight="700" fill="#1c2431">⑩ 원자재·가상자산</text>
+<text x="438" y="432" font-size="11" fill="#8a93a3">간접 · 원화 강세 경로만</text>
+<line x1="430" y1="68" x2="430" y2="454" stroke="#c9cfd8" stroke-width="1.5"/>
+<text x="360" y="462" text-anchor="middle" font-size="11.5" fill="#8a93a3">순위와 강도는 편집부 판단의 개념도이며 매수·매도 신호가 아닙니다</text>
+</svg>
+</div>
+<p class="caption">왼쪽으로 길수록 압박, 오른쪽으로 길수록 수혜. 강도는 편집부 판단의 개념도다.</p>
+
+<div class="rank">
+<h3>① 가계부채·주택담보대출 <span class="badge neg">압박 최대</span></h3>
+<p class="meta">가계신용 2,019.8조원 · 0.25%p 인상 시 연 이자 부담 +1.8조원</p>
+<p>이번 인상이 가장 확실하게, 가장 넓게 때리는 곳이다. 2026년 2분기 가계신용 잔액은 <span class="num">2,019조 8,000억원</span>으로 <span class="key">사상 처음 2,000조원을 넘었다</span>. 분기 증가폭 25조 9,000억원은 4년 6개월 만의 최대다.</p>
+<p>금리가 0.25%포인트 오르면 전체 차주의 연간 이자 부담은 <span class="up">약 1조 8,000억원</span> 늘고, 1인당으로는 <span class="num">약 29만 6,000원</span>이 더 든다. 7월과 8월을 합치면 0.50%포인트, 1인당 약 59만원이다. 대출 5억원을 쓰는 가구라면 우리은행 함영진 부동산리서치랩장 추산으로 <b>0.25%포인트당 연 125만원</b>이 추가된다.</p>
+<p>다만 <b>반영에는 시차가 있다</b>. 변동금리 주담대의 기준인 코픽스는 7월분이 3.18%(전월 대비 +0.13%포인트)로 석 달 연속 올랐는데, <span class="key">8월 27일 인상분은 9월 중순 공시되는 8월 코픽스부터 본격 반영</span>된다. 즉 이번 인상의 청구서는 <b>추석 무렵부터</b> 날아온다.</p>
+<p class="takeaway">5대 은행 고정형 주담대는 이미 연 4.72~7.17%다. 기준금리가 3.50%까지 간다면 상단 8% 돌파가 거론된다.</p>
+</div>
+
+<div class="rank">
+<h3>② 부동산(주택) <span class="badge neg">압박 큼</span></h3>
+<p class="meta">서울 아파트 80주 연속 상승 · 거래는 5월 대비 반토막</p>
+<p>정책이 겨냥한 표적이다. 신 총재는 선제 대응이 <b>"최근 수도권 주택가격 완화에도 도움이 될 것"</b>이라고 명시했다. 그런데 시장은 아직 말을 듣지 않는다. 한국부동산원 8월 4주(조사기준일 24일) 서울 아파트 매매가는 <span class="up">+0.29%</span>로 전주(+0.22%)보다 오히려 <b>상승폭이 확대</b>됐다. 80주 연속 상승이다.</p>
+<p>대신 시장 안에서 갈라짐이 뚜렷하다. <span class="key">강북 14개구 +0.40% vs 강남 11개구 +0.20%</span>, 중랑 +0.56%·성북 +0.55%인 반면 <span class="down">서초구는 −0.05%로 하락 전환</span>했다. 그리고 거래가 마르고 있다. 서울 아파트 매매는 5월 8,945건에서 <span class="num">7월 4,502건</span>으로 <span class="down">49.7%</span> 줄었다. <b>가격은 오르는데 거래는 반토막인 비유동성 상승장</b>이다.</p>
+<p>전문가 진단은 '즉효 없음, 지효 있음'으로 모인다. KB국민은행 박원갑 수석부동산전문위원은 "수차례 금리 인상이 계속될 경우 올해 말이나 내년에는 집값 하락 요인이 될 수 있다"고 봤고, 함 랩장은 "거래 소강상태가 연말까지 이어지겠지만 당장 전면적 가격 하락으로 이어지기는 제한적"이라고 했다. 타격은 <b>대출 의존도가 높은 중저가 지역에 먼저</b> 온다는 견해가 공통적이다.</p>
+<p>전세도 움직인다. 전국 임대차 거래 중 월세 비중은 2021년 43.5%에서 <span class="num">2026년 1~5월 68.6%</span>까지 올라왔다. 전세대출 금리가 오르면 전세의 레버리지 매력이 떨어지고 월세 전환이 빨라진다.</p>
+</div>
+
+<div class="rank">
+<h3>③ 예금·현금성 자산 <span class="badge pos">수혜 큼</span></h3>
+<p class="meta">정기예금 991조원 · 7월 한 달 +35.5조원</p>
+<p>가장 확실한 수혜자는 <b>가만히 있는 돈</b>이다. 5대 은행 12개월 정기예금은 이미 연 3.2~3.3%, 저축은행 12개월 평균은 3.80%다. 8월 27일 인상분은 통상 1~2주 안에 수신금리에 반영되므로 <span class="key">9월이면 3%대 중후반 상품이 흔해진다</span>.</p>
+<p>자금은 이미 움직였다. 정기예금 잔액은 7월 말 984조 9,399억원에서 8월 6일 <span class="num">991조 4,441억원</span>으로 늘었고, 7월 한 달에만 35조 5,401억원이 들어왔다. 같은 기간 요구불예금은 56조 4,049억원, 투자자예탁금은 17조 4,986억원 빠져나갔다. <b>증시에서 은행으로 되돌아가는 역머니무브</b>가 진행 중이고, 이번 인상은 그 흐름에 힘을 보탠다.</p>
+</div>
+
+<div class="rank">
+<h3>④ 채권(국고채) <span class="badge pos">수혜 큼 · 단 역설적</span></h3>
+<p class="meta">3년물 3.755%(−6.1bp) · 10년물 4.238%(−5.0bp)</p>
+<p>여기서 이번 국면의 가장 흥미로운 장면이 나온다. <span class="key">금리를 올렸는데 채권금리는 전 구간 내렸다</span>. 8월 27일 국고채 3년물은 6.1bp 하락한 연 3.755%, 10년물은 5.0bp 하락한 연 4.238%로 마감했다. 2년물 −7.3bp, 20년물 −7.4bp로 오히려 장기물이 더 강했다.</p>
+<p>이유는 앞서 짚은 '사라진 한 문장'이다. 인상 발표 직후 약세로 출발했던 채권시장이 <b>기자간담회를 비둘기파적으로 받아들이며 강세로 돌아섰다</b>. 점도표 중간값이 3.25%에 그친 것도 "더 매파적일 수 있다"는 우려를 덜어냈다. 국고 3년물이 기준금리를 여전히 75bp 이상 웃돈다는 건, <b>시장이 추가 인상을 이미 상당 부분 가격에 넣어뒀다</b>는 뜻이기도 하다.</p>
+<p class="takeaway">"금리 인상 = 채권 손실"이라는 도식은 이번엔 성립하지 않았다. 채권값을 움직이는 건 오늘의 금리가 아니라 내일의 금리 경로다.</p>
+</div>
+
+<div class="rank">
+<h3>⑤ 원/달러·달러자산 <span class="badge neg">달러 보유자에겐 압박</span></h3>
+<p class="meta">한미 금리차 1.00%p → 0.75%p · 8/28 환율 1,373.3원</p>
+<p>한은이 3.00%로 올리면서 미 연준(3.50~3.75%)과의 역전폭은 <span class="key">0.75%포인트로 좁혀졌다. 3년 8개월 만의 최소</span>다. 금리차가 좁아지면 달러로 옮겨갈 이유가 줄어 원화에 우호적이다.</p>
+<p>신 총재는 환율을 직접 겨냥했다. "환율이 지난 6월 말에 비해서는 상당히 많이 하락하고 안정됐지만, 역사적으로 봤을 때 아직도 높은 수준"이라며 <b>원화가 더 강해지는 편이 물가 억제에 바람직하다</b>는 취지를 밝혔다. 즉 원화 강세는 부작용이 아니라 <b>의도된 정책 경로</b>다.</p>
+<p>실제 8월 27일 환율은 발표 직후 장중 1,377.30원까지 밀렸다가 1,380.90원(<span class="down">−3.9원</span>)에 마감했고, 8월 28일에는 <span class="num">1,373.3원</span>(<span class="down">−7.1원</span>)까지 내려왔다. 다만 이 흐름의 주된 동력은 금리차가 아니라 반도체 수출 대금과 수출기업의 달러 매도다. <b>달러 예금·미국 주식·달러 표시 자산을 든 투자자에게는 원화 환산 수익이 깎이는 구간</b>이다.</p>
+</div>
+
+<div class="rank">
+<h3>⑥ 보험·은행주 <span class="badge pos">수혜 있음 · 다만 통념과 다르게</span></h3>
+<p class="meta">8월 KRX보험 +14.33% vs KRX은행 +2.25% vs KRX증권 −2.88%</p>
+<p>"금리 오르면 은행주"라는 공식은 <b>이번 사이클에선 빗나갔다</b>. 8월 한 달 업종지수는 <span class="up">보험 +14.33%</span>, 은행 +2.25%, <span class="down">증권 −2.88%</span>였다. 인상 당일에도 KB금융은 <span class="up">+0.90%</span>로 코스피 상승률(+1.53%)에 못 미쳤고 이튿날엔 하락 전환했다.</p>
+<p>이유는 각 업종이 금리의 다른 부분을 먹기 때문이다. <span class="key">보험은 장기금리 상승이 장기부채 할인과 운용수익을 동시에 개선</span>해 최대 수혜를 본다. 8월 한화생명은 +26.24%였다. 은행은 순이자마진이 넓어지지만 폭이 작다 — 하나증권 추산으로 <b>25bp 인상은 이후 1년간 은행 평균 NIM을 약 2.5bp 올리는 데 그친다</b>. 증권은 거래대금이 줄어 금리 수혜가 상쇄된다.</p>
+<p>은행주에는 별도의 짐도 있다. 예금보험료와 고가 주택담보대출 위험가중치 규제 불확실성, 그리고 <b>2016년 이후 최고 수준인 대출 연체율</b>이다. 금리가 올라 마진이 넓어져도 떼이는 돈이 늘면 남는 게 없다.</p>
+</div>
+
+<div class="rank">
+<h3>⑦ 성장주·반도체·레버리지 <span class="badge neg">압박 있음</span></h3>
+<p class="meta">신용융자 잔고 30.9조원 · 코스피 8/28 6,788.88(−1.79%)</p>
+<p>금리는 미래 이익의 현재가치를 깎는다. 이익이 먼 미래에 몰린 성장주일수록 할인율 상승에 민감하다. 8월 27일 장면이 이를 압축한다. 엔비디아 호실적에 코스피는 <span class="key">장중 6,996.12까지 올라 '칠천피'를 눈앞에 뒀다가, 금통위 발표 직후 상승폭이 +0.64%까지 밀렸다</span>. 종가는 +1.53%로 회복했지만 <b>상승 316종목 대 하락 538종목</b>으로 체감은 하락장이었다. 이튿날 코스피는 <span class="down">6,788.88(−1.79%)</span>로 마감했다.</p>
+<p>더 직접적인 건 빚이다. 신용융자 잔고는 6월 24일 38조 6,000억원으로 사상 최고를 찍은 뒤 7월 급락장에서 28조 9,350억원까지 줄었다가, 8월 13일 <span class="num">30조 9,300억원</span>으로 다시 늘었다. 이 중 삼성전자 4조 8,800억원, SK하이닉스 4조 8,100억원으로 <b>반도체 두 종목이 9조 6,900억원</b>을 차지한다. 금리가 오르면 이 포지션의 이자 비용이 그대로 늘어난다.</p>
+</div>
+
+<div class="rank">
+<h3>⑧ 리츠·부동산 PF <span class="badge neg">압박 있음</span></h3>
+<p class="meta">리츠 조달금리 3.5~4.5% · PF 익스포저 169.8조원, 연체율 4.65%</p>
+<p>리츠는 금리에 양쪽으로 맞는다. 빌려온 돈의 이자가 오르고(조달금리 3.5~4.5%), 동시에 안전한 국고채 금리가 오르면 배당의 상대 매력이 떨어진다. 국내 상장 리츠 23개는 이미 연초 대비 <span class="down">−7.7%</span> 수준이었고, 4월 제이알글로벌리츠의 담보인정비율 약정 위반 사태 이후 리츠 주가가 18% 급락한 기억도 남아 있다.</p>
+<p>부동산 PF는 규모가 다르다. 2026년 3월 말 금융권 익스포저 <span class="num">169조 8,000억원</span>, 연체율 <span class="up">4.65%</span>, 유의·부실우려 여신 16조 4,000억원이다. 다만 업계에서는 "기준금리 인상이 곧바로 PF 시장 전반의 위기로 이어진다고 보기는 어렵다"며, <b>사업성이 부족한 개별 현장의 조달비용이 빠르게 뛰는 선별의 문제</b>로 본다.</p>
+</div>
+
+<div class="rank">
+<h3>⑨ 내수·소비·자영업 관련주 <span class="badge neg">압박 보통</span></h3>
+<p class="meta">자영업 대출 1,095.5조원 · 취약차주 연체율 12.68%</p>
+<p>이번 인상의 가장 아픈 지점일 수 있다. 한국은행 금융안정보고서 기준 자영업 대출은 <span class="num">1,095조 5,000억원</span>, 취약차주 연체율은 <span class="up">12.68%</span>다. 사업자대출을 보유한 약 360만 사업체 중 <b>14%가 이미 폐업</b>했다. 기준금리 0.25%포인트 인상은 자영업자 이자부담을 연 1조 8,000억원가량 늘리는 것으로 추정된다.</p>
+<p>소비 심리도 방향을 틀었다. 8월 소비자심리지수는 <span class="num">104.5</span>로 전월 대비 2.3포인트 내리며 <b>4개월 만에 하락 전환</b>했다. 실제로 8월 27일 유통(<span class="down">−2.36%</span>)과 음식료·담배(<span class="down">−1.56%</span>)는 코스피가 오른 날에 하락했다.</p>
+<p>KDI 진단이 이 구도를 정확히 짚는다. 반도체 초호황이 성장률을 3%대로 끌어올렸지만 <span class="key">"경제성장의 혜택이 민간소비나 고용 같은 다수 가계의 소득으로는 아직 충분히 확산되지 않고" 있다</span>. 성장률은 반도체가 만들고, 금리 인상 청구서는 가계와 자영업이 받는다.</p>
+</div>
+
+<div class="rank">
+<h3>⑩ 원자재·가상자산 <span class="badge neg">간접 · 영향 작음</span></h3>
+<p class="meta">국제 금 $4,587.21 · KRX 금 203,010원/g · 비트코인 약 $80,700</p>
+<p>순위 마지막에 둔 이유는 <b>인과가 가장 약하기 때문</b>이다. 한국의 기준금리는 달러로 매겨지는 국제 원자재 가격에 사실상 영향을 주지 못한다. 국내 투자자에게 열리는 통로는 오직 하나, <b>원화 강세를 통한 원화 환산 가격 하락</b>이다. 실제로 8월 28일 국제 금은 온스당 4,587.21달러(<span class="down">−0.31%</span>)였는데 KRX 금은 그램당 203,010원으로 <span class="down">−1.28%</span>, 환율이 내린 만큼 국내 금값이 더 크게 빠졌다.</p>
+<p>가상자산은 한 걸음 더 멀다. 비트코인은 8월 25일 3개월 만에 8만 달러를 회복했지만 <span class="key">이 반등의 동력은 한은이 아니라 미 재무부 국채 바이백 확대와 달러 약세</span>다. 실제로 한은 인상과 국내 가상자산 시장을 직접 연결한 분석은 확인되지 않았다. 참고할 구조 변화는 따로 있다 — <b>김치프리미엄이 사라졌다</b>. 8월 27일 비트코인 김프는 +0.01%였고, 올해 221일 중 123일이 역프리미엄으로 <b>2020년 이후 처음 역프 일수가 정프 일수를 넘어섰다</b>.</p>
+</div>
+
+<h2>③ 세 가지 오해 — 이번엔 통하지 않은 공식들</h2>
+
+<div class="callout red">
+<b>⚠️ "금리 인상 = 은행주 급등"</b><br>
+인상 당일 KB금융 +0.90%로 지수(+1.53%)에 미달, 이튿날 하락 전환. 8월 업종지수는 <span class="key">보험 +14.33%가 은행 +2.25%를 압도</span>했다. 이번 사이클의 수혜는 은행이 아니라 보험이다.
+</div>
+
+<div class="callout red">
+<b>⚠️ "금리 인상 = 채권금리 상승"</b><br>
+국고 3년물 −6.1bp, 10년물 −5.0bp로 <b>전 구간 하락</b>했다. 의결문에서 "인상 기조" 문구가 빠지고 점도표 중간값이 3.25%에 그치자 시장은 긴축의 끝을 먼저 봤다.
+</div>
+
+<div class="callout red">
+<b>⚠️ "8월 27일 급등주는 금리 수혜주"</b><br>
+그날 HD현대일렉트릭 +12.01%, 효성중공업 +10.08%, LS일렉트릭 +8.93%가 뛴 건 금리가 아니라 <b>트럼프 행정부의 외국산 전력기기 관련 조치</b> 때문이다. 같은 날 오른 종목을 금리와 엮으면 인과를 잘못 읽는다.
+</div>
+
+<h2>④ 앞으로 — 3대 시나리오</h2>
+
+<div class="scen">
+<h3>A. 한 번 더, 그리고 멈춤 (연말 3.25%) <span class="prob">48%</span></h3>
+<p>금통위 점도표의 중간값이 그리는 경로다. 21개 점 중 3.25%가 10개로 가장 많았고, 신 총재도 "6개월간 회의가 네 번 있는데 지금보다 한 번 더 인상한다는 의미"라고 해설했다. State Street Global Markets는 10월 동결 후 물가·부동산 상황에 따라 11월 인상을 전망하며 최종금리를 3.25%로 봤다.</p>
+<p><b>확인 신호</b> — 8·9월 소비자물가와 2분기 명목 국내총생산(GDP). 신 총재가 10월 회의 전 점검하겠다고 직접 지목한 지표다.</p>
+</div>
+
+<div class="scen">
+<h3>B. 3.50%까지 (추가 두 번) <span class="prob">30%</span></h3>
+<p>점도표에서 3.50%를 찍은 점도 6개였다. 근원물가가 2.6%에서 더 오르거나 수도권 집값 상승세가 꺾이지 않으면 열리는 경로다. 이 시나리오에서는 <b>고정형 주담대 상단 8% 돌파</b>가 현실이 되고, 가계·자영업 압박이 본격화된다. 씨티는 10월 추가 인상 가능성을 제시했다.</p>
+<p><b>확인 신호</b> — 서울 아파트 주간 상승률이 +0.3%대를 지속하는지, 9월 코픽스 상승폭, 가계대출 증가세.</p>
+</div>
+
+<div class="scen">
+<h3>C. 3.00%에서 종료 (동결 전환) <span class="prob">22%</span></h3>
+<p>점도표에서 동결(3.00%)을 찍은 점도 5개 있었다. 원화가 계속 강세를 보여 수입물가를 눌러주고, 소비심리 하락(8월 104.5)과 자영업 연체율이 실물 부담으로 확인되면 한은이 여기서 멈출 수 있다. 채권시장이 이미 이 가능성을 일부 가격에 넣은 상태다.</p>
+<p><b>확인 신호</b> — 원/달러가 1,350원대로 더 내려가는지, 소비·고용 지표 추가 악화, 미 연준의 9월 결정.</p>
+</div>
+
+<p class="caption">위 확률은 편집부 판단의 개념도이며 매수·매도 신호가 아닙니다. 세 시나리오의 확률 합계는 100%입니다.</p>
+
+<h2>⑤ 대응 원칙</h2>
+<ul class="body-list">
+<li><b>대출은 '금리'가 아니라 '구조'부터 보라</b> — 이번 인상분은 9월 중순 코픽스부터 반영된다. 변동금리 차주라면 지금이 고정 전환·대환·금리인하요구권을 따져볼 시점이다. 다만 <b>고정으로 갈아타는 비용(중도상환수수료)과 남은 만기</b>를 계산에 넣어야 한다 — 시나리오 A·C가 합쳐 70%라면 인상은 많아야 한 번 더다.</li>
+<li><b>현금에도 이자가 붙는 시대를 활용하라</b> — 예금 3%대 중후반이 눈앞이다. 방향을 확신하기 어려운 구간에서 <b>'기다리는 것'이 손해가 아닌 선택지</b>가 됐다. 다만 예금자보호 한도와 저축은행 건전성은 별도로 확인할 것.</li>
+<li><b>빚으로 산 포지션부터 점검하라</b> — 신용융자 30.9조원 중 9.7조원이 반도체 두 종목에 몰려 있다. 금리 인상은 이 이자를 직접 올린다. 방향이 맞아도 <b>진폭에 강제 청산될 수 있다는 것</b>이 7월 급락장의 교훈이다.</li>
+<li><b>업종은 '금리 수혜'가 아니라 '금리의 어느 부분을 먹는가'로 나눠라</b> — 보험은 장기금리, 은행은 예대마진, 증권은 거래대금이다. 세 업종이 같은 금리 뉴스에 정반대로 움직인 이유다.</li>
+<li><b>부동산은 가격이 아니라 거래량을 보라</b> — 서울 아파트는 80주 연속 올랐지만 거래는 5월 대비 반토막이다. 가격 지수가 꺾이기 전에 거래량이 먼저 말한다. 특히 <b>대출 의존도가 높은 중저가 지역</b>의 매물 증가 여부가 선행 신호다.</li>
+<li><b>달러 자산은 환율 구간을 나눠 대응하라</b> — 한미 금리차 축소는 원화에 우호적이고 한은은 원화 강세를 원한다고 명시했다. 달러 자산 보유자에게는 역풍 구간이지만, 세 시나리오의 확률이 고르게 흩어져 있으니 한 번에 움직이기보다 나눠서.</li>
+<li><b>가상자산·원자재를 한은 뉴스로 매매하지 마라</b> — 이 자산군의 가격은 연준·미 재정·달러가 결정한다. 한국 금리 인상을 근거로 진입·청산하는 건 인과를 잘못 잡은 거래다.</li>
+</ul>
+
+<h2>⑥ 핵심 체크리스트</h2>
+<ul class="body-list">
+<li><b>9월 2일(수)</b> — 8월 소비자물가: 신 총재가 10월 회의 전 보겠다고 지목한 첫 지표 <b>(발표 전)</b></li>
+<li><b>9월 15일(화) 전후</b> — 8월 코픽스 공시: 이번 인상분이 변동금리 주담대에 실리는 시점 <b>(발표 전)</b></li>
+<li><b>9월 15~16일</b> — 미 FOMC: 동결 시 한미 금리차 0.75%포인트 유지 <b>(발표 전)</b></li>
+<li><b>10월 금통위</b> — 추가 인상 여부. 신 총재는 "모든 회의는 라이브"라고 못 박았다 <b>(발표 전)</b></li>
+<li><b>매주 목요일</b> — 한국부동산원 주간 아파트 가격: 서울 상승폭 둔화 여부가 정책 성패의 척도</li>
+<li><b>상시</b> — 신용융자 잔고, 5대 은행 수신·대출금리 고시, 국고 3년물이 3.75%선을 지키는지</li>
+</ul>
+
+<div class="callout">
+<b>💡 종합 — 지금은 어떤 국면인가</b><br>
+이번 인상은 <span class="key">반도체가 만든 3.3% 성장률을 근거로, 가계와 자영업이 청구서를 받는 구조</span>다. 한은은 '호미'를 들었다고 했고 시장은 '가래는 없다'고 읽었다 — 그래서 금리를 올린 날 채권값이 올랐다. 자산 배치의 기준은 단순하다. <b>빚이 있는 쪽은 시차를 두고 아프고, 현금이 있는 쪽은 즉시 유리해진다.</b> 그리고 그 시차의 첫 마디는 9월 중순 코픽스다.
+</div>
+
+<div class="disc">
+⚠️ 본 기사는 정보 제공용 분석이며 특정 종목·자산의 매수·매도 권유가 아닙니다. 편집자는 라이선스를 보유한 투자자문가가 아니며, 투자의 최종 판단과 책임은 투자자 본인에게 있습니다. 자산군 순위·영향 강도·시나리오 확률은 편집부 판단의 개념도이며, 10월 금융통화위원회·미 FOMC 등 미확정 이벤트의 결과에 따라 달라질 수 있습니다. 본문 수치는 한국은행·한국부동산원·금융투자협회·전국은행연합회·금융감독원·KDI 및 머니투데이·서울경제·헤럴드경제·파이낸셜뉴스·아주경제·한국경제·이투데이·Businesskorea·CoinMarketCap·TradingEconomics 보도와 INVEST STORY 자동 티커(2026-08-28 15:45 KST)를 종합한 것입니다. 금통위 의결문 인용은 언론 보도를 통한 재인용이며, 정확한 전문은 한국은행 보도자료를 확인하시기 바랍니다.
+</div>
+
+<p class="homelink"><a href="/">← 다른 리포트 보러가기</a></p>
+</div>
+</body>
+</html>
