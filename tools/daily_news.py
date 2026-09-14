@@ -2231,6 +2231,31 @@ def main():
         print("[daily_news] 휴장일 — 생성하지 않고 종료")
         return 0
 
+    # ── 조기 중복 가드(2026-09-14 신설) ──────────────────────────────────
+    # 같은 날짜·모드 기사가 이미 있으면 '여기서' 끝낸다.
+    # 기존에는 이 판정이 AI 생성 '뒤'에 있어서, 재실행할 때마다 기사를 다 만들어
+    # 놓고 버렸다(2026-09-08 10:28 런: 5분 22초를 쓰고 폐기). Anthropic 크레딧과
+    # KIS 일일 호출량이 그대로 새던 지점이라 생성 앞으로 끌어올린다.
+    # 뒤쪽 가드는 FORCE_REGEN=1 일 때의 '폴백 보호'만 남긴다.
+    _fname_early = f'{now:%Y-%m-%d}-{mode}.html'
+    _abs_early = os.path.join(NEWS_DIR, _fname_early)
+    if os.path.exists(_abs_early):
+        try:
+            with open(_abs_early, encoding="utf-8") as _ef:
+                _prev_early = _ef.read()
+        except Exception:
+            _prev_early = ""
+        if "INVEST_STORY_LOCKED" in _prev_early:
+            print(f"[lock] newsletters/{_fname_early} 잠금(LOCKED) — 생성 전에 종료합니다"
+                  f"(수동 확정본 보호 · AI 호출 없음).")
+            return 0
+        if os.environ.get("FORCE_REGEN", "").strip() != "1":
+            print(f"[guard] newsletters/{_fname_early} 이미 존재 — 중복/지연 재실행으로 판단해 "
+                  f"생성 전에 종료합니다(AI 호출·KIS 조회 없음). "
+                  f"강제로 덮어쓰려면 FORCE_REGEN=1 환경변수를 주세요.")
+            return 0
+        print(f"[guard] newsletters/{_fname_early} 존재하나 FORCE_REGEN=1 — 재생성을 진행합니다.")
+
     items, asof = load_ticker()
     if not items:
         sys.stderr.write("[daily_news] ticker.json 비어있음 — update_ticker.py를 먼저 실행하세요\n")
@@ -2317,16 +2342,9 @@ def main():
         except Exception:
             prev = None
     if prev is not None:
-        # (1) 잠금: <!-- INVEST_STORY_LOCKED --> 가 있으면 자동발행이 절대 덮어쓰지 않음(수동 확정본 보호)
-        if "INVEST_STORY_LOCKED" in prev:
-            print(f"[lock] {relfile} 잠금(LOCKED) — 재생성·manifest 갱신을 건너뜁니다(수동 확정본 보호).")
-            return 0
-        force = os.environ.get("FORCE_REGEN", "").strip() == "1"
-        # (2) 멱등성: 같은 날짜·모드 파일이 이미 있으면 중복/지연 재실행으로 보고 건너뜀
-        if not force:
-            print(f"[guard] {relfile} 이미 존재 — 중복/지연 재실행으로 판단해 건너뜁니다. "
-                  f"강제로 덮어쓰려면 FORCE_REGEN=1 환경변수를 주세요.")
-            return 0
+        # (1)(2) 잠금·멱등성 판정은 위쪽 '조기 중복 가드'로 이동했다(2026-09-14).
+        #        생성 전에 끊어야 AI 크레딧이 새지 않는다. 여기까지 왔다는 건
+        #        파일이 없었거나 FORCE_REGEN=1 이라는 뜻이다.
         # (3) 폴백 보호: 강제 재생성이어도 AI 실패(짧은 템플릿)면 더 긴 기존 파일을 보존
         if (not used_ai) and len(htmlstr) < len(prev):
             print(f"[guard] 강제 재생성이나 AI 작성 실패(템플릿) — 더 긴 기존 파일을 보존합니다: {relfile}")
