@@ -1,5 +1,5 @@
 {
-  "asof": "2026-09-15 06:56 KST (자동·야후+Twelve Data+KRX금)",
+  "asof": "2026-09-15 07:00 KST (자동·야후+Twelve Data+KRX금)",
   "items": [
     {
       "name": "KOSPI",
@@ -16,7 +16,7 @@
     {
       "name": "USD/KRW",
       "value": "1,346.8",
-      "change": "+5.8",
+      "change": "+5.7",
       "dir": "up"
     },
     {
@@ -51,8 +51,8 @@
     },
     {
       "name": "국제 금",
-      "value": "$4,298.96",
-      "change": "+0.01%",
+      "value": "$4,299.01",
+      "change": "+0.02%",
       "dir": "up"
     }
   ]
