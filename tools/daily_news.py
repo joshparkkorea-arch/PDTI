@@ -1934,6 +1934,18 @@ def _g_num(s):
 
 # 실데이터 종가와 본문 수치의 허용 편차. 잠정↔확정 종가 괴리(통상 0.01% 미만)는
 # 흡수하되, 전혀 다른 지수 수치(오보)는 걸러내는 폭으로 잡는다.
+# 장중 고·저가처럼 '종가가 아닌' 수치를 가리키는 수식어(사고#35, 2026-09-23 신설).
+# 이 표현이 수치 주변에 있으면 종가 화이트리스트와 달라도 정상 서술로 본다.
+# 배경: 9/23 마감호가 리드의 '장중 7,153.99'(종가 7,080.92 대비 +1.03%) 때문에
+#       근접 검사에 걸려 미발행됐다. 기사 자체는 정확했고 검산기가 맥락을 몰랐다.
+INTRADAY_MARKERS = (
+    "장중", "고가", "저가", "최고", "최저", "고점", "저점", "터치", "찍", "돌파",
+    "한때", "장 초반", "장초반", "장 막판", "개장", "오전", "오후", "상단", "하단",
+    "연고점", "연저점", "52주", "까지", "치솟", "웃돌", "밑돌", "상회", "하회", "되돌",
+)
+# 장중 수치라도 종가에서 이만큼 넘게 벗어나면 오기로 보고 그대로 차단한다.
+INTRADAY_TOL = 0.05   # 5%
+
 IDX_TOL = 0.003    # 0.30%  (코스피 6,900 기준 약 21포인트)
 
 
@@ -1988,6 +2000,9 @@ def verify_index_figures(htmlstr, items, asof):
         for name, kws in (("KOSPI", ("코스피", "KOSPI")), ("KOSDAQ", ("코스닥", "KOSDAQ"))):
             if name not in auth:
                 continue
+            # 주의: 아래 장중 예외 판정에 쓰는 종가(ap)는 반드시 '이 지수'의 값이어야 한다.
+            # (A) 검사 루프의 ap를 그대로 쓰면 마지막 지수(KOSDAQ) 값이 새어 들어온다.
+            ap = auth[name][0]
             for kw in kws:
                 for m in re.finditer(re.escape(kw), lead):
                     seg = lead[m.end(): m.end() + 90]
@@ -1999,6 +2014,17 @@ def verify_index_figures(htmlstr, items, asof):
                         if cv is None or cv < 50:
                             continue
                         if not any(abs(cv - w) / max(w, 1e-9) <= 0.005 for w in white):
+                            # 장중 고·저가 서술이면 종가와 달라도 정상이다(사고#35).
+                            # 수치 앞뒤(지수 키워드 이전 포함)를 넓게 보고 수식어를 찾는다.
+                            _abs = m.end() + cm.start()
+                            _ctx = lead[max(0, _abs - 40): _abs + len(cm.group(1)) + 20]
+                            if (any(_k in _ctx for _k in INTRADAY_MARKERS)
+                                    and abs(cv - ap) / max(ap, 1e-9) <= INTRADAY_TOL):
+                                issues.append(
+                                    f"(경고) {name}: 리드의 '{kw}' 인근 수치 {cm.group(1)} — "
+                                    f"장중 고·저가 표현으로 판단해 검산 제외"
+                                    f"(종가 대비 {abs(cv - ap) / ap * 100:.2f}%)")
+                                continue
                             issues.append(f"{name}: 리드의 '{kw}' 인근 수치 {cm.group(1)} — 실데이터와 불일치")
     # (C) 방향 검사 — 리드의 지수 등락률 부호가 실데이터와 반대면 차단(사고#12).
     # 등락 크기가 실데이터와 사실상 같은데 방향만 뒤집힌 경우만 잡는다.
