@@ -26,6 +26,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 NEWS_DIR = os.path.join(ROOT, "newsletters")
 MANIFEST = os.path.join(ROOT, "manifest.json")
 KIMCHI_HISTORY = os.path.join(ROOT, "data", "kimchi_history.json")
+FX_HISTORY = os.path.join(ROOT, "data", "fx_history.json")
 TICKER   = os.path.join(ROOT, "ticker.json")
 KST = timezone(timedelta(hours=9))
 KIS_BASE = "https://openapi.koreainvestment.com:9443"
@@ -1112,6 +1113,221 @@ def update_kimchi_history(crypto, mode):
         sys.stderr.write(f"[kimchi] 히스토리 갱신 경고(무시): {e}\n")
         return _load_kimchi_history()
 
+# ──────────────────────────────────────────────────────────────────
+# 원·달러 레벨 맥락 (사고#37, 2026-10-13 신설)
+# 배경: 10/13 개장호가 1,334.5원(+0.4, +0.03%)을 "고환율 부담 — 원화 약세 지속"으로
+#   적고 증시 리스크 요인 ③번으로 올렸다. 실제로는 8/19~10/13 범위
+#   1,333.7~1,397.8원의 사실상 최하단, 두 달간 63원(-4.5%) 내린 '원화 강세' 흐름이었다.
+#   원인은 AI에게 넘기는 데이터가 '오늘 값'과 '전일 대비' 둘뿐이라 레벨 판단 재료가
+#   아예 없었던 것. 10월 발행분을 전수 대조하니 일간 부호가 +면 무조건 '약세',
+#   -면 무조건 '강세'로 100% 기계적으로 붙고 있었다.
+# 대응: 발행분마다 환율을 히스토리에 쌓고, 60거래일 범위 내 위치와 20거래일 변화율을
+#   프롬프트에 함께 넘긴다. 레벨을 판단할 재료를 주는 것이 1차 방어고,
+#   verify_fx_narrative()의 경고가 2차 방어다(비차단 — 미발행을 만들지 않는다).
+# ──────────────────────────────────────────────────────────────────
+
+def _load_fx_history():
+    """data/fx_history.json 로드. 없으면 []."""
+    try:
+        with open(FX_HISTORY, encoding="utf-8") as f:
+            h = json.load(f)
+        return h if isinstance(h, list) else []
+    except Exception:
+        return []
+
+
+def update_fx_history(items, mode):
+    """이번 발행분 USD/KRW를 히스토리에 추가(같은 날짜·모드는 교체), 180일 롤링."""
+    try:
+        it = (items or {}).get("USD/KRW") or {}
+        v = _g_num(it.get("value"))
+        if v is None or v <= 0:
+            return _load_fx_history()
+        today = datetime.now(KST).strftime("%Y-%m-%d")
+        hist = [e for e in _load_fx_history()
+                if not (e.get("date") == today and e.get("mode") == mode)]
+        hist.append({"date": today, "mode": mode, "value": round(v, 2)})
+        hist.sort(key=lambda e: (e.get("date", ""), 0 if e.get("mode") == "open" else 1))
+        cutoff = (datetime.now(KST) - timedelta(days=180)).strftime("%Y-%m-%d")
+        hist = [e for e in hist if e.get("date", "") >= cutoff]
+        os.makedirs(os.path.dirname(FX_HISTORY), exist_ok=True)
+        with open(FX_HISTORY, "w", encoding="utf-8") as f:
+            json.dump(hist, f, ensure_ascii=False, indent=1)
+        print(f"[daily_news] 환율 히스토리 갱신: {len(hist)}건 (180일 롤링)")
+        return hist
+    except Exception as e:
+        sys.stderr.write(f"[fx] 히스토리 갱신 경고(무시): {e}\n")
+        return _load_fx_history()
+
+
+FX_BAND_LOW = 25.0     # 60거래일 범위에서 이 백분위 이하면 '하단권'
+FX_BAND_HIGH = 75.0    # 이 백분위 이상이면 '상단권'
+FX_FLAT_PCT = 0.10     # 일간 등락률이 이 미만(%)이면 '보합' — 약세/강세 단정 금지
+FX_TREND_PCT = 0.30    # 20거래일 변화율이 이 이상이면 추세 방향이 섰다고 본다
+
+
+def fx_context(hist=None, items=None):
+    """원·달러 레벨을 '추세 안에서' 읽을 재료를 만든다.
+
+    일간 등락 부호 하나로 고환율/저환율을 판정하는 사고#37을 막기 위한 것이다.
+    반환: dict(cur, band, pct60, lo60, hi60, lo20, hi20, chg5, chg20, days, line)
+          또는 재료가 모자라면 None(그 경우 호출자는 기존 동작 그대로).
+    """
+    try:
+        hist = _load_fx_history() if hist is None else hist
+        rows = [e for e in hist if isinstance(e, dict) and _g_num(e.get("value")) is not None]
+        if len(rows) < 10:
+            return None
+        rows.sort(key=lambda e: (e.get("date", ""), 0 if e.get("mode") == "open" else 1))
+        cur = _g_num((items or {}).get("USD/KRW", {}).get("value"))
+        if cur is None:
+            cur = _g_num(rows[-1]["value"])
+        if cur is None:
+            return None
+
+        dates = sorted({e.get("date", "") for e in rows})
+        def _win(n):
+            keep = set(dates[-n:])
+            return [_g_num(e["value"]) for e in rows if e.get("date") in keep]
+        w60, w20 = _win(60), _win(20)
+        if not w60 or not w20:
+            return None
+        lo60, hi60 = min(w60 + [cur]), max(w60 + [cur])
+        lo20, hi20 = min(w20 + [cur]), max(w20 + [cur])
+        span = hi60 - lo60
+        pct60 = 50.0 if span < 1e-9 else (cur - lo60) / span * 100.0
+
+        def _back(n):
+            """n거래일 전 마지막 값(없으면 None)."""
+            if len(dates) <= n:
+                return None
+            d = dates[-(n + 1)]
+            vs = [_g_num(e["value"]) for e in rows if e.get("date") == d]
+            return vs[-1] if vs else None
+        def _chg(n):
+            b = _back(n)
+            return None if not b else (cur - b) / b * 100.0
+        chg5, chg20 = _chg(5), _chg(20)
+
+        band = ("하단권" if pct60 <= FX_BAND_LOW
+                else "상단권" if pct60 >= FX_BAND_HIGH else "중단권")
+        n60 = min(60, len(dates))
+        # 추세 방향 — 5거래일·20거래일 중 뚜렷한 쪽을 따른다(둘이 엇갈리면 '혼조').
+        downs = [c for c in (chg5, chg20) if c is not None and c <= -FX_TREND_PCT]
+        ups = [c for c in (chg5, chg20) if c is not None and c >= FX_TREND_PCT]
+        trend = ("원화 강세 방향" if downs and not ups
+                 else "원화 약세 방향" if ups and not downs
+                 else "혼조" if (downs and ups) else "방향성 약함")
+
+        parts = [f"현재 {cur:,.1f}원",
+                 f"최근 {n60}거래일 범위 {lo60:,.1f}~{hi60:,.1f}원 중 "
+                 f"하단에서 {pct60:.1f}% 지점({band})",
+                 f"20거래일 범위 {lo20:,.1f}~{hi20:,.1f}원"]
+        if chg5 is not None:
+            parts.append(f"5거래일 {chg5:+.2f}%")
+        if chg20 is not None:
+            parts.append(f"20거래일 {chg20:+.2f}%")
+        parts.append(f"추세 {trend}")
+        return {"cur": cur, "band": band, "pct60": pct60, "lo60": lo60, "hi60": hi60,
+                "lo20": lo20, "hi20": hi20, "chg5": chg5, "chg20": chg20,
+                "trend": trend, "days": n60, "line": " · ".join(parts)}
+    except Exception as e:
+        sys.stderr.write(f"[fx] 레벨 맥락 계산 경고(무시): {e}\n")
+        return None
+
+
+# '레벨'을 주장하는 표현 — 범위 내 위치로만 참·거짓이 갈린다.
+FX_LEVEL_HIGH = ("고환율", "환율 고공", "높은 환율")
+FX_LEVEL_LOW = ("저환율", "낮은 환율")
+FX_LEVEL_STRICT = 10.0   # 레벨 주장은 범위 하위/상위 10% 밖으로 벗어났을 때만 모순으로 본다
+
+# '방향(추세)'을 단정하는 표현.
+# 중요 — 단어만 보면 안 된다. "원화 약세는 수출주에 유리하다"(일반론),
+# "원화 약세가 심화될 경우"(가정)처럼 사실 주장이 아닌 쓰임이 훨씬 많다.
+# 그래서 '방향어 + 지속/이어지/계속/심화/확대'가 붙은 **단정형**만 잡고,
+# 바로 뒤에 '경우/되면/하면' 같은 가정 어미가 오면 제외한다.
+_FX_ASSERT_TAIL = r"\s*(?:가|이|는|을|를)?\s*(?:지속|이어지|이어가|계속|심화|확대)(?!.{0,6}(?:경우|되면|하면|진다면|한다면|수도))"
+FX_TREND_UP_PAT = r"(원화 약세|원화 가치 하락|원화 값 하락|환율 상승|환율 급등|환율 오름세)" + _FX_ASSERT_TAIL
+FX_TREND_DOWN_PAT = r"(원화 강세|원화 가치 상승|원화 값 상승|환율 하락|환율 급락|환율 내림세)" + _FX_ASSERT_TAIL
+
+# 가정·시나리오 절은 사실 주장이 아니다. "원화 약세 지속 시 외국인 매도",
+# "하락 시나리오: 고환율·고금리 장기화" 같은 문장까지 잡으면 경고가 쓸모없어진다.
+FX_COND_MARKERS = ("시나리오", "경우", " 시 ", " 시,", " 시:", "하면", "되면",
+                   "다면", "가정", "가령", "전환되면", "라면")
+_FX_CLAUSE_SPLIT = re.compile(
+    r"(?:[.!?。]\s+|\n+|\s*[①②③④⑤⑥⑦⑧⑨⑩]\s*|\s*[▲▼]\s*|\s+[\-\u2013\u2014]\s+)")
+
+
+def _fx_plain(htmlstr):
+    """검사용 평문화 — 블록 태그는 줄바꿈으로 바꿔 절 경계를 살린다."""
+    t = re.sub(r"<\s*/\s*(?:p|div|td|th|tr|li|h[1-6]|section|br)\s*/?>", "\n",
+               htmlstr or "", flags=re.I)
+    t = re.sub(r"<[^>]+>", " ", t)
+    return re.sub(r"[ \t]+", " ", t)
+
+
+def _fx_assertive(txt):
+    """가정·시나리오 절을 걷어낸 '사실 주장' 절만 돌려준다."""
+    return [c for c in _FX_CLAUSE_SPLIT.split(txt)
+            if c and not any(k in c for k in FX_COND_MARKERS)]
+
+
+
+def verify_fx_narrative(htmlstr, items, fxc=None):
+    """환율 서술이 '레벨'·'추세' 사실과 어긋나는지 점검한다(사고#37).
+
+    두 종류의 주장을 각각 다른 기준으로 본다.
+      · 레벨 주장('고환율'·'저환율') → 60거래일 범위 안에서의 위치로 판정
+      · 추세 주장('원화 약세'·'환율 하락') → 5·20거래일 변화율로 판정
+    10/13 사례는 두 가지를 동시에 틀렸다(하단권인데 '고환율', 5거래일 -1.17%인데 '약세 지속').
+
+    **비차단**이다. ok=False여도 발행을 막지 않고 경고만 남긴다. 사고#34·#35에서
+    과한 게이트가 '맞는 기사'를 미발행시킨 전례가 있어, 여기서는 알리는 데까지만 한다.
+    표현을 넓게 잡아 '약세 우려가 진정됐다' 같은 문장도 걸릴 수 있으나,
+    경고일 뿐이므로 놓치는 것보다 낫다고 본다.
+    """
+    issues = []
+    fxc = fx_context(items=items) if fxc is None else fxc
+    if not fxc:
+        return True, ["(경고) 환율 히스토리가 부족해 환율 서술 점검 생략"]
+    txt = _fx_plain(htmlstr)
+    facts = _fx_assertive(txt)
+    rng = (f"{fxc['cur']:,.1f}원은 최근 {fxc['days']}거래일 범위 "
+           f"{fxc['lo60']:,.1f}~{fxc['hi60']:,.1f}원의 하단 {fxc['pct60']:.1f}% 지점"
+           f"({fxc['band']})")
+    c5 = "—" if fxc.get("chg5") is None else f"{fxc['chg5']:+.2f}%"
+    c20 = "—" if fxc.get("chg20") is None else f"{fxc['chg20']:+.2f}%"
+
+    # ① 레벨 주장 ↔ 범위 내 위치 (하위/상위 10% 밖일 때만 — 절대 레벨로는 1,380원도
+    #    '고환율'이라 부를 수 있으므로, 명백한 최저·최고권에서만 모순으로 본다)
+    hi_w = sorted({w for c in facts for w in FX_LEVEL_HIGH if w in c})
+    lo_w = sorted({w for c in facts for w in FX_LEVEL_LOW if w in c})
+    if hi_w and fxc["pct60"] <= FX_LEVEL_STRICT:
+        issues.append(f"레벨 서술 모순: 본문이 '{', '.join(hi_w)}'라고 썼으나 {rng}입니다")
+    if lo_w and fxc["pct60"] >= 100.0 - FX_LEVEL_STRICT:
+        issues.append(f"레벨 서술 모순: 본문이 '{', '.join(lo_w)}'라고 썼으나 {rng}입니다")
+
+    # ② 추세 단정 ↔ 5·20거래일 변화율
+    up_w = sorted({m.group(0).strip() for c in facts for m in re.finditer(FX_TREND_UP_PAT, c)})
+    dn_w = sorted({m.group(0).strip() for c in facts for m in re.finditer(FX_TREND_DOWN_PAT, c)})
+    if up_w and fxc.get("trend") == "원화 강세 방향":
+        issues.append(f"추세 서술 모순: 본문이 '{', '.join(up_w)}'라고 단정했으나 "
+                      f"5거래일 {c5}, 20거래일 {c20}로 원화 강세 방향입니다")
+    if dn_w and fxc.get("trend") == "원화 약세 방향":
+        issues.append(f"추세 서술 모순: 본문이 '{', '.join(dn_w)}'라고 단정했으나 "
+                      f"5거래일 {c5}, 20거래일 {c20}로 원화 약세 방향입니다")
+
+    # ③ 사실상 보합인데 방향을 단정 — 경고까지만
+    it = (items or {}).get("USD/KRW") or {}
+    dchg = _g_num(it.get("change"))
+    if dchg is not None and fxc["cur"]:
+        dpct = abs(dchg) / fxc["cur"] * 100.0
+        if dpct < FX_FLAT_PCT and (up_w or dn_w):
+            issues.append(f"(경고) 일간 변동 {dchg:+.1f}원({dpct:.3f}%)은 보합 수준인데 "
+                          f"본문이 '{', '.join(up_w + dn_w)}'로 방향을 단정했습니다")
+    return (not [i for i in issues if not i.startswith("(경고)")]), issues
+
+
 def svg_line_kimchi(hist):
     """코인별 김치 프리미엄 추이 선 그래프(최근 90일). 데이터 2건 미만이면 None."""
     hist = [e for e in (hist or []) if e.get("prem")]
@@ -1347,6 +1563,10 @@ def _ai_user_prompt(mode, date_kst, items, asof, vol, rank_up, rank_dn, flows, u
                      "함께 표기하고, 단위·통화가 다르므로 두 값을 직접 비교하지 마세요. 국제 금은 선물이 "
                      "아니라 현물이므로 '금 선물'로 쓰지 마세요. 안전자산 선호·달러 흐름 맥락에서 한 문단 "
                      "이내로 다루면 충분합니다.)")
+    _fxc = fx_context(items=items)
+    if _fxc:
+        lines.append("USD/KRW 레벨 맥락(고환율/저환율·원화 강세/약세는 반드시 이 범위 안에서 판단): "
+                     + _fxc["line"])
     if vol:
         lines.append("거래대금 상위(한국): " + "; ".join(
             f'{x["name"]}({x.get("code","")}) 현재가 {x["price"]} 등락 {x["ctrt"]}% 거래대금 {x.get("val","—")}' for x in vol))
@@ -1440,11 +1660,12 @@ def _ai_user_prompt(mode, date_kst, items, asof, vol, rank_up, rank_dn, flows, u
         "12) 지수의 '급등/급락/약세/강세 출발(개장 기사)' 또는 '마감(마감 기사)'은 반드시 '금일 시초가' 또는 '금일 종가'의 실제 부호로만 판단해 적습니다. '전일 종가'의 등락률을 오늘의 개장/마감 등락률로 절대 재사용하지 마세요(예: 전일 종가 +5.42%를 '오늘 +5.42% 급등 출발'로 쓰면 안 됨). 표와 본문에서 '전일 종가'와 '금일 시초가/종가'를 항상 구분해 명시하고, 금일 시초가 데이터가 없으면 방향(급등/급락 등)을 단정하지 마세요.\n"
         "13) ===TITLE===(제목)과 ===SUBTITLE===(부제)에는 어떤 HTML 태그도 넣지 마세요. .up/.down/.key/.num 등 강조 span은 본문(===BODY===)에만 사용하고, 제목·부제는 순수 텍스트(숫자·기호는 그대로)로만 작성합니다.\n"
         "14) 기업·시장 이벤트 일정(실적발표·상장·공시·FOMC 등)의 '날짜'는 web_search로 교차 확인한 뒤에만 구체적으로 적습니다. ① 날짜에 요일을 병기할 때는 실제 달력과 일치하는지 반드시 확인하세요(날짜-요일 불일치는 자동 검산에 걸려 발행이 차단됩니다). ② 이벤트의 '성격'을 혼동하지 마세요 — 예: 상장일을 실적발표일로, 잠정실적 발표를 확정실적 발표로 쓰면 안 됩니다. ③ 날짜가 출처로 확인되지 않으면 구체 날짜·요일을 지어내지 말고 '이달 말 예정' 등으로 순화합니다.\n"
-        "15) 미국 국채금리(10년물·30년물)가 실데이터로 제공되면 지수·지표표에 수록하고, 장기금리 레벨(예: 10년물 4.5%·30년물 5%)이 성장주·반도체 밸류에이션에 갖는 의미를 시황 분석에서 맥락화합니다. 금리 '레벨'에는 +/− 부호를 붙이지 않고, 일간 변동은 %p 또는 bp 단위로 표기합니다.\n\n"
-        + ("16) [개장호 편집 원칙] 개장 브리핑의 주인공은 간밤(주말·연휴 후엔 주말간) 미국 증시입니다. 제목·부제·요약·리드 문단은 모두 미국 지수(나스닥·S&P500·다우)·대장주(엔비디아 등) 등락이나 간밤 최대 이슈를 앞세우고, 전일 한국 증시 마감(코스피·코스닥 급등/급락 수치)을 앞머리 주어로 삼지 마세요. 전일 국내 마감은 오늘 국내 증시에 미칠 영향의 맥락으로만 뒤에서 짧게 다룹니다.\n\n" if mode == "open" else "")
+        "15) 미국 국채금리(10년물·30년물)가 실데이터로 제공되면 지수·지표표에 수록하고, 장기금리 레벨(예: 10년물 4.5%·30년물 5%)이 성장주·반도체 밸류에이션에 갖는 의미를 시황 분석에서 맥락화합니다. 금리 '레벨'에는 +/− 부호를 붙이지 않고, 일간 변동은 %p 또는 bp 단위로 표기합니다.\n"
+        "16) [환율 서술 규칙] 원·달러 환율의 '고환율/저환율', '원화 약세/강세'를 그날의 전일 대비 부호 하나로 판단하지 마세요. 위에 'USD/KRW 레벨 맥락'이 제공됐다면 그 60거래일 범위 내 위치와 20거래일 변화율을 근거로 적고 본문에도 그 맥락을 함께 밝히세요(제공되지 않았다면 고/저·강세/약세 단정 자체를 피하고 수치만 적으세요)(예: '두 달래 최저권', '20거래일 1.6% 하락'). ① 일간 변동률이 ±0.1% 미만이면 '보합'으로 쓰고 방향을 단정하지 마세요. ② 레벨이 범위 하단권(하위 25% 이내)인데 '고환율 부담'·'원화 약세 지속'이라고 쓰면 안 되고, 상단권인데 '원화 강세'라고 쓰면 안 됩니다. ③ 환율을 증시 리스크 요인으로 올릴 때는 '레벨(비싼가)'과 '방향(오르는가)'을 구분해 적고, 하루 0.03% 같은 미세 변동을 리스크 요인으로 세우지 마세요.\n\n"
+        + ("17) [개장호 편집 원칙] 개장 브리핑의 주인공은 간밤(주말·연휴 후엔 주말간) 미국 증시입니다. 제목·부제·요약·리드 문단은 모두 미국 지수(나스닥·S&P500·다우)·대장주(엔비디아 등) 등락이나 간밤 최대 이슈를 앞세우고, 전일 한국 증시 마감(코스피·코스닥 급등/급락 수치)을 앞머리 주어로 삼지 마세요. 전일 국내 마감은 오늘 국내 증시에 미칠 영향의 맥락으로만 뒤에서 짧게 다룹니다.\n\n" if mode == "open" else "")
         + f"{AI_CLASSES}\n"
         + (("[긴급 정정 지시 — 최우선 준수] " + correction_note + "\n\n") if correction_note else "")
-        + "[발행 전 자가점검] 출력하기 전에 본문을 스스로 점검하세요: ⑴ 모든 등락률(%)이 .up/.down으로 감싸졌는가, ⑵ 핵심 키워드·사건명에 .key 밑줄이 (기사 전체 6개 이상) 충분히 들어갔는가, ⑶ 중요한 절대수치(지수레벨·금액)에 .num을 썼는가, ⑷ 각 섹션이 .takeaway로 마무리됐는가, ⑸ '역사적·역대급·사상 최대' 등 미검증 최상급을 쓰지 않았는가(규칙 11), ⑹ '급등/약세 출발' 등 방향을 '전일 종가'가 아닌 '금일 시초가/종가'의 실제 부호로 적었는가(규칙 12), ⑺ 제목·부제에 HTML 태그(<span> 등)를 넣지 않았는가(규칙 13), ⑻ 본문의 모든 '날짜(요일)' 병기가 실제 달력과 일치하고 이벤트 성격(실적발표/상장/공시 등)을 원 출처 그대로 적었는가(규칙 14), ⑼ 확정 데이터로 제공된 미국 국채금리(10년물·30년물)를 지수·지표표와 시황 분석에 반영했는가(규칙 15). 하나라도 어긋나면 고쳐 다시 작성한 뒤 출력하세요.\n\n"
+        + "[발행 전 자가점검] 출력하기 전에 본문을 스스로 점검하세요: ⑴ 모든 등락률(%)이 .up/.down으로 감싸졌는가, ⑵ 핵심 키워드·사건명에 .key 밑줄이 (기사 전체 6개 이상) 충분히 들어갔는가, ⑶ 중요한 절대수치(지수레벨·금액)에 .num을 썼는가, ⑷ 각 섹션이 .takeaway로 마무리됐는가, ⑸ '역사적·역대급·사상 최대' 등 미검증 최상급을 쓰지 않았는가(규칙 11), ⑹ '급등/약세 출발' 등 방향을 '전일 종가'가 아닌 '금일 시초가/종가'의 실제 부호로 적었는가(규칙 12), ⑺ 제목·부제에 HTML 태그(<span> 등)를 넣지 않았는가(규칙 13), ⑻ 본문의 모든 '날짜(요일)' 병기가 실제 달력과 일치하고 이벤트 성격(실적발표/상장/공시 등)을 원 출처 그대로 적었는가(규칙 14), ⑼ 확정 데이터로 제공된 미국 국채금리(10년물·30년물)를 지수·지표표와 시황 분석에 반영했는가(규칙 15). ⑽ 환율의 고/저·강세/약세를 일간 부호가 아니라 제공된 60거래일 범위 위치와 20거래일 변화율로 판단했는가(규칙 16). 하나라도 어긋나면 고쳐 다시 작성한 뒤 출력하세요.\n\n"
         "[출력 형식] 아래 형식 '그대로' 출력하세요. 각 구분선(===...===)을 정확히 쓰고 그 사이에 내용만 넣으세요. "
         "마크다운 코드펜스(```)나 형식 밖의 다른 말은 절대 쓰지 마세요. body_html은 위 클래스만 쓴 순수 HTML입니다.\n"
         "===TITLE===\n"
@@ -2310,6 +2531,7 @@ def main():
     crypto = fetch_crypto_movers(os.environ.get("TWELVEDATA_API_KEY", "").strip())
     print(f"[daily_news] 암호화폐={'O' if crypto else 'X'}")
     update_kimchi_history(crypto, mode)
+    update_fx_history(items, mode)   # 사고#37: 레벨 판단 재료 축적
     if token:
         if mode == "close":
             topcap = fetch_topcap_codes(token, key, sec, 100)   # 시총 상위 100위 집합
@@ -2402,6 +2624,24 @@ def main():
                 "본문 KOSPI/KOSDAQ 수치가 KIS/ticker 실데이터와 불일치. "
                 "확인 후 재실행하거나, 의도된 경우 ALLOW_UNVERIFIED=1 로 우회.\n")
             return 2
+
+    # ── 환율 서술 점검(사고#37, 2026-10-13) — 경고만, 발행은 막지 않는다 ─────
+    # 10/13 개장호가 두 달래 최저권(1,334.5원)을 "고환율 부담·원화 약세 지속"으로 적고
+    # 증시 리스크 요인으로 올린 건에 대한 2차 방어. 1차 방어는 프롬프트에 넘기는
+    # 'USD/KRW 레벨 맥락'이다. 여기서 발행을 중단시키지 않는 이유는 사고#34·#35에서
+    # 과한 게이트가 '맞는 기사'를 미발행시킨 전례가 있기 때문이다.
+    if used_ai:
+        try:
+            _fxok, _fxiss = verify_fx_narrative(htmlstr, items)
+            for _msg in _fxiss:
+                print(f"[verify] {_msg}")
+            if not _fxok:
+                print("::warning title=환율 서술 점검::"
+                      + " / ".join(m for m in _fxiss if not m.startswith("(경고)")))
+                sys.stderr.write("[WARN-FX] 환율 서술이 레벨·추세와 어긋납니다 — "
+                                 "발행은 진행하되 본문 확인 필요(사고#37).\n")
+        except Exception as _e:
+            sys.stderr.write(f"[fx] 환율 서술 점검 경고(무시): {_e}\n")
 
     # ── 날짜-요일 검산 게이트(사고#14: SK하이닉스 일정 오보 재발 방지) ─────────
     # 본문의 '날짜(요일)' 병기가 실제 달력과 불일치하면 일정 자체를 지어냈을
