@@ -1,5 +1,5 @@
 {
-  "asof": "2026-11-07 08:30 KST (자동·KIS+야후+KRX금)",
+  "asof": "2026-11-07 08:56 KST (자동·야후+KRX금)",
   "items": [
     {
       "name": "KOSPI",
@@ -10,7 +10,7 @@
     {
       "name": "KOSDAQ",
       "value": "644.27",
-      "change": "-5.03%",
+      "change": "-9.89%",
       "dir": "down"
     },
     {
