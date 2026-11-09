@@ -810,7 +810,7 @@ def _krw_big(won):
     return f"{v:,.0f}원"
 
 
-def fetch_crypto_movers(td_key=None):
+def fetch_crypto_movers(td_key=None, fx_fallback=None):
     """업비트(원화)·바이낸스(USDT)·USD/KRW로 주요 코인 시세 + 김치 프리미엄 계산.
     공개 시장 데이터(인증/키 불필요)만 사용. 업비트=api.upbit.com,
     바이낸스=data-api.binance.vision(지역차단 회피). 실패 시 None(섹션 자동 생략)."""
@@ -820,16 +820,39 @@ def fetch_crypto_movers(td_key=None):
         ("ETH",  "이더리움", "KRW-ETH",  "ETHUSDT"),
         ("XRP",  "리플",    "KRW-XRP",  "XRPUSDT"),
     ]
-    # 1) USD/KRW 기준환율 (Twelve Data — 이미 보유한 키 재사용, 별도 Secret 불필요)
-    usdkrw = None
+    # 1) USD/KRW 기준환율 — 사고#39(2026-11-09): Twelve Data 단일 소스가 9/8부터 조용히 실패해
+    #    김프 칸이 두 달간 '—'로 나가고 김프 추이 그래프가 9/7에서 멈췄다.
+    #    → Twelve Data → 야후(KRW=X, 24시간 호가) → ticker.json USD/KRW 순으로 폴백하고,
+    #      어느 소스를 썼는지 표 주석에 남긴다. 셋 다 실패하면 ::warning::으로 알린다.
+    usdkrw = None; fx_src = None
     if td_key:
         try:
             k = urllib.parse.quote(td_key)
             j = _fmp_get(f"https://api.twelvedata.com/price?symbol=USD/KRW&apikey={k}")
             if isinstance(j, dict) and j.get("price"):
-                usdkrw = float(j["price"])
+                usdkrw = float(j["price"]); fx_src = "Twelve Data"
+            else:
+                sys.stderr.write(f"[crypto] Twelve Data USD/KRW 응답에 price 없음: {str(j)[:160]}\n")
         except Exception as e:
-            sys.stderr.write(f"[crypto] USD/KRW 환율 실패: {e}\n")
+            sys.stderr.write(f"[crypto] USD/KRW 환율(Twelve Data) 실패: {e}\n")
+    if usdkrw is None:
+        try:
+            q = yahoo_chart_quote("KRW=X")
+            if q and 900 < float(q.get("price") or 0) < 2500:
+                usdkrw = float(q["price"]); fx_src = "야후"
+        except Exception as e:
+            sys.stderr.write(f"[crypto] USD/KRW 환율(야후) 실패: {e}\n")
+    if usdkrw is None and fx_fallback:
+        try:
+            v = float(str(fx_fallback).replace(",", "").replace("원", "").strip())
+            if 900 < v < 2500:
+                usdkrw = v; fx_src = "시세판"
+        except Exception:
+            pass
+    if usdkrw is None:
+        print("::warning title=김프 계산 불가::USD/KRW 기준환율을 Twelve Data·야후·ticker 어디서도 얻지 못했습니다 — 김프 칸이 '—'로 발행됩니다(사고#39).")
+    elif fx_src != "Twelve Data":
+        print(f"[crypto] USD/KRW 기준환율 폴백 사용: {fx_src} {usdkrw:,.2f}")
     # 2) 업비트 원화 시세 (공개 quotation, 인증 불필요)
     up = {}
     try:
@@ -892,7 +915,9 @@ def fetch_crypto_movers(td_key=None):
         })
     if not rows:
         return None
-    return {"usdkrw": usdkrw, "rows": rows, "headline": headline}
+    if usdkrw and not any(r.get("prem") for r in rows if r.get("sym") != "USDT"):
+        print("::warning title=김프 계산 불가::기준환율은 있으나 바이낸스 시세가 없어 코인 김프를 계산하지 못했습니다(사고#39).")
+    return {"usdkrw": usdkrw, "fx_src": fx_src, "rows": rows, "headline": headline}
 
 
 def inject_stock_tables(body, token, key, sec):
@@ -986,7 +1011,8 @@ def inject_crypto_table(body, crypto):
             f'<td>{prem_cell}</td>'
             "</tr>")
     fx = crypto.get("usdkrw")
-    fxnote = (f"기준환율 USD/KRW ₩{float(fx):,.2f} · " if fx else "")
+    fxnote = (f"기준환율 USD/KRW ₩{float(fx):,.2f}"
+              + (f"({crypto.get('fx_src')})" if crypto.get("fx_src") else "") + " · " if fx else "")
     table = (
         '<div class="src-cat">암호화폐 시세 · 김치 프리미엄</div>'
         '<table class="grid"><thead><tr>'
@@ -1273,6 +1299,27 @@ def _fx_assertive(txt):
 
 
 
+def verify_outlook_blocks(htmlstr):
+    """사고#39: 모든 섹션에 '현재·전망·트리거' 박스가 있는지 점검.
+    섹션(<section class="sec">) 단위로 잘라 div.outlook 안에 ol-now 1개 + 시나리오 li 2개 이상 + trg 2개 이상인지 본다.
+    반환: (ok, [문제 섹션 메시지])"""
+    try:
+        body = htmlstr
+        parts = re.split(r'<section class="sec"', body)
+        issues = []
+        for chunk in parts[1:]:
+            hm = re.search(r'<h2[^>]*>(.*?)</h2>', chunk, re.S)
+            name = re.sub(r'<[^>]+>', '', hm.group(1)).strip() if hm else "(제목 없음)"
+            boxes = re.findall(r'<div class="outlook">(.*?)</ul>\s*</div>', chunk, re.S)
+            good = [b for b in boxes if 'ol-now' in b and len(re.findall(r'<li', b)) >= 2
+                    and len(re.findall(r'class="trg"', b)) >= 2]
+            if not good:
+                issues.append(f"'{name}' 섹션에 현재·전망·트리거 박스 없음/불완전")
+        return (not issues), issues
+    except Exception as e:
+        return True, [f"(경고) outlook 점검 오류: {e}"]
+
+
 def verify_fx_narrative(htmlstr, items, fxc=None):
     """환율 서술이 '레벨'·'추세' 사실과 어긋나는지 점검한다(사고#37).
 
@@ -1385,18 +1432,44 @@ def svg_line_kimchi(hist):
         if e["date"] not in seen:
             seen.append(e["date"])
     stepn = max(1, (len(seen) + 5) // 6)
-    for d in seen[::stepn]:
+    _lab = seen[::stepn]
+    if seen and seen[-1] not in _lab:
+        _lab.append(seen[-1])
+    _px = []
+    for d in _lab:
         xx = X(_d.datetime.strptime(d, "%Y-%m-%d").toordinal() + 0.5)
-        if padL <= xx <= W - padR:
+        if d != seen[-1] and any(abs(xx - q) < 44 for q in _px):
+            continue   # 사고#39: 라벨 겹침 방지(최신 날짜는 항상 표시)
+        _px.append(xx)
+        if padL <= xx <= W - padR + 12:
             p.append(f'<text x="{xx:.1f}" y="{H-padB+22:.1f}" font-size="10.5" fill="#666666" text-anchor="middle">{d[5:].replace("-","/")}</text>')
-    # 코인별 선
+    # 코인별 선 — 사고#39: 7일 넘는 수집 공백은 선을 이어 그리지 않는다(가짜 추세 방지)
+    gaps = []
+    for a, b in zip(hist, hist[1:]):
+        if _x_of(b) - _x_of(a) > 7:
+            gaps.append((a["date"], b["date"]))
     for sym, col in _KIMCHI_COLORS:
-        pts = [(X(_x_of(e)), Y(e["prem"][sym])) for e in hist if sym in e["prem"]]
-        if len(pts) < 2:
+        es = [e for e in hist if sym in e["prem"]]
+        if not es:
             continue
-        path = " ".join(f"{x:.1f},{y:.1f}" for x, y in pts)
-        p.append(f'<polyline points="{path}" fill="none" stroke="{col}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>')
-        p.append(f'<circle cx="{pts[-1][0]:.1f}" cy="{pts[-1][1]:.1f}" r="3.2" fill="{col}"/>')
+        segs, cur = [], [es[0]]
+        for a, b in zip(es, es[1:]):
+            if _x_of(b) - _x_of(a) > 7:
+                segs.append(cur); cur = [b]
+            else:
+                cur.append(b)
+        segs.append(cur)
+        for sg in segs:
+            pts = [(X(_x_of(e)), Y(e["prem"][sym])) for e in sg]
+            if len(pts) >= 2:
+                path = " ".join(f"{x:.1f},{y:.1f}" for x, y in pts)
+                p.append(f'<polyline points="{path}" fill="none" stroke="{col}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>')
+        lx_, ly_ = X(_x_of(es[-1])), Y(es[-1]["prem"][sym])
+        p.append(f'<circle cx="{lx_:.1f}" cy="{ly_:.1f}" r="3.2" fill="{col}"/>')
+    if gaps:
+        g0, g1 = gaps[-1]
+        p.append(f'<text x="{W-padR}" y="58" font-size="11" fill="#8a8a8a" text-anchor="end">'
+                 f'{g0[5:].replace("-","/")}~{g1[5:].replace("-","/")} 수집 누락 구간은 선을 끊어 표시</text>')
     p.append(f'<text x="{padL-32}" y="{H-10}" font-size="10" font-weight="700" fill="#C9A654">INVEST STORY</text>')
     p.append(f'<text x="{W-padR}" y="{H-10}" font-size="9.5" fill="#9a9a9a" text-anchor="end">출처: 업비트·바이낸스 자체 집계</text>')
     p.append('</svg>')
@@ -1530,6 +1603,12 @@ AI_CLASSES = (
     " - <span class=\"key\">핵심 구절</span> : 꼭 읽혀야 할 핵심 키워드·사건명·핵심 수치 구절에 골드 밑줄 강조. 한 문단에 1~3개까지 적극적으로(단, 한 문단을 통째로 칠하는 남발은 금지).\n"
     " - <span class=\"num\">8,203.84</span> : 본문 속 중요한 '절대 수치'(지수 레벨·금액·종목수 등)를 세리프로 환기. 등락률(%)에는 쓰지 말 것 — 그건 up/down.\n"
     " - <p class=\"takeaway\">섹션 핵심 한 줄</p> : 섹션마다 가장 중요한 결론 1문장을 콜아웃 박스로(섹션당 최대 1개, 보통 섹션 끝에).\n"
+    " - 현재·전망·트리거 박스(모든 섹션 필수, takeaway 바로 앞):\n"
+    "   <div class=\"outlook\"><div class=\"ol-h\">현재 · 전망 · 트리거</div>"
+    "<p class=\"ol-now\"><b>📍 현재</b> 지금 상태를 수치와 함께 1~2문장</p>"
+    "<ul><li class=\"s1\"><b>① 상방</b> 전망 내용(가능하면 가격·레벨 범위)<span class=\"trg\">이 시나리오로 가고 있음을 알려줄 확인 신호(가격선·지표·일정 KST)</span></li>"
+    "<li class=\"s2\"><b>② 기본</b> …<span class=\"trg\">…</span></li>"
+    "<li class=\"s3\"><b>③ 하방</b> …<span class=\"trg\">…</span></li></ul></div>\n"
     " - <strong>…</strong> : 부차(약) 강조. key/num에 해당 안 되는 일반 강조용.\n"
     " - <p class=\"small\">…</p> : 작은 보조설명·출처\n"
     " - <hr class=\"rule\"> : 구분선\n"
@@ -1626,7 +1705,7 @@ def _ai_user_prompt(mode, date_kst, items, asof, vol, rank_up, rank_dn, flows, u
             " · 위 '암호화폐' 확정 수치를 토대로 당일 암호화폐 시장을 '수급'과 '뉴스' 중심으로 분석하는 섹션을 작성하세요(2~3문단). 단순 시세 나열이 아니라 '왜 이렇게 움직였는가'를 풀어야 합니다.\n"
             " · [수급] ① 비트코인·테더 김치 프리미엄의 부호·의미(+ = 국내 매수세 과열/역프 = 해외 대비 저평·차익 유인), ② 업비트 24h 거래대금으로 본 국내 거래 활발도, ③ web_search로 확인되는 글로벌 수급 — 미국 현물 비트코인·이더리움 ETF 순유입/유출, 기관·고래 동향, 스테이블코인 수급 흐름을 엮어 해석하세요.\n"
             " · [뉴스] 당일(또는 간밤) 암호화폐 시장을 움직인 주요 뉴스 — 규제·정책, 매크로(금리·달러), 거래소·온체인·주요 프로젝트 이슈 등을 web_search로 확인해 출처와 함께 1~3건 정리하세요(직접 인용 금지, 자신의 말로 요약).\n"
-            " · 마지막에 향후 관전 포인트를 한 줄로(예정 이벤트는 KST 병기). 단정적 매수·매도 권유는 금지.\n"
+            " · 섹션 끝(takeaway 앞)에 '현재·전망·트리거' 박스(div.outlook)를 반드시 넣으세요 — 📍현재(비트코인·이더리움 가격, 김프, ETF 자금 흐름), ①상방·②기본·③하방 시나리오(비트코인 가격 범위), 각 시나리오의 트리거(가격선·ETF 순유입/유출·김프·예정 이벤트 KST). 단정적 매수·매도 권유는 금지.\n"
             " · 표는 직접 쓰지 말고, 섹션 본문 안 독립된 한 줄로 {{CRYPTO_TABLE}} 토큰을 넣으면 코드가 업비트·바이낸스·김프 표를 자동으로 채웁니다(절대 <p> 안에 넣지 말 것).\n"
             " · 확정 수치(가격·김프·거래대금)는 위 제공값만 사용하고 임의 생성 금지. ETF 자금·뉴스 등 web_search로 확인한 사실은 반드시 출처를 답니다. 김프/등락 부호 색상은 상승=빨강(up)/하락=파랑(down) 원칙.\n"
         )
@@ -1639,6 +1718,7 @@ def _ai_user_prompt(mode, date_kst, items, asof, vol, rank_up, rank_dn, flows, u
         "요구사항:\n"
         "1) 모든 수치·뉴스·주장에 출처를 명시하세요(web_search로 확인한 매체명+가능하면 링크). 확인 안 된 사실은 쓰지 마세요.\n"
         "2) 전망/주가 예상은 반드시 '근거 → 결론' 순서로, 시나리오(상승/하락/횡보 등)와 트리거를 함께. 단정적 매수·매도 권유는 금지.\n"
+        "2-1) [필수 · 사고#39] 모든 섹션은 끝(takeaway 바로 앞)에 '현재·전망·트리거' 박스(div.outlook, 위 클래스 목록의 형식 그대로)를 1개 넣습니다. ① 📍현재: 그 섹션 주제의 지금 상태를 확정 수치와 함께. ② 전망: ①상방·②기본·③하방 3개 시나리오(가능하면 지수·가격 범위). ③ 트리거: 각 시나리오마다 '이런 신호가 나오면 그 시나리오'라는 확인 신호 — 가격선, 지표 결과, 수급 전환, 예정 일정(KST 병기). 종목 심층 분석 섹션은 종목마다 박스를 1개씩 넣습니다. 트리거의 일정·날짜는 web_search로 확인된 것만 쓰고, 가격선은 제공 수치 기준으로 편집부가 정한 확인선임을 전제로 씁니다.\n"
         "3) 뉴스는 직접 인용 대신 자신의 말로 요약(저작권). 출처만 표기.\n"
         "4) 분량은 충실하게(읽을거리 있는 데일리 뉴스레터 수준). 과장·미확인 추측 금지.\n"
         "5) 한국 증시 색상 관례: 상승=빨강(class=\"up\"), 하락=파랑(class=\"down\").\n"
@@ -1665,7 +1745,7 @@ def _ai_user_prompt(mode, date_kst, items, asof, vol, rank_up, rank_dn, flows, u
         + ("17) [개장호 편집 원칙] 개장 브리핑의 주인공은 간밤(주말·연휴 후엔 주말간) 미국 증시입니다. 제목·부제·요약·리드 문단은 모두 미국 지수(나스닥·S&P500·다우)·대장주(엔비디아 등) 등락이나 간밤 최대 이슈를 앞세우고, 전일 한국 증시 마감(코스피·코스닥 급등/급락 수치)을 앞머리 주어로 삼지 마세요. 전일 국내 마감은 오늘 국내 증시에 미칠 영향의 맥락으로만 뒤에서 짧게 다룹니다.\n\n" if mode == "open" else "")
         + f"{AI_CLASSES}\n"
         + (("[긴급 정정 지시 — 최우선 준수] " + correction_note + "\n\n") if correction_note else "")
-        + "[발행 전 자가점검] 출력하기 전에 본문을 스스로 점검하세요: ⑴ 모든 등락률(%)이 .up/.down으로 감싸졌는가, ⑵ 핵심 키워드·사건명에 .key 밑줄이 (기사 전체 6개 이상) 충분히 들어갔는가, ⑶ 중요한 절대수치(지수레벨·금액)에 .num을 썼는가, ⑷ 각 섹션이 .takeaway로 마무리됐는가, ⑸ '역사적·역대급·사상 최대' 등 미검증 최상급을 쓰지 않았는가(규칙 11), ⑹ '급등/약세 출발' 등 방향을 '전일 종가'가 아닌 '금일 시초가/종가'의 실제 부호로 적었는가(규칙 12), ⑺ 제목·부제에 HTML 태그(<span> 등)를 넣지 않았는가(규칙 13), ⑻ 본문의 모든 '날짜(요일)' 병기가 실제 달력과 일치하고 이벤트 성격(실적발표/상장/공시 등)을 원 출처 그대로 적었는가(규칙 14), ⑼ 확정 데이터로 제공된 미국 국채금리(10년물·30년물)를 지수·지표표와 시황 분석에 반영했는가(규칙 15). ⑽ 환율의 고/저·강세/약세를 일간 부호가 아니라 제공된 60거래일 범위 위치와 20거래일 변화율로 판단했는가(규칙 16). 하나라도 어긋나면 고쳐 다시 작성한 뒤 출력하세요.\n\n"
+        + "[발행 전 자가점검] 출력하기 전에 본문을 스스로 점검하세요: ⑴ 모든 등락률(%)이 .up/.down으로 감싸졌는가, ⑵ 핵심 키워드·사건명에 .key 밑줄이 (기사 전체 6개 이상) 충분히 들어갔는가, ⑶ 중요한 절대수치(지수레벨·금액)에 .num을 썼는가, ⑷ 각 섹션이 .takeaway로 마무리됐는가, ⑸ '역사적·역대급·사상 최대' 등 미검증 최상급을 쓰지 않았는가(규칙 11), ⑹ '급등/약세 출발' 등 방향을 '전일 종가'가 아닌 '금일 시초가/종가'의 실제 부호로 적었는가(규칙 12), ⑺ 제목·부제에 HTML 태그(<span> 등)를 넣지 않았는가(규칙 13), ⑻ 본문의 모든 '날짜(요일)' 병기가 실제 달력과 일치하고 이벤트 성격(실적발표/상장/공시 등)을 원 출처 그대로 적었는가(규칙 14), ⑼ 확정 데이터로 제공된 미국 국채금리(10년물·30년물)를 지수·지표표와 시황 분석에 반영했는가(규칙 15). ⑽ 환율의 고/저·강세/약세를 일간 부호가 아니라 제공된 60거래일 범위 위치와 20거래일 변화율로 판단했는가(규칙 16). ⑾ 모든 섹션 끝에 '현재·전망·트리거' 박스(div.outlook: 📍현재 + ①②③ 시나리오 + 시나리오별 트리거)가 있는가(규칙 2-1). 하나라도 어긋나면 고쳐 다시 작성한 뒤 출력하세요.\n\n"
         "[출력 형식] 아래 형식 '그대로' 출력하세요. 각 구분선(===...===)을 정확히 쓰고 그 사이에 내용만 넣으세요. "
         "마크다운 코드펜스(```)나 형식 밖의 다른 말은 절대 쓰지 마세요. body_html은 위 클래스만 쓴 순수 HTML입니다.\n"
         "===TITLE===\n"
@@ -1828,6 +1908,15 @@ ART_CSS = """<style>
  main .key{font-weight:700;color:var(--ink);background:linear-gradient(transparent 60%,rgba(201,166,84,.32) 60%);padding:0 1px;border-radius:1px}
  main .num{font-family:var(--serif);font-weight:700;color:var(--navy);font-variant-numeric:tabular-nums}
  main strong{font-weight:700;color:var(--ink);letter-spacing:-.01em}
+ .outlook{margin:16px 0 10px;border:1px solid var(--line);border-top:3px solid var(--navy);border-radius:6px;background:#fff;padding:12px 14px 6px}
+ .outlook .ol-h{font-size:11.5px;font-weight:800;color:var(--gold-d);letter-spacing:.08em;margin-bottom:6px}
+ .outlook .ol-now{margin:0 0 8px;font-size:14.5px;line-height:1.65}
+ .outlook ul{list-style:none;margin:0;padding:0}
+ .outlook li{margin:0 0 8px;padding:7px 10px;border-left:3px solid var(--line);background:#F8F9FB;border-radius:0 5px 5px 0;font-size:14.5px;line-height:1.65;word-break:keep-all}
+ .outlook li.s1{border-left-color:#2E7D5B} .outlook li.s2{border-left-color:var(--navy)} .outlook li.s3{border-left-color:#B5462F}
+ .outlook li b{margin-right:4px}
+ .outlook .trg{display:block;font-size:13px;color:#4a5562;margin-top:3px}
+ .outlook .trg:before{content:"🎯 트리거 · ";font-weight:700;color:var(--ink)}
  p.takeaway{margin:16px 0 6px;padding:12px 15px;background:#FBF7EE;border-left:4px solid var(--gold);border-radius:0 7px 7px 0;font-family:var(--serif);font-weight:700;color:var(--navy);font-size:15px;line-height:1.62}
  table.grid{width:100%;border-collapse:collapse;margin:6px 0 18px;font-size:13.5px;border:1px solid var(--line);table-layout:fixed}
  table.grid th{background:var(--navy-bar);color:#fff;font-weight:700;text-align:left;padding:9px 10px;font-size:12.5px;vertical-align:top}
@@ -2528,7 +2617,8 @@ def main():
         us_movers = combine_us_focus(_base, _news, 5)   # 거래대금4 + 픽1(겹치면 거래대금5위)
         print(f"[daily_news] 미국주목종목={'O' if us_movers else 'X'} "
               f"(거래대금4+픽1, 픽={_news.get('symbol') if _news else '-'})")
-    crypto = fetch_crypto_movers(os.environ.get("TWELVEDATA_API_KEY", "").strip())
+    crypto = fetch_crypto_movers(os.environ.get("TWELVEDATA_API_KEY", "").strip(),
+                                 fx_fallback=(items.get("USD/KRW") or {}).get("value"))
     print(f"[daily_news] 암호화폐={'O' if crypto else 'X'}")
     update_kimchi_history(crypto, mode)
     update_fx_history(items, mode)   # 사고#37: 레벨 판단 재료 축적
@@ -2571,6 +2661,42 @@ def main():
         print("[daily_news] ANTHROPIC_API_KEY 없음 — 템플릿 모드(숫자 위주)")
 
     used_ai = htmlstr is not None
+    # ── 현재·전망·트리거 박스 점검(사고#39, 2026-11-09) ─────────────────
+    # 운영자 지시: "앞으로 항상 현재 상태와 전망, 전망에 대한 트리거도 함께".
+    # 빠진 섹션이 있으면 그 목록을 정정 지시로 되먹여 1회만 재작성한다.
+    # 재작성으로도 못 채우면 발행은 하되 ::warning::으로 남긴다(과한 게이트로 미발행된 사고#34·#35 교훈).
+    if used_ai and os.environ.get("SKIP_OUTLOOK_CHECK", "").strip() != "1":
+        try:
+            _olok, _oliss = verify_outlook_blocks(htmlstr)
+            for _m in _oliss:
+                print(f"[verify] {_m}")
+            if not _olok:
+                print("[verify] 현재·전망·트리거 박스 누락 — 1회 자동 재생성 시도(사고#39)")
+                _note_o = ("직전 초안에서 다음 섹션에 '현재·전망·트리거' 박스(div.outlook)가 빠졌거나 불완전했습니다: "
+                           + " / ".join(_oliss)
+                           + " — 모든 섹션 끝(takeaway 바로 앞)에 규칙 2-1 형식의 박스를 넣으세요. "
+                             "그 외 본문 구성·수치·품질은 그대로 유지합니다.")
+                _mo = compose_with_claude(api_key, mode, now, items, asof, vol, rank_up, rank_dn,
+                                          flows, us_movers, crypto, correction_note=_note_o)
+                for _fn, _args in ((inject_stock_tables, (token, key, sec)),
+                                   (inject_crypto_table, (crypto,)),
+                                   (inject_charts, (mode, items, rank_up, rank_dn, vol, us_movers, crypto)),
+                                   (inject_section_cards, ())):
+                    try:
+                        _mo["body_html"] = _fn(_mo["body_html"], *_args)
+                    except Exception as _e:
+                        sys.stderr.write(f"[regen-outlook] {_fn.__name__} 경고: {_e}\n")
+                _ho, _to, _so = render_ai(mode, now, _mo)
+                _olok2, _oliss2 = verify_outlook_blocks(_ho)
+                for _m in _oliss2:
+                    print(f"[verify] (재생성) {_m}")
+                if len(_oliss2) < len(_oliss):
+                    htmlstr, title, summary = _ho, _to, _so
+                    print(f"[verify] 재생성본 채택(누락 {len(_oliss)}→{len(_oliss2)})")
+                if _oliss2:
+                    print("::warning title=현재·전망·트리거 박스 누락::" + " / ".join(_oliss2 if len(_oliss2) < len(_oliss) else _oliss))
+        except Exception as _e:
+            sys.stderr.write(f"[outlook] 점검/재생성 경고(무시): {_e}\n")
     if htmlstr is None:
         htmlstr, title, summary = build_html(mode, now, items, asof, rank_up, rank_dn, flows)
 
