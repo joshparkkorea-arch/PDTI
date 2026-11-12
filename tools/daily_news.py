@@ -920,6 +920,9 @@ def fetch_crypto_movers(td_key=None, fx_fallback=None):
     return {"usdkrw": usdkrw, "fx_src": fx_src, "rows": rows, "headline": headline}
 
 
+_USQ = {}   # 사고#40: 미국 종목 공식 시세 캐시(표·프롬프트·차트 공용)
+
+
 def inject_stock_tables(body, token, key, sec):
     """본문의 {{STOCK|시장|식별자|종목명}} 토큰을 공식 4줄 표로 치환.
     미국 종목은 콤마로 묶어 1회만 호출(분당 제한 회피), 한국 종목은 KIS로 개별 조회."""
@@ -929,7 +932,12 @@ def inject_stock_tables(body, token, key, sec):
     pat = r"(?:<p>\s*)?\{\{\s*STOCK\s*\|\s*([a-zA-Z]+)\s*\|\s*([^|}]+?)\s*\|\s*([^}]*?)\s*\}\}(?:\s*</p>)?"
     toks = re.findall(pat, body)
     us_syms = [ident for (mkt, ident, _nm) in toks if mkt.strip().lower() == "us"]
-    us_data = fmp_quotes(us_syms, fmp_key) if us_syms else {}
+    # 사고#40: 개장호 '미국 주목 종목'은 main에서 이미 받은 공식 시세(_USQ)를 그대로 써서
+    #          프롬프트·차트·표의 등락률/거래량이 한 소스로 맞도록 한다.
+    us_data = {s_.upper(): _USQ[s_.upper()] for s_ in us_syms if s_.upper() in _USQ}
+    _rest = [s_ for s_ in us_syms if s_.upper() not in us_data]
+    if _rest:
+        us_data.update(fmp_quotes(_rest, fmp_key))
 
     # FMP에서 누락됐거나 값이 빈 미국 종목 → Twelve Data 2차 폴백
     # (가격·전일종가·등락률·거래량 보강. 시가총액은 무료 미제공이라 그 칸만 '—'.)
@@ -1299,6 +1307,28 @@ def _fx_assertive(txt):
 
 
 
+def fix_stock_pct_consistency(htmlstr):
+    """사고#40: 종목 표의 '금일 종가 $X (±Y%)'를 기준으로, 본문에서 같은 가격 $X 바로 뒤에 붙은
+    다른 등락률을 표 값으로 교정한다(가격이 같은데 등락률만 다른 경우만 → 오교정 위험 낮음).
+    또 '$123억'처럼 달러 기호와 억·조 단위를 섞은 표기를 찾아 경고한다. 반환: (html, [메시지])"""
+    msgs = []
+    try:
+        pairs = re.findall(r'<td>금일 종가</td><td>(\$[\d,]+\.\d{2}) <span[^>]*>\(([+\-−]?[\d.]+%)\)</span>', htmlstr)
+        for price, pct in pairs:
+            pat = re.compile(r'(' + re.escape(price) + r'(?:</span>)?\s*\(<span class="(?:up|down)">)([+\-−]?[\d.]+%)(</span>)')
+            def _r(m):
+                if m.group(2).replace("−", "-") != pct.replace("−", "-"):
+                    msgs.append(f"{price} 등락률 {m.group(2)} → {pct}(종목 표 기준) 교정")
+                    return m.group(1) + pct + m.group(3)
+                return m.group(0)
+            htmlstr = pat.sub(_r, htmlstr)
+        for m in re.finditer(r'\$\s?[\d,.]+\s?(?:</span>)?\s?(억|조)', re.sub(r'<svg.*?</svg>', '', htmlstr, flags=re.S)):
+            msgs.append(f"(경고) 달러 기호와 '{m.group(1)}' 단위 혼용: '{m.group(0)}' — 1,000억 달러 식으로 표기해야 함")
+    except Exception as e:
+        msgs.append(f"(경고) 수치 일관성 점검 오류: {e}")
+    return htmlstr, msgs
+
+
 def verify_outlook_blocks(htmlstr):
     """사고#39: 모든 섹션에 '현재·전망·트리거' 박스가 있는지 점검.
     섹션(<section class="sec">) 단위로 잘라 div.outlook 안에 ol-now 1개 + 시나리오 li 2개 이상 + trg 2개 이상인지 본다.
@@ -1606,7 +1636,7 @@ AI_CLASSES = (
     " - 현재·전망·트리거 박스(모든 섹션 필수, takeaway 바로 앞):\n"
     "   <div class=\"outlook\"><div class=\"ol-h\">현재 · 전망 · 트리거</div>"
     "<p class=\"ol-now\"><b>📍 현재</b> 지금 상태를 수치와 함께 1~2문장</p>"
-    "<ul><li class=\"s1\"><b>① 상방</b> 전망 내용(가능하면 가격·레벨 범위)<span class=\"trg\">이 시나리오로 가고 있음을 알려줄 확인 신호(가격선·지표·일정 KST)</span></li>"
+    "<ul><li class=\"s1\"><b>① 상방</b> 전망 내용(가능하면 가격·레벨 범위)<span class=\"trg\">이 시나리오로 가고 있음을 알려줄 확인 신호(가격선·지표·일정 KST) — '트리거:'라는 말머리는 쓰지 말 것(화면에 자동 표시)</span></li>"
     "<li class=\"s2\"><b>② 기본</b> …<span class=\"trg\">…</span></li>"
     "<li class=\"s3\"><b>③ 하방</b> …<span class=\"trg\">…</span></li></ul></div>\n"
     " - <strong>…</strong> : 부차(약) 강조. key/num에 해당 안 되는 일반 강조용.\n"
@@ -1661,6 +1691,7 @@ def _ai_user_prompt(mode, date_kst, items, asof, vol, rank_up, rank_dn, flows, u
     if us_movers:
         lines.append("미국 주목 5종목(거래대금 상위 4 + 뉴스·화제성 픽 1): " + "; ".join(
             f'{x["symbol"]} {x.get("name","")} {x.get("price","")} {x.get("chg","")}'
+            + (f' 거래량 {x["vol"]}' if x.get("vol") else "")
             + (" (뉴스·화제성 픽)" if x.get("news") else "") for x in us_movers)
             + " — '뉴스·화제성 픽' 종목은 심층 분석에서 그 점을 명시하세요.")
     if crypto and crypto.get("rows"):
@@ -1718,6 +1749,7 @@ def _ai_user_prompt(mode, date_kst, items, asof, vol, rank_up, rank_dn, flows, u
         "요구사항:\n"
         "1) 모든 수치·뉴스·주장에 출처를 명시하세요(web_search로 확인한 매체명+가능하면 링크). 확인 안 된 사실은 쓰지 마세요.\n"
         "2) 전망/주가 예상은 반드시 '근거 → 결론' 순서로, 시나리오(상승/하락/횡보 등)와 트리거를 함께. 단정적 매수·매도 권유는 금지.\n"
+        "2-2) [수치 일관성 · 사고#40] ① 종목의 종가·등락률·거래량은 위 '확정 데이터' 값만 씁니다. 장중 고점이나 시간 외 등락을 쓸 때는 '장중'·'시간 외'를 반드시 붙이고, 종가 등락률과 다른 숫자를 같은 의미로 섞지 마세요(예: 표 +2.87%인데 박스 +2.92% 금지). ② 한 기사 안에서 같은 수치(매출·성장률·가이던스·등락률)는 섹션이 달라도 하나의 값으로 통일합니다. ③ 달러 금액의 한국어 표기: $108B = 1,080억 달러, $3.66B = 36억 6,000만 달러. '$108억'처럼 달러 기호와 '억·조'를 섞어 쓰지 마세요. ④ '전년 동기 ○○ 달러'를 쓸 때는 성장률과 계산이 맞는지 확인하세요(예: 36억 6,000만 달러가 +168%면 전년 동기는 약 13억 6,500만 달러).\n"
         "2-1) [필수 · 사고#39] 모든 섹션은 끝(takeaway 바로 앞)에 '현재·전망·트리거' 박스(div.outlook, 위 클래스 목록의 형식 그대로)를 1개 넣습니다. ① 📍현재: 그 섹션 주제의 지금 상태를 확정 수치와 함께. ② 전망: ①상방·②기본·③하방 3개 시나리오(가능하면 지수·가격 범위). ③ 트리거: 각 시나리오마다 '이런 신호가 나오면 그 시나리오'라는 확인 신호 — 가격선, 지표 결과, 수급 전환, 예정 일정(KST 병기). 종목 심층 분석 섹션은 종목마다 박스를 1개씩 넣습니다. 트리거의 일정·날짜는 web_search로 확인된 것만 쓰고, 가격선은 제공 수치 기준으로 편집부가 정한 확인선임을 전제로 씁니다.\n"
         "3) 뉴스는 직접 인용 대신 자신의 말로 요약(저작권). 출처만 표기.\n"
         "4) 분량은 충실하게(읽을거리 있는 데일리 뉴스레터 수준). 과장·미확인 추측 금지.\n"
@@ -1759,7 +1791,10 @@ def _ai_user_prompt(mode, date_kst, items, asof, vol, rank_up, rank_dn, flows, u
     )
 
 
-def call_anthropic(api_key, system, user, max_tokens=16000, max_searches=7, max_attempts=4):
+_LAST_STOP = {"reason": None}   # 사고#40: 직전 호출의 stop_reason(max_tokens 잘림 감지용)
+
+
+def call_anthropic(api_key, system, user, max_tokens=24000, max_searches=7, max_attempts=4):
     # 재시도 정책(사고#8 대응): 과부하·타임아웃·5xx·429 등 '일시적' 오류는 백오프 후 재시도.
     # 단 400(잔액부족 등)·401·403은 재시도해도 동일하므로 즉시 실패시켜 폴백 판단으로 넘긴다.
     body = {
@@ -1781,8 +1816,9 @@ def call_anthropic(api_key, system, user, max_tokens=16000, max_searches=7, max_
         try:
             # 사고#27·#28 대응: 폭락/폭등일 대용량 생성(web_search 포함)은 응답에 4분+ 소요될 수 있음.
             # 240초에서 600초로 상향 — 서버가 응답을 완성할 때까지 read를 기다린다.
-            with urllib.request.urlopen(req, timeout=600) as r:
+            with urllib.request.urlopen(req, timeout=900) as r:
                 data = json.load(r)
+            _LAST_STOP["reason"] = data.get("stop_reason")
             texts = [b.get("text", "") for b in data.get("content", []) if b.get("type") == "text"]
             out = "\n".join(t for t in texts if t).strip()
             if not out:
@@ -1803,6 +1839,33 @@ def call_anthropic(api_key, system, user, max_tokens=16000, max_searches=7, max_
             sys.stderr.write(f"[ai] Claude 호출 실패(시도 {attempt}/{max_attempts}: {last_err}) — {wait}s 후 재시도\n")
             time.sleep(wait)
     raise RuntimeError(f"Anthropic 호출 {max_attempts}회 연속 실패: {last_err}")
+
+
+_VOID = {"br", "hr", "img", "meta", "link", "input", "wbr", "source", "col", "area", "base", "embed", "param", "track"}
+
+def close_dangling_tags(body):
+    """사고#40: 잘린 본문 끝의 열린 태그를 닫는다. 정상 본문은 그대로 반환."""
+    try:
+        stack = []
+        for m in re.finditer(r"<(/?)([a-zA-Z][a-zA-Z0-9]*)\b[^>]*?(/?)>", body or ""):
+            close, tag, selfc = m.group(1), m.group(2).lower(), m.group(3)
+            if tag in _VOID or selfc:
+                continue
+            if not close:
+                stack.append(tag)
+            elif tag in stack:
+                while stack and stack.pop() != tag:
+                    pass
+        if not stack:
+            return body
+        tail = body.rstrip()
+        if not re.search(r"[.!?。)\]>]$", tail):
+            tail += "…(이하 생략)"
+        print(f"[repair] 열린 태그 {len(stack)}개 자동 닫음: {', '.join(stack)}")
+        return tail + "".join(f"</{t}>" for t in reversed(stack)) + "\n"
+    except Exception as e:
+        sys.stderr.write(f"[repair] 태그 닫기 경고(무시): {e}\n")
+        return body
 
 
 def parse_article(txt):
@@ -1845,8 +1908,21 @@ def compose_with_claude(api_key, mode, date_kst, items, asof, vol, rank_up, rank
     last_err = None
     for attempt in range(1, 3):  # 파싱 실패(형식 깨짐) 시 1회 더 재생성
         raw = call_anthropic(api_key, system, user)
+        if _LAST_STOP.get("reason") == "max_tokens":
+            # 사고#40: 길이 한도에서 잘림 → 같은 내용을 더 간결하게 1회 재작성
+            print("::warning title=본문 잘림::출력 길이 한도에서 잘림 — 간결 모드로 1회 재작성(사고#40)")
+            raw2 = call_anthropic(api_key, system, user + (
+                "\n\n[길이 지시 — 최우선] 직전 작성본이 출력 길이 한도에서 잘렸습니다. 구성·섹션·박스는 모두 유지하되 "
+                "각 문단을 2~3문장으로 줄이고 반복 설명을 빼서 전체 분량을 25% 줄이세요. 반드시 마지막 섹션의 "
+                "현재·전망·트리거 박스까지 완결해 출력하세요."))
+            if _LAST_STOP.get("reason") != "max_tokens" or len(raw2 or "") > len(raw or "") * 0.6:
+                raw = raw2
+            if _LAST_STOP.get("reason") == "max_tokens":
+                print("::warning title=본문 잘림::재작성도 길이 한도에 걸림 — 열린 태그를 자동으로 닫아 발행(사고#40)")
         try:
-            return parse_article(raw)
+            meta = parse_article(raw)
+            meta["body_html"] = close_dangling_tags(meta["body_html"])
+            return meta
         except Exception as e:
             last_err = e
             sys.stderr.write(f"[ai] 응답 파싱 실패(시도 {attempt}/2): {e}. 원문 앞 400자:\n"
@@ -2615,6 +2691,23 @@ def main():
         _base = fetch_us_movers(_fk, 6) or fetch_us_movers_free(6)   # FMP 실패 시 무료(야후) 경로
         _news = fetch_most_mentioned_us(_fk) or fetch_trending_us()   # FMP 뉴스 실패 시 야후 트렌딩
         us_movers = combine_us_focus(_base, _news, 5)   # 거래대금4 + 픽1(겹치면 거래대금5위)
+        # 사고#40: 목록의 등락률(+2.92%)과 종목 표의 등락률(+2.87%)이 달랐던 건 — 표와 같은 시세로 정합화
+        try:
+            if us_movers:
+                _q = fmp_quotes([m["symbol"] for m in us_movers], _fk)
+                _USQ.update(_q)
+                for _m in us_movers:
+                    _d = _q.get(str(_m.get("symbol", "")).upper())
+                    if _d and _d.get("chg"):
+                        if _d["chg"] != _m.get("chg"):
+                            print(f"[us_movers] {_m['symbol']} 등락률 정합화 {_m.get('chg')} → {_d['chg']} (종목 표와 같은 공식 시세)")
+                        _m["chg"] = _d["chg"]
+                        if _d.get("c") and _d["c"] != "—":
+                            _m["price"] = _d["c"]
+                        if _d.get("vol") and _d["vol"] != "—":
+                            _m["vol"] = _d["vol"]
+        except Exception as _e:
+            sys.stderr.write(f"[us_movers] 시세 정합화 경고(무시): {_e}\n")
         print(f"[daily_news] 미국주목종목={'O' if us_movers else 'X'} "
               f"(거래대금4+픽1, 픽={_news.get('symbol') if _news else '-'})")
     crypto = fetch_crypto_movers(os.environ.get("TWELVEDATA_API_KEY", "").strip(),
@@ -2697,6 +2790,19 @@ def main():
                     print("::warning title=현재·전망·트리거 박스 누락::" + " / ".join(_oliss2 if len(_oliss2) < len(_oliss) else _oliss))
         except Exception as _e:
             sys.stderr.write(f"[outlook] 점검/재생성 경고(무시): {_e}\n")
+    # ── 수치 일관성 점검(사고#40) — 교정 가능한 것은 교정, 나머지는 경고 ─────────
+    if used_ai:
+        try:
+            htmlstr, _nmsgs = fix_stock_pct_consistency(htmlstr)
+            # 박스 트리거 줄의 '트리거:' 중복 제거(CSS가 '🎯 트리거 ·'를 이미 붙임)
+            htmlstr = re.sub(r'(<span class="trg">)\s*(?:🎯\s*)?트리거\s*[:：]\s*', r'\1', htmlstr)
+            for _m in _nmsgs:
+                print(f"[verify] {_m}")
+            _warns = [m for m in _nmsgs if m.startswith("(경고) 달러")]
+            if _warns:
+                print("::warning title=단위 혼용::" + " / ".join(_warns)[:900])
+        except Exception as _e:
+            sys.stderr.write(f"[num] 수치 일관성 점검 경고(무시): {_e}\n")
     if htmlstr is None:
         htmlstr, title, summary = build_html(mode, now, items, asof, rank_up, rank_dn, flows)
 
