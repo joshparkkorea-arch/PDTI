@@ -1307,6 +1307,110 @@ def _fx_assertive(txt):
 
 
 
+def fix_usd_eok_notation(htmlstr):
+    """사고#41: '$108억'·'$1.2조' 같은 달러기호+억/조 혼용을 결정적으로 고친다.
+    같은 기사에 'N×10억 달러'(= $N B를 한국식으로 쓴 값)가 따로 있으면 그 표기로 통일하고,
+    없으면 '$N억' → 'N억 달러'로만 바꿔 기호 혼용을 없앤다(값 자체는 숫자 교열 단계가 판단)."""
+    msgs = []
+    plain = re.sub(r"<[^>]+>", "", htmlstr)
+    def _num(x):
+        return float(x.replace(",", ""))
+    def _fmt_eok(v):
+        return f"{v:,.0f}" if abs(v - round(v)) < 1e-9 else f"{v:,.1f}"
+    def repl(m):
+        n, unit = m.group(1), m.group(2)
+        try:
+            v = _num(n)
+        except Exception:
+            return m.group(0)
+        if unit == "억":
+            alt = _fmt_eok(v * 10) + "억 달러"
+            if alt in plain and (_fmt_eok(v) + "억 달러") not in plain:
+                msgs.append(f"'${n}억' → '{alt}'(기사 내 같은 금액 표기로 통일)")
+                return alt
+            msgs.append(f"'${n}억' → '{n}억 달러'(기호 혼용 제거 — 값은 교열 단계 확인)")
+            return f"{n}억 달러"
+        msgs.append(f"'${n}조' → '{n}조 달러'(기호 혼용 제거)")
+        return f"{n}조 달러"
+    pat = re.compile(r"\$\s?([\d][\d,]*(?:\.\d+)?)\s?(억|조)(?:\s*달러)?")
+    parts = re.split(r"(<svg.*?</svg>|<[^>]+>)", htmlstr, flags=re.S)
+    out = [p if (p.startswith("<")) else pat.sub(repl, p) for p in parts]
+    return "".join(out), msgs
+
+
+_AUDIT_SYS = ("당신은 경제 뉴스레터의 숫자 교열 담당 기자입니다. 문장을 다듬지 않고 숫자만 봅니다. "
+              "확정 데이터와 기사 안의 다른 숫자들을 대조해 '확실히 틀린 숫자'만 골라 JSON으로만 답합니다.")
+
+def numeric_audit_fixes(api_key, facts_text, htmlstr):
+    """사고#41: 숫자 교열 AI 호출 → [{"wrong","right","context","reason"}], [notes]. 실패 시 ([], [사유])."""
+    body = re.sub(r"<svg.*?</svg>|<style.*?</style>|<script.*?</script>", " ", htmlstr, flags=re.S)
+    body = re.sub(r"</(p|li|h2|h3|div|tr|table)>", "\n", body)
+    body = re.sub(r"<[^>]+>", "", body)
+    body = re.sub(r"[ \t]+", " ", body)
+    body = re.sub(r"\n\s*\n+", "\n", body).strip()
+    tables = []
+    for m in re.finditer(r'<div class="src-cat">([^<]*?) — 핵심 지표</div><table class="grid">(.*?)</table>', htmlstr, re.S):
+        cells = re.sub(r"<[^>]+>", " ", m.group(2))
+        tables.append(m.group(1).strip() + ": " + re.sub(r"\s+", " ", cells).strip())
+    user = (
+        "[확정 데이터 — 정답 기준]\n" + facts_text.strip() + "\n\n"
+        "[종목 표(공식 시세) — 정답 기준]\n" + ("\n".join(tables) or "(없음)") + "\n\n"
+        "[기사 전문]\n" + body[:60000] + "\n\n"
+        "[할 일] 기사 전문에서 아래 네 가지에 해당하는 '확실히 틀린 숫자'만 찾으세요.\n"
+        "1) 확정 데이터·종목 표와 다른 숫자(등락률·종가·전일종가·거래량·지수·환율). 단 '장중', '시간 외', '프리마켓'처럼 다른 시점임을 밝힌 숫자는 제외.\n"
+        "2) 같은 대상(같은 회사의 같은 지표·같은 기간)의 숫자가 기사 안에서 서로 다른 경우 — 확정 데이터·표에 있으면 그 값, 없으면 해당 사건을 직접 다룬 문단(실적 문단 등)의 값을 정답으로.\n"
+        "3) 단위 환산 오류 — $1B = 10억 달러, $108B = 1,080억 달러, $3.66B = 36억 6,000만 달러. '$108억'처럼 기호와 억을 섞어 10배 틀린 경우 포함.\n"
+        "4) 산식 모순 — 'A가 전년 대비 X% 증가'와 '전년 B'가 맞지 않음, 전일·금일 종가와 등락률이 맞지 않음 등. 계산으로 맞는 값을 구할 수 있을 때만.\n"
+        "고치지 말 것: 전망·시나리오의 가격 범위, 목표가, 의견, 출처로 확인 불가한 숫자, 반올림 차이(0.01%p·표기 자릿수 차이).\n"
+        "확신이 없으면 fixes가 아니라 notes에 적으세요.\n\n"
+        "[출력 — JSON만, 코드펜스·설명 금지]\n"
+        '{"fixes":[{"wrong":"기사에 적힌 숫자 표기 그대로(예: +2.92%)","right":"바꿀 표기(예: +2.87%)",'
+        '"context":"wrong 바로 앞 6~20자 기사 원문 그대로(숫자·태그 없이 글자만)","reason":"근거 한 줄"}],'
+        '"notes":["확신 없는 의심 사항"]}'
+    )
+    try:
+        raw = call_anthropic(api_key, _AUDIT_SYS, user, max_tokens=4000, max_attempts=2, use_search=False)
+        raw = raw.strip()
+        if raw.startswith("```"):
+            raw = raw.strip("`")
+            raw = raw[raw.find("{"):]
+        j = json.loads(raw[raw.find("{"): raw.rfind("}") + 1])
+        fixes = [f for f in (j.get("fixes") or []) if isinstance(f, dict)]
+        notes = [str(n) for n in (j.get("notes") or [])]
+        return fixes, notes
+    except Exception as e:
+        return [], [f"숫자 교열 호출/해석 실패: {e}"]
+
+
+def apply_numeric_fixes(htmlstr, fixes):
+    """교열 결과를 '앞 문맥이 일치하는 그 자리'에만 적용. 반환 (html, 적용 로그, 미적용 로그)."""
+    done, skipped = [], []
+    norm = lambda t: re.sub(r"\s+", "", t)
+    for f in fixes:
+        w, r_, ctx = str(f.get("wrong", "")).strip(), str(f.get("right", "")).strip(), str(f.get("context", "")).strip()
+        why = str(f.get("reason", ""))[:120]
+        if (not w or not r_ or w == r_ or len(w) > 40 or len(r_) > 40
+                or not re.search(r"\d", w) or not re.search(r"\d", r_) or not ctx):
+            skipped.append(f"형식 부적합: {w}→{r_}")
+            continue
+        nctx = norm(ctx)[-20:]
+        hits = []
+        for m in re.finditer(re.escape(w), htmlstr):
+            pre = re.sub(r"<[^>]+>", "", htmlstr[max(0, m.start() - 600):m.start()])
+            if nctx and norm(pre).endswith(nctx) or (nctx and nctx in norm(pre)[-60:]):
+                # svg 내부(차트 라벨)는 문맥이 다르므로 제외 — 차트는 원천 데이터로 그린다
+                if htmlstr.rfind("<svg", 0, m.start()) > htmlstr.rfind("</svg>", 0, m.start()):
+                    continue
+                hits.append(m)
+        if not hits:
+            skipped.append(f"문맥 불일치로 미적용: {w}→{r_} (문맥 '{ctx}')")
+            continue
+        for m in reversed(hits):
+            htmlstr = htmlstr[:m.start()] + r_ + htmlstr[m.end():]
+        done.append(f"{w} → {r_} ×{len(hits)} ({why})")
+    return htmlstr, done, skipped
+
+
 def fix_stock_pct_consistency(htmlstr):
     """사고#40: 종목 표의 '금일 종가 $X (±Y%)'를 기준으로, 본문에서 같은 가격 $X 바로 뒤에 붙은
     다른 등락률을 표 값으로 교정한다(가격이 같은데 등락률만 다른 경우만 → 오교정 위험 낮음).
@@ -1691,6 +1795,7 @@ def _ai_user_prompt(mode, date_kst, items, asof, vol, rank_up, rank_dn, flows, u
     if us_movers:
         lines.append("미국 주목 5종목(거래대금 상위 4 + 뉴스·화제성 픽 1): " + "; ".join(
             f'{x["symbol"]} {x.get("name","")} {x.get("price","")} {x.get("chg","")}'
+            + (f' 전일종가 {x["pc"]}' if x.get("pc") else "")
             + (f' 거래량 {x["vol"]}' if x.get("vol") else "")
             + (" (뉴스·화제성 픽)" if x.get("news") else "") for x in us_movers)
             + " — '뉴스·화제성 픽' 종목은 심층 분석에서 그 점을 명시하세요.")
@@ -1749,7 +1854,7 @@ def _ai_user_prompt(mode, date_kst, items, asof, vol, rank_up, rank_dn, flows, u
         "요구사항:\n"
         "1) 모든 수치·뉴스·주장에 출처를 명시하세요(web_search로 확인한 매체명+가능하면 링크). 확인 안 된 사실은 쓰지 마세요.\n"
         "2) 전망/주가 예상은 반드시 '근거 → 결론' 순서로, 시나리오(상승/하락/횡보 등)와 트리거를 함께. 단정적 매수·매도 권유는 금지.\n"
-        "2-2) [수치 일관성 · 사고#40] ① 종목의 종가·등락률·거래량은 위 '확정 데이터' 값만 씁니다. 장중 고점이나 시간 외 등락을 쓸 때는 '장중'·'시간 외'를 반드시 붙이고, 종가 등락률과 다른 숫자를 같은 의미로 섞지 마세요(예: 표 +2.87%인데 박스 +2.92% 금지). ② 한 기사 안에서 같은 수치(매출·성장률·가이던스·등락률)는 섹션이 달라도 하나의 값으로 통일합니다. ③ 달러 금액의 한국어 표기: $108B = 1,080억 달러, $3.66B = 36억 6,000만 달러. '$108억'처럼 달러 기호와 '억·조'를 섞어 쓰지 마세요. ④ '전년 동기 ○○ 달러'를 쓸 때는 성장률과 계산이 맞는지 확인하세요(예: 36억 6,000만 달러가 +168%면 전년 동기는 약 13억 6,500만 달러).\n"
+        "2-2) [수치 일관성 · 사고#40] ① 종목의 종가·등락률·거래량은 위 '확정 데이터' 값만 씁니다. 장중 고점이나 시간 외 등락을 쓸 때는 '장중'·'시간 외'를 반드시 붙이고, 종가 등락률과 다른 숫자를 같은 의미로 섞지 마세요(예: 표 +2.87%인데 박스 +2.92% 금지). ② 한 기사 안에서 같은 수치(매출·성장률·가이던스·등락률)는 섹션이 달라도 하나의 값으로 통일합니다. ③ 달러 금액의 한국어 표기: $108B = 1,080억 달러, $3.66B = 36억 6,000만 달러. '$108억'처럼 달러 기호와 '억·조'를 섞어 쓰지 마세요. ④ '전년 동기 ○○ 달러'를 쓸 때는 성장률과 계산이 맞는지 확인하세요(예: 36억 6,000만 달러가 +168%면 전년 동기는 약 13억 6,500만 달러). ⑤ 종목의 전일 종가·종가·등락률·거래량은 본문에 직접 쓸 경우 위 '미국 주목 종목'에 준 값만 쓰고 웹 검색 값으로 바꾸지 마세요. ⑥ 웹 검색으로 얻은 실적·가이던스 숫자는 같은 기사 안에서 한 번 정한 값을 끝까지 같은 표기로 씁니다. 발행 전 별도 '숫자 교열'이 기사 전체를 대조합니다.\n"
         "2-1) [필수 · 사고#39] 모든 섹션은 끝(takeaway 바로 앞)에 '현재·전망·트리거' 박스(div.outlook, 위 클래스 목록의 형식 그대로)를 1개 넣습니다. ① 📍현재: 그 섹션 주제의 지금 상태를 확정 수치와 함께. ② 전망: ①상방·②기본·③하방 3개 시나리오(가능하면 지수·가격 범위). ③ 트리거: 각 시나리오마다 '이런 신호가 나오면 그 시나리오'라는 확인 신호 — 가격선, 지표 결과, 수급 전환, 예정 일정(KST 병기). 종목 심층 분석 섹션은 종목마다 박스를 1개씩 넣습니다. 트리거의 일정·날짜는 web_search로 확인된 것만 쓰고, 가격선은 제공 수치 기준으로 편집부가 정한 확인선임을 전제로 씁니다.\n"
         "3) 뉴스는 직접 인용 대신 자신의 말로 요약(저작권). 출처만 표기.\n"
         "4) 분량은 충실하게(읽을거리 있는 데일리 뉴스레터 수준). 과장·미확인 추측 금지.\n"
@@ -1794,7 +1899,7 @@ def _ai_user_prompt(mode, date_kst, items, asof, vol, rank_up, rank_dn, flows, u
 _LAST_STOP = {"reason": None}   # 사고#40: 직전 호출의 stop_reason(max_tokens 잘림 감지용)
 
 
-def call_anthropic(api_key, system, user, max_tokens=24000, max_searches=7, max_attempts=4):
+def call_anthropic(api_key, system, user, max_tokens=24000, max_searches=7, max_attempts=4, use_search=True):
     # 재시도 정책(사고#8 대응): 과부하·타임아웃·5xx·429 등 '일시적' 오류는 백오프 후 재시도.
     # 단 400(잔액부족 등)·401·403은 재시도해도 동일하므로 즉시 실패시켜 폴백 판단으로 넘긴다.
     body = {
@@ -1804,6 +1909,8 @@ def call_anthropic(api_key, system, user, max_tokens=24000, max_searches=7, max_
         "messages": [{"role": "user", "content": user}],
         "tools": [{"type": "web_search_20250305", "name": "web_search", "max_uses": max_searches}],
     }
+    if not use_search:
+        body.pop("tools", None)
     payload = json.dumps(body).encode("utf-8")
     last_err = None
     for attempt in range(1, max_attempts + 1):
@@ -2706,6 +2813,8 @@ def main():
                             _m["price"] = _d["c"]
                         if _d.get("vol") and _d["vol"] != "—":
                             _m["vol"] = _d["vol"]
+                        if _d.get("pc") and _d["pc"] != "—":
+                            _m["pc"] = _d["pc"]
         except Exception as _e:
             sys.stderr.write(f"[us_movers] 시세 정합화 경고(무시): {_e}\n")
         print(f"[daily_news] 미국주목종목={'O' if us_movers else 'X'} "
@@ -2800,9 +2909,37 @@ def main():
                 print(f"[verify] {_m}")
             _warns = [m for m in _nmsgs if m.startswith("(경고) 달러")]
             if _warns:
-                print("::warning title=단위 혼용::" + " / ".join(_warns)[:900])
+                print("[verify] 단위 혼용 발견 — 바로 아래 숫자 교열 단계에서 자동 환산(사고#41)")
         except Exception as _e:
             sys.stderr.write(f"[num] 수치 일관성 점검 경고(무시): {_e}\n")
+        # ── 숫자 교열(사고#41) — '$N억' 결정적 환산 → AI 교열(웹검색 없음) → 문맥 일치 자리만 교체 ──
+        try:
+            htmlstr, _umsgs = fix_usd_eok_notation(htmlstr)
+            for _m in _umsgs:
+                print(f"[num-fix] {_m}")
+            if api_key and os.environ.get("NUM_AUDIT", "1").strip() != "0":
+                _facts = _ai_user_prompt(mode, now, items, asof, vol, rank_up, rank_dn, flows,
+                                         us_movers, crypto).split("[작성 지침]")[0]
+                _fixes, _notes = numeric_audit_fixes(api_key, _facts, htmlstr)
+                htmlstr, _done, _skip = apply_numeric_fixes(htmlstr, _fixes)
+                if summary:
+                    for _f in _fixes:
+                        _w, _r = str(_f.get("wrong", "")), str(_f.get("right", ""))
+                        if _w and _r and _w in summary and re.search(r"\d", _w):
+                            summary = summary.replace(_w, _r)
+                for _m in _done:
+                    print(f"[num-audit] 교정 {_m}")
+                for _m in _skip + _notes:
+                    print(f"[num-audit] 보류 {_m}")
+                if _done:
+                    print("::notice title=숫자 교열 교정::" + " / ".join(_done)[:900])
+                if _skip or _notes:
+                    print("::warning title=숫자 교열 확인 필요::" + " / ".join(_skip + _notes)[:900])
+                htmlstr, _n2 = fix_stock_pct_consistency(htmlstr)   # 교정 후 재확인
+                for _m in _n2:
+                    print(f"[verify] (교열 후) {_m}")
+        except Exception as _e:
+            sys.stderr.write(f"[num-audit] 숫자 교열 경고(무시): {_e}\n")
     if htmlstr is None:
         htmlstr, title, summary = build_html(mode, now, items, asof, rank_up, rank_dn, flows)
 
