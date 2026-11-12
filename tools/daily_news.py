@@ -204,6 +204,189 @@ def fetch_investors(token, app_key, app_secret):
         return None
 
 
+# ===================== 사고#42: 확정 수급 이력 · 유가 정산가 · 금액 단위 =====================
+_FLOW_FACTS = []      # 프롬프트에 넣을 '확정 수급' 줄(코드 계산)
+_FLOW_STATE = {}      # 결정적 교정용: {"KOSPI": {"frgn": (sign, days), ...}}
+_OIL_SETTLE = {}      # {"WTI": (정산가, 등락%), "브렌트": (...)}
+
+def _http_text(url, headers=None, timeout=20, enc="utf-8"):
+    h = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36"}
+    h.update(headers or {})
+    with urllib.request.urlopen(urllib.request.Request(url, headers=h), timeout=timeout) as r:
+        return r.read().decode(enc, "ignore")
+
+def _flows_daum(market):
+    """다음금융(한국거래소 집계) 일별 투자자 순매수 금액 → [{date, frgn, orgn, indv}] (억원, 최신순)."""
+    j = json.loads(_http_text(
+        f"https://finance.daum.net/api/market_index/days?page=1&perPage=20&market={market}&pagination=true",
+        {"Referer": "https://finance.daum.net/", "Accept": "application/json"}))
+    rows = []
+    for x in j.get("data") or []:
+        rows.append({"date": str(x.get("date", ""))[:10],
+                     "frgn": float(x.get("foreignStraightPurchasePrice") or 0) / 1e8,
+                     "orgn": float(x.get("institutionStraightPurchasePrice") or 0) / 1e8,
+                     "indv": float(x.get("individualStraightPurchasePrice") or 0) / 1e8})
+    return rows
+
+def _flows_naver(sosok):
+    """네이버 '투자자별 매매동향(일별)' 표(억원) → [{date, frgn, orgn, indv}] 최신순. sosok 01=코스피, 02=코스닥."""
+    rows = []
+    today = datetime.now(KST).strftime("%Y%m%d")
+    for page in (1, 2):
+        html_ = _http_text(f"https://finance.naver.com/sise/investorDealTrendDay.naver?bizdate={today}&sosok={sosok}&page={page}",
+                           {"Referer": "https://finance.naver.com/"}, enc="euc-kr")
+        for m in re.finditer(r'<td class="date2">\s*(\d\d)\.(\d\d)\.(\d\d)\s*</td>(.*?)</tr>', html_, re.S):
+            nums = [n.replace(",", "") for n in re.findall(r">\s*([+\-]?[\d,]+)\s*<", m.group(4))]
+            if len(nums) < 3:
+                continue
+            rows.append({"date": f"20{m.group(1)}-{m.group(2)}-{m.group(3)}",
+                         "indv": float(nums[0]), "frgn": float(nums[1]), "orgn": float(nums[2])})
+    return rows
+
+def fetch_investor_history():
+    """확정 수급 이력. 다음금융 → 네이버 순으로 시도. 반환 ({"KOSPI": rows, "KOSDAQ": rows}, 출처) 또는 ({}, None)."""
+    for src, fn, args in (("다음금융(한국거래소 집계)", _flows_daum, ("KOSPI", "KOSDAQ")),
+                          ("네이버금융(한국거래소 집계)", _flows_naver, ("01", "02"))):
+        try:
+            k, q = fn(args[0]), fn(args[1])
+            if k and len(k) >= 5:
+                return {"KOSPI": k, "KOSDAQ": q or []}, src
+        except Exception as e:
+            sys.stderr.write(f"[flow-hist] {src} 실패: {e}\n")
+    return {}, None
+
+def _streak(rows, key):
+    """최신일부터 같은 부호가 이어진 일수·누적·기간, 그리고 직전 반대 부호 구간."""
+    if not rows:
+        return None
+    sg = lambda v: 1 if v > 0 else (-1 if v < 0 else 0)
+    s0 = sg(rows[0][key]); n = 0; tot = 0.0
+    while n < len(rows) and sg(rows[n][key]) == s0 and s0 != 0:
+        tot += rows[n][key]; n += 1
+    cur = {"sign": s0, "days": n, "sum": tot, "from": rows[n - 1]["date"] if n else rows[0]["date"], "to": rows[0]["date"]}
+    m = n; s1 = sg(rows[m][key]) if m < len(rows) else 0; k = 0; tot2 = 0.0
+    while m + k < len(rows) and sg(rows[m + k][key]) == s1 and s1 != 0:
+        tot2 += rows[m + k][key]; k += 1
+    prev = {"sign": s1, "days": k, "sum": tot2,
+            "from": rows[m + k - 1]["date"] if k else None, "to": rows[m]["date"] if k else None}
+    return cur, prev
+
+def _eok(v):
+    a = abs(v); sgn = "+" if v > 0 else ("−" if v < 0 else "")
+    if a >= 10000:
+        jo, rest = int(a // 10000), int(round(a % 10000))
+        return f"{sgn}{jo}조" + (f" {rest:,}억" if rest else "") + "원"
+    return f"{sgn}{a:,.0f}억원"
+
+def build_flow_facts(now, mode):
+    """프롬프트용 '확정 수급' 줄을 만들고 결정적 교정용 상태를 저장."""
+    _FLOW_FACTS.clear(); _FLOW_STATE.clear()
+    hist, src = fetch_investor_history()
+    if not hist:
+        print("::warning title=확정 수급 미확보::다음금융·네이버 모두 실패 — 수급 금액·연속 일수는 AI가 쓰지 않도록 규칙 적용(사고#42)")
+        _FLOW_FACTS.append("확정 수급: 미확보 — 투자자별 순매수 금액과 '연속 순매수/순매도 일수'를 쓰지 마세요. 장중 집계를 쓸 경우 반드시 '오후 ○시 ○분 기준 잠정'이라고 밝히세요.")
+        return
+    today = now.strftime("%Y-%m-%d")
+    for mk, label in (("KOSPI", "유가증권시장(코스피)"), ("KOSDAQ", "코스닥")):
+        rows = hist.get(mk) or []
+        if not rows:
+            continue
+        r0 = rows[0]
+        stale = (mode == "close" and r0["date"] != today)
+        head = (f"{label} {r0['date'][5:].replace('-', '/')} 외국인 {_eok(r0['frgn'])} · 기관 {_eok(r0['orgn'])} · 개인 {_eok(r0['indv'])}")
+        recent = ", ".join(f"{r['date'][5:].replace('-', '/')} {_eok(r['frgn'])}" for r in rows[:7])
+        parts = [head, f"최근 외국인 일별: {recent}"]
+        st = {}
+        for key, nm in (("frgn", "외국인"), ("orgn", "기관")):
+            res = _streak(rows, key)
+            if not res:
+                continue
+            cur, prev = res
+            if cur["sign"] == 0:
+                continue
+            side = "순매수" if cur["sign"] > 0 else "순매도"
+            txt = (f"{nm} {cur['days']}거래일 연속 {side}({cur['from'][5:].replace('-', '/')}~{cur['to'][5:].replace('-', '/')}, 누적 {_eok(cur['sum'])})")
+            if prev["days"]:
+                pside = "순매수" if prev["sign"] > 0 else "순매도"
+                txt += f" · 그 직전 {prev['days']}거래일 연속 {pside}(누적 {_eok(prev['sum'])})"
+            parts.append(txt)
+            st[key] = (cur["sign"], cur["days"])
+        _FLOW_STATE[mk] = st
+        _FLOW_FACTS.append(f"확정 수급[{label}, 출처 {src}{', 오늘 확정치 미반영(전 거래일까지)' if stale else ''}]: " + " | ".join(parts))
+    print(f"[flow-hist] 확정 수급 {len(_FLOW_FACTS)}줄 확보({src})")
+
+def fetch_oil_settle():
+    """WTI·브렌트 '간밤 정산가'와 그 등락(전 정산 대비). 야후 일봉 기준."""
+    out = {}
+    for sym, nm in (("CL=F", "WTI"), ("BZ=F", "브렌트")):
+        try:
+            j1 = _yahoo_get(f"https://query2.finance.yahoo.com/v8/finance/chart/{urllib.parse.quote(sym)}?range=1d&interval=1d")
+            s1 = float((((j1.get("chart") or {}).get("result") or [{}])[0].get("meta") or {}).get("chartPreviousClose"))
+            j2 = _yahoo_get(f"https://query2.finance.yahoo.com/v8/finance/chart/{urllib.parse.quote(sym)}?range=1mo&interval=1d")
+            closes = [c for c in (((j2["chart"]["result"][0]["indicators"]["quote"][0]).get("close")) or []) if c]
+            idx = max(i for i, c in enumerate(closes) if abs(c - s1) < 0.006)
+            s0 = closes[idx - 1]
+            out[nm] = (s1, (s1 / s0 - 1) * 100)
+        except Exception as e:
+            sys.stderr.write(f"[oil] {nm} 정산가 확보 실패: {e}\n")
+    _OIL_SETTLE.clear(); _OIL_SETTLE.update(out)
+    if out:
+        print("[oil] 간밤 정산가: " + ", ".join(f"{k} ${v[0]:.2f}({v[1]:+.2f}%)" for k, v in out.items()))
+    return out
+
+def _krw_amount(val, price=None, vol=None):
+    """거래대금 원시값 → 'X조 X,XXX억원'. 가격×거래량과 비교해 단위(원/백만원)를 판별."""
+    try:
+        v = float(str(val).replace(",", ""))
+    except Exception:
+        return "—"
+    try:
+        approx = float(price) * float(vol)
+        if approx > 0 and 0.2 < (v * 1e6) / approx < 5:
+            v *= 1e6          # 백만원 단위였음
+    except Exception:
+        pass
+    return _eok(v / 1e8).lstrip("+")
+
+def fix_flow_streaks(htmlstr):
+    """사고#42: '외국인 N거래일 연속 순매수/순매도' 일수를 계산값으로 교정(코스피 기준, 문장에 코스닥·날짜가 없을 때만)."""
+    msgs = []
+    st = (_FLOW_STATE.get("KOSPI") or {}).get("frgn")
+    if not st:
+        return htmlstr, msgs
+    sign, days = st
+    side = "순매수" if sign > 0 else "순매도"
+    pat = re.compile(r"(외국인(?:은|이|의)?\s*(?:<[^>]+>)?\s*)(\d+)(거래일\s*연속\s*(?:소폭\s*)?" + side + ")")
+    def rep(m):
+        # 같은 문장만 본다(앞뒤 문장의 '코스닥'·날짜에 걸려 교정이 빠지지 않도록)
+        _pre = re.sub(r"<[^>]+>", "", htmlstr[max(0, m.start() - 200):m.start()])
+        _pre = re.split(r"[.!?]\s|\n", _pre)[-1]
+        _post = re.sub(r"<[^>]+>", "", htmlstr[m.end():m.end() + 80]).split(".")[0]
+        sent = _pre + re.sub(r"<[^>]+>", "", m.group(0)) + _post
+        if "코스닥" in sent or re.search(r"\d+월\s*\d+일", sent):
+            return m.group(0)
+        if int(m.group(2)) != days:
+            msgs.append(f"외국인 {m.group(2)}거래일 연속 {side} → {days}거래일(확정 수급 계산값)")
+            return m.group(1) + str(days) + m.group(3)
+        return m.group(0)
+    parts = re.split(r"(<svg.*?</svg>)", htmlstr, flags=re.S)
+    htmlstr = "".join(p if p.startswith("<svg") else pat.sub(rep, p) for p in parts)
+    return htmlstr, msgs
+
+def add_oil_note(htmlstr):
+    """표에 WTI가 있으면 '작성 시각 시세 vs 간밤 정산가' 안내를 표 바로 아래 자동 삽입."""
+    w = _OIL_SETTLE.get("WTI")
+    if not w:
+        return htmlstr
+    m = re.search(r"<table[^>]*>(?:(?!</table>).)*WTI(?:(?!</table>).)*</table>", htmlstr, re.S)
+    if not m:
+        return htmlstr
+    b = _OIL_SETTLE.get("브렌트")
+    note = (f'\n<p class="small">※ 표의 WTI는 작성 시각(한국시간) 시세와 직전 정산가 대비 등락입니다. 간밤 뉴욕상업거래소(NYMEX) 정산가는 '
+            f'배럴당 {w[0]:,.2f}달러({w[1]:+.2f}%)' + (f', 브렌트 {b[0]:,.2f}달러({b[1]:+.2f}%)' if b else '') + '입니다.</p>\n')
+    return htmlstr[:m.end()] + note + htmlstr[m.end():]
+
+
 def fetch_value_rank(token, app_key, app_secret, n=5):
     """국내 거래대금(거래금액) 상위 종목 — best-effort. 저가주 쏠림 방지 위해 거래량 대신 거래대금 기준. 실패 시 None."""
     try:
@@ -226,7 +409,7 @@ def fetch_value_rank(token, app_key, app_secret, n=5):
                 "price": o.get("stck_prpr", "—"),
                 "ctrt": o.get("prdy_ctrt", "—"),
                 "vol": o.get("acml_vol", "—"),
-                "val": o.get("acml_tr_pbmn", "—"),   # 누적 거래대금
+                "val": _krw_amount(o.get("acml_tr_pbmn"), o.get("stck_prpr"), o.get("acml_vol")),   # 사고#42: 단위 포함
                 "sign": o.get("prdy_vrss_sign", "3"),
             })
         return out or None
@@ -1361,6 +1544,8 @@ def numeric_audit_fixes(api_key, facts_text, htmlstr):
         "2) 같은 대상(같은 회사의 같은 지표·같은 기간)의 숫자가 기사 안에서 서로 다른 경우 — 확정 데이터·표에 있으면 그 값, 없으면 해당 사건을 직접 다룬 문단(실적 문단 등)의 값을 정답으로.\n"
         "3) 단위 환산 오류 — $1B = 10억 달러, $108B = 1,080억 달러, $3.66B = 36억 6,000만 달러. '$108억'처럼 기호와 억을 섞어 10배 틀린 경우 포함.\n"
         "4) 산식 모순 — 'A가 전년 대비 X% 증가'와 '전년 B'가 맞지 않음, 전일·금일 종가와 등락률이 맞지 않음 등. 계산으로 맞는 값을 구할 수 있을 때만.\n"
+        "5) 수급 금액·'○거래일 연속' 일수가 확정 수급과 다르거나 장중 집계가 확정치처럼 쓰인 경우, 유가 방향이 간밤 정산가와 반대로 쓰인 경우.\n"
+        "(참고로만 notes에) 장 마감 후 발표된 실적을 그날 정규장 등락의 원인으로 쓴 시점·인과 혼동.\n"
         "고치지 말 것: 전망·시나리오의 가격 범위, 목표가, 의견, 출처로 확인 불가한 숫자, 반올림 차이(0.01%p·표기 자릿수 차이).\n"
         "확신이 없으면 fixes가 아니라 notes에 적으세요.\n\n"
         "[출력 — JSON만, 코드펜스·설명 금지]\n"
@@ -1789,9 +1974,17 @@ def _ai_user_prompt(mode, date_kst, items, asof, vol, rank_up, rank_dn, flows, u
         lines.append("등락률 하위: " + ", ".join(f'{x["name"]}({x.get("code","")}) {x["ctrt"]}%' for x in rank_dn))
     if rank_up or rank_dn:
         lines.append("(위 등락률 상·하위 종목은 '시가총액 상위 100위 이내'로 이미 필터링된 목록입니다. 등락률 상·하위 섹션에는 제공된 이 종목들만 다루고, 100위권 밖 종목을 임의로 추가하지 마세요.)")
-    if flows:
-        lines.append("수급(외국인/기관/개인 순매수): " + "; ".join(
+    if _FLOW_FACTS:
+        lines.extend(_FLOW_FACTS)
+        lines.append("(수급 규칙 — 위 '확정 수급'의 금액과 연속 일수만 쓰세요. 웹 검색에서 본 '오후 ○시 기준' 장중 집계는 확정치가 있으면 쓰지 말고, "
+                     "써야 한다면 반드시 시각을 밝혀 그날 확정치와 구분하세요. '○거래일 연속'은 위 계산값과 반드시 같아야 합니다.)")
+    elif flows:
+        lines.append("수급(KIS 응답, 단위 불명 — 금액으로 인용 금지): " + "; ".join(
             f'{m} 외 {v.get("frgn")} 기 {v.get("orgn")} 개 {v.get("indv")}' for m, v in flows.items()))
+    if _OIL_SETTLE:
+        lines.append("유가 간밤 정산가(NYMEX·ICE, 전 정산 대비): " + ", ".join(
+            f"{k} ${v[0]:,.2f}({v[1]:+.2f}%)" for k, v in _OIL_SETTLE.items())
+            + " — '간밤 유가가 올랐다/내렸다'는 이 값으로만 판단하세요. 지수·지표의 WTI 값은 작성 시각 시세(정산가 대비)이므로, 표에 쓸 때는 '작성 시각 시세'로 밝히세요.")
     if us_movers:
         lines.append("미국 주목 5종목(거래대금 상위 4 + 뉴스·화제성 픽 1): " + "; ".join(
             f'{x["symbol"]} {x.get("name","")} {x.get("price","")} {x.get("chg","")}'
@@ -1854,7 +2047,7 @@ def _ai_user_prompt(mode, date_kst, items, asof, vol, rank_up, rank_dn, flows, u
         "요구사항:\n"
         "1) 모든 수치·뉴스·주장에 출처를 명시하세요(web_search로 확인한 매체명+가능하면 링크). 확인 안 된 사실은 쓰지 마세요.\n"
         "2) 전망/주가 예상은 반드시 '근거 → 결론' 순서로, 시나리오(상승/하락/횡보 등)와 트리거를 함께. 단정적 매수·매도 권유는 금지.\n"
-        "2-2) [수치 일관성 · 사고#40] ① 종목의 종가·등락률·거래량은 위 '확정 데이터' 값만 씁니다. 장중 고점이나 시간 외 등락을 쓸 때는 '장중'·'시간 외'를 반드시 붙이고, 종가 등락률과 다른 숫자를 같은 의미로 섞지 마세요(예: 표 +2.87%인데 박스 +2.92% 금지). ② 한 기사 안에서 같은 수치(매출·성장률·가이던스·등락률)는 섹션이 달라도 하나의 값으로 통일합니다. ③ 달러 금액의 한국어 표기: $108B = 1,080억 달러, $3.66B = 36억 6,000만 달러. '$108억'처럼 달러 기호와 '억·조'를 섞어 쓰지 마세요. ④ '전년 동기 ○○ 달러'를 쓸 때는 성장률과 계산이 맞는지 확인하세요(예: 36억 6,000만 달러가 +168%면 전년 동기는 약 13억 6,500만 달러). ⑤ 종목의 전일 종가·종가·등락률·거래량은 본문에 직접 쓸 경우 위 '미국 주목 종목'에 준 값만 쓰고 웹 검색 값으로 바꾸지 마세요. ⑥ 웹 검색으로 얻은 실적·가이던스 숫자는 같은 기사 안에서 한 번 정한 값을 끝까지 같은 표기로 씁니다. 발행 전 별도 '숫자 교열'이 기사 전체를 대조합니다.\n"
+        "2-2) [수치 일관성 · 사고#40] ① 종목의 종가·등락률·거래량은 위 '확정 데이터' 값만 씁니다. 장중 고점이나 시간 외 등락을 쓸 때는 '장중'·'시간 외'를 반드시 붙이고, 종가 등락률과 다른 숫자를 같은 의미로 섞지 마세요(예: 표 +2.87%인데 박스 +2.92% 금지). ② 한 기사 안에서 같은 수치(매출·성장률·가이던스·등락률)는 섹션이 달라도 하나의 값으로 통일합니다. ③ 달러 금액의 한국어 표기: $108B = 1,080억 달러, $3.66B = 36억 6,000만 달러. '$108억'처럼 달러 기호와 '억·조'를 섞어 쓰지 마세요. ④ '전년 동기 ○○ 달러'를 쓸 때는 성장률과 계산이 맞는지 확인하세요(예: 36억 6,000만 달러가 +168%면 전년 동기는 약 13억 6,500만 달러). ⑤ 종목의 전일 종가·종가·등락률·거래량은 본문에 직접 쓸 경우 위 '미국 주목 종목'에 준 값만 쓰고 웹 검색 값으로 바꾸지 마세요. ⑥ 웹 검색으로 얻은 실적·가이던스 숫자는 같은 기사 안에서 한 번 정한 값을 끝까지 같은 표기로 씁니다. 발행 전 별도 '숫자 교열'이 기사 전체를 대조합니다. ⑦ [사고#42] 실적 발표 시점과 주가 반응 세션을 구분하세요 — 장 마감 후 발표된 실적은 그날 정규장 등락의 원인이 될 수 없습니다. 발표 시각을 현지·한국시간으로 적고, 반응은 '시간 외' 또는 '다음 정규장'으로 씁니다. ⑧ 수급 금액·연속 일수는 '확정 수급'만, 유가 방향은 '간밤 정산가'만 기준으로 씁니다.\n"
         "2-1) [필수 · 사고#39] 모든 섹션은 끝(takeaway 바로 앞)에 '현재·전망·트리거' 박스(div.outlook, 위 클래스 목록의 형식 그대로)를 1개 넣습니다. ① 📍현재: 그 섹션 주제의 지금 상태를 확정 수치와 함께. ② 전망: ①상방·②기본·③하방 3개 시나리오(가능하면 지수·가격 범위). ③ 트리거: 각 시나리오마다 '이런 신호가 나오면 그 시나리오'라는 확인 신호 — 가격선, 지표 결과, 수급 전환, 예정 일정(KST 병기). 종목 심층 분석 섹션은 종목마다 박스를 1개씩 넣습니다. 트리거의 일정·날짜는 web_search로 확인된 것만 쓰고, 가격선은 제공 수치 기준으로 편집부가 정한 확인선임을 전제로 씁니다.\n"
         "3) 뉴스는 직접 인용 대신 자신의 말로 요약(저작권). 출처만 표기.\n"
         "4) 분량은 충실하게(읽을거리 있는 데일리 뉴스레터 수준). 과장·미확인 추측 금지.\n"
@@ -2783,6 +2976,14 @@ def main():
         items.update(fetch_us_yields())
     except Exception as _e:
         sys.stderr.write(f"[yh] 국채금리 수집 실패(계속 진행): {_e}\n")
+    try:   # 사고#42: 유가 간밤 정산가 · 확정 수급 이력
+        fetch_oil_settle()
+    except Exception as _e:
+        sys.stderr.write(f"[oil] 정산가 경고(무시): {_e}\n")
+    try:
+        build_flow_facts(now, mode)
+    except Exception as _e:
+        sys.stderr.write(f"[flow-hist] 확정 수급 경고(무시): {_e}\n")
 
     if mode == "open":
         dji = fmp_index("^DJI", os.environ.get("FMP_API_KEY", "").strip()) or yahoo_index("^DJI")
@@ -2912,6 +3113,14 @@ def main():
                 print("[verify] 단위 혼용 발견 — 바로 아래 숫자 교열 단계에서 자동 환산(사고#41)")
         except Exception as _e:
             sys.stderr.write(f"[num] 수치 일관성 점검 경고(무시): {_e}\n")
+        # ── 사고#42: 연속 일수 결정적 교정 · 유가 기준 안내 ──
+        try:
+            htmlstr, _fmsgs = fix_flow_streaks(htmlstr)
+            for _m in _fmsgs:
+                print(f"[flow-fix] {_m}")
+            htmlstr = add_oil_note(htmlstr)
+        except Exception as _e:
+            sys.stderr.write(f"[flow-fix] 경고(무시): {_e}\n")
         # ── 숫자 교열(사고#41) — '$N억' 결정적 환산 → AI 교열(웹검색 없음) → 문맥 일치 자리만 교체 ──
         try:
             htmlstr, _umsgs = fix_usd_eok_notation(htmlstr)
