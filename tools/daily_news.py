@@ -208,6 +208,7 @@ def fetch_investors(token, app_key, app_secret):
 _FLOW_FACTS = []      # 프롬프트에 넣을 '확정 수급' 줄(코드 계산)
 _FLOW_STATE = {}      # 결정적 교정용: {"KOSPI": {"frgn": (sign, days), ...}}
 _OIL_SETTLE = {}      # {"WTI": (정산가, 등락%), "브렌트": (...)}
+_IDX_WEEK = {}        # 사고#43: {"필라델피아 반도체지수": ("11/13(금)", 일간%, 주간%), ...}
 
 def _http_text(url, headers=None, timeout=20, enc="utf-8"):
     h = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36"}
@@ -278,6 +279,14 @@ def _eok(v):
         return f"{sgn}{jo}조" + (f" {rest:,}억" if rest else "") + "원"
     return f"{sgn}{a:,.0f}억원"
 
+def _mdw(d):
+    """'2026-11-13' → '11/13(금)' (요일은 달력 계산값 · 사고#43)."""
+    try:
+        dt = datetime.strptime(str(d)[:10], "%Y-%m-%d")
+        return f"{dt.month}/{dt.day}({WEEKDAY_KR[dt.weekday()]})"
+    except Exception:
+        return str(d)[5:10].replace("-", "/")
+
 def build_flow_facts(now, mode):
     """프롬프트용 '확정 수급' 줄을 만들고 결정적 교정용 상태를 저장."""
     _FLOW_FACTS.clear(); _FLOW_STATE.clear()
@@ -293,9 +302,10 @@ def build_flow_facts(now, mode):
             continue
         r0 = rows[0]
         stale = (mode == "close" and r0["date"] != today)
-        head = (f"{label} {r0['date'][5:].replace('-', '/')} 외국인 {_eok(r0['frgn'])} · 기관 {_eok(r0['orgn'])} · 개인 {_eok(r0['indv'])}")
-        recent = ", ".join(f"{r['date'][5:].replace('-', '/')} {_eok(r['frgn'])}" for r in rows[:7])
-        parts = [head, f"최근 외국인 일별: {recent}"]
+        prelim = (mode == "close" and r0["date"] == today)
+        head = (f"{label} {_mdw(r0['date'])}{'(마감 직후 잠정치)' if prelim else ''} 외국인 {_eok(r0['frgn'])} · 기관 {_eok(r0['orgn'])} · 개인 {_eok(r0['indv'])}")
+        recent = ", ".join(f"{_mdw(r['date'])} {_eok(r['frgn'])}/{_eok(r['orgn'])}/{_eok(r['indv'])}" for r in rows[:7])
+        parts = [head, f"최근 일별(외국인/기관/개인): {recent}"]
         st = {}
         for key, nm in (("frgn", "외국인"), ("orgn", "기관")):
             res = _streak(rows, key)
@@ -305,15 +315,90 @@ def build_flow_facts(now, mode):
             if cur["sign"] == 0:
                 continue
             side = "순매수" if cur["sign"] > 0 else "순매도"
-            txt = (f"{nm} {cur['days']}거래일 연속 {side}({cur['from'][5:].replace('-', '/')}~{cur['to'][5:].replace('-', '/')}, 누적 {_eok(cur['sum'])})")
+            txt = (f"{label} {nm} {cur['days']}거래일 연속 {side}({_mdw(cur['from'])}~{_mdw(cur['to'])}, 누적 {_eok(cur['sum'])})")
             if prev["days"]:
                 pside = "순매수" if prev["sign"] > 0 else "순매도"
                 txt += f" · 그 직전 {prev['days']}거래일 연속 {pside}(누적 {_eok(prev['sum'])})"
             parts.append(txt)
-            st[key] = (cur["sign"], cur["days"])
+            st[key] = (cur["sign"], cur["days"], cur["from"], cur["to"])
         _FLOW_STATE[mk] = st
+        if mk == "KOSPI":
+            _FLOW_STATE["_asof"] = r0["date"]
         _FLOW_FACTS.append(f"확정 수급[{label}, 출처 {src}{', 오늘 확정치 미반영(전 거래일까지)' if stale else ''}]: " + " | ".join(parts))
+    _FLOW_FACTS.append("(수급 표기 규칙 · 사고#43 — 날짜 뒤 요일은 코드가 달력으로 계산한 값이니 표·본문에 그대로 옮기고 직접 계산하지 마세요. "
+                       "수급표를 만들면 외국인·기관·개인 칸을 위 일별 값으로 모두 채우세요. '○거래일 연속'은 시장(코스피·코스닥)과 주체(외국인·기관)별 "
+                       "위 값을 쓰고, 문장에 시장을 꼭 밝히세요. '마감 직후 잠정치'로 표시된 값은 본문에 '잠정'이라고 밝히세요.)")
     print(f"[flow-hist] 확정 수급 {len(_FLOW_FACTS)}줄 확보({src})")
+
+def fetch_us_index_week():
+    """사고#43: 미 주요 지수의 마지막 거래일 '하루' 등락과 '주간'(직전 주 마지막 종가 대비) 등락. 야후 일봉."""
+    out = {}
+    for sym, nm in (("^SOX", "필라델피아 반도체지수"), ("^IXIC", "나스닥"), ("^GSPC", "S&P 500"), ("^DJI", "다우")):
+        try:
+            j = _yahoo_get(f"https://query2.finance.yahoo.com/v8/finance/chart/{urllib.parse.quote(sym)}?range=1mo&interval=1d")
+            r = j["chart"]["result"][0]
+            ts = r.get("timestamp") or []
+            cl = (r["indicators"]["quote"][0]).get("close") or []
+            bars = [(datetime.fromtimestamp(t, timezone(timedelta(hours=-5))).date(), c) for t, c in zip(ts, cl) if c]
+            if len(bars) < 6:
+                continue
+            d1, c1 = bars[-1]; c0 = bars[-2][1]
+            wk = d1.isocalendar()[:2]
+            prevw = [c for d, c in bars if d.isocalendar()[:2] < wk]
+            if not prevw:
+                continue
+            out[nm] = (f"{d1.month}/{d1.day}({WEEKDAY_KR[d1.weekday()]})", (c1 / c0 - 1) * 100, (c1 / prevw[-1] - 1) * 100)
+        except Exception as e:
+            sys.stderr.write(f"[idx-week] {nm} 실패: {e}\n")
+    _IDX_WEEK.clear(); _IDX_WEEK.update(out)
+    if out:
+        print("[idx-week] " + ", ".join(f"{k} {v[0]} 일간 {v[1]:+.2f}% · 주간 {v[2]:+.2f}%" for k, v in out.items()))
+    return out
+
+_IDX_ALIAS = {"필라델피아 반도체지수": ("필라델피아 반도체", "필라델피아반도체", "SOX"),
+              "나스닥": ("나스닥",), "S&P 500": ("S&amp;P", "S&P"), "다우": ("다우",)}
+
+def fix_daily_weekly_mixups(htmlstr):
+    """사고#43: '지수 … 주간 X%'의 X가 실제로는 마지막 거래일 하루 등락이고 주간 값과 다르면 '주간'→'하루'로 교정."""
+    msgs = []
+    if not _IDX_WEEK:
+        return htmlstr, msgs
+    def _one(part):
+        for nm, (dlab, dpct, wpct) in _IDX_WEEK.items():
+            for al in _IDX_ALIAS.get(nm, (nm,)):
+                pat = re.compile(re.escape(al) + r"[^.。!?]{0,60}?(주간)((?:\s|<[^>]+>)*)[+\-−]?(\d+(?:\.\d+)?)\s*%")
+                def _r(m):
+                    v = float(m.group(3)); nd = len(m.group(3).split(".")[1]) if "." in m.group(3) else 0
+                    if round(abs(dpct), nd) == round(v, nd) and abs(abs(wpct) - v) > 0.15:
+                        msgs.append(f"{nm} '주간 {m.group(3)}%' → '하루 {m.group(3)}%'({dlab} 일간, 주간은 {wpct:+.2f}%)")
+                        a, b = m.span(1)
+                        return m.group(0)[:a - m.start()] + "하루" + m.group(0)[b - m.start():]
+                    return m.group(0)
+                part = pat.sub(_r, part)
+        return part
+    parts = re.split(r"(<svg.*?</svg>)", htmlstr, flags=re.S)
+    return "".join(p if p.startswith("<svg") else _one(p) for p in parts), msgs
+
+def fix_guidance_bounds(htmlstr):
+    """사고#43: '가이던스(X) 상단/하단'에서 X가 기사에 'X(±p%)'로 적힌 중앙값이면 실제 상·하단 값으로 교정."""
+    msgs = []
+    plain = re.sub(r"<[^>]+>", "", htmlstr)
+    mids = {}
+    for m in re.finditer(r"([\d,]+)억\s*달러\s*\(\s*±\s*(\d+(?:\.\d+)?)\s*%\s*\)", plain):
+        mids[m.group(1)] = float(m.group(2))
+    if not mids:
+        return htmlstr, msgs
+    pat = re.compile(r"가이던스\s*\(\s*((?:<[^>]+>)*)([\d,]+)억\s*달러((?:</[^>]+>)*)\s*\)\s*(상단|하단)")
+    def _r(m):
+        x = m.group(2)
+        if x not in mids:
+            return m.group(0)
+        mid = float(x.replace(",", "")); p = mids[x]
+        bound = mid * (1 + p / 100) if m.group(4) == "상단" else mid * (1 - p / 100)
+        b = f"{int(round(bound)):,}"
+        msgs.append(f"가이던스({x}억 달러) {m.group(4)} → {m.group(4)} 약 {b}억 달러(중앙값 {x}억 달러, ±{p:g}%)")
+        return f"가이던스 {m.group(4)}({m.group(1)}약 {b}억 달러{m.group(3)}, 중앙값 {x}억 달러)"
+    return pat.sub(_r, htmlstr), msgs
 
 def fetch_oil_settle():
     """WTI·브렌트 '간밤 정산가'와 그 등락(전 정산 대비). 야후 일봉 기준."""
@@ -349,28 +434,70 @@ def _krw_amount(val, price=None, vol=None):
     return _eok(v / 1e8).lstrip("+")
 
 def fix_flow_streaks(htmlstr):
-    """사고#42: '외국인 N거래일 연속 순매수/순매도' 일수를 계산값으로 교정(코스피 기준, 문장에 코스닥·날짜가 없을 때만)."""
+    """사고#42→#43: '(코스피|코스닥) (외국인|기관) N거래일 연속 순매수/순매도'의 N을 확정 수급 계산값으로 교정.
+    시장은 같은 문단(p·li·td)의 같은 문장 안에서 그 문구 바로 앞에 나온 '코스닥/코스피(유가증권)'로 판단하고,
+    문장에 시장 언급이 없으면 코스피로 보되 그 숫자가 코스닥 값과 같으면 건드리지 않는다.
+    과거 구간 서술(직전·앞선·당시, 기준일과 다른 'M월 D일', 끝 날짜가 기준일이 아닌 'M/D~M/D')은 교정하지 않는다."""
     msgs = []
-    st = (_FLOW_STATE.get("KOSPI") or {}).get("frgn")
-    if not st:
+    if not any(k in _FLOW_STATE for k in ("KOSPI", "KOSDAQ")):
         return htmlstr, msgs
-    sign, days = st
-    side = "순매수" if sign > 0 else "순매도"
-    pat = re.compile(r"(외국인(?:은|이|의)?\s*(?:<[^>]+>)?\s*)(\d+)(거래일\s*연속\s*(?:소폭\s*)?" + side + ")")
-    def rep(m):
-        # 같은 문장만 본다(앞뒤 문장의 '코스닥'·날짜에 걸려 교정이 빠지지 않도록)
-        _pre = re.sub(r"<[^>]+>", "", htmlstr[max(0, m.start() - 200):m.start()])
-        _pre = re.split(r"[.!?]\s|\n", _pre)[-1]
-        _post = re.sub(r"<[^>]+>", "", htmlstr[m.end():m.end() + 80]).split(".")[0]
-        sent = _pre + re.sub(r"<[^>]+>", "", m.group(0)) + _post
-        if "코스닥" in sent or re.search(r"\d+월\s*\d+일", sent):
-            return m.group(0)
-        if int(m.group(2)) != days:
-            msgs.append(f"외국인 {m.group(2)}거래일 연속 {side} → {days}거래일(확정 수급 계산값)")
-            return m.group(1) + str(days) + m.group(3)
-        return m.group(0)
+    asof = _FLOW_STATE.get("_asof", "")
+    ok_md = set()
+    for d in (asof, datetime.now(KST).strftime("%Y-%m-%d")):
+        if d:
+            ok_md.add((int(d[5:7]), int(d[8:10])))
+    pat = re.compile(r"(?P<who>외국인|기관)(?P<j>(?:투자자)?(?:은|이|의|도)?\s*(?:<[^>]+>\s*)*)(?P<n>\d+)"
+                     r"(?P<mid>거래일\s*연속\s*(?:\((?P<rng>[^)]{0,24})\)\s*)?(?:소폭\s*|대규모\s*)?)(?P<side>순매수|순매도)")
+    MK = {"KOSPI": "코스피", "KOSDAQ": "코스닥"}
+    def _market(src, pos):
+        blk = max(src.rfind(t, 0, pos) for t in ("<p", "<li", "<td", "<h1", "<h2", "<h3", '<div class="ah-'))
+        pre_blk = re.sub(r"<[^>]+>", "", src[max(0, blk):pos])
+        pre_blk = re.split(r"[.!?](?:\s|$)", pre_blk)[-1]   # 같은 문장 안에서만 시장을 찾는다
+        hits = [(mm.start(), mm.group(0)) for mm in re.finditer(r"코스닥|코스피|유가증권", pre_blk)]
+        if hits:
+            return ("KOSDAQ" if hits[-1][1] == "코스닥" else "KOSPI"), True
+        return "KOSPI", False
+    def _fix_part(src):
+        out, last = [], 0
+        for m in pat.finditer(src):
+            key = "frgn" if m.group("who") == "외국인" else "orgn"
+            mk, sure = _market(src, m.start())
+            st = (_FLOW_STATE.get(mk) or {}).get(key)
+            if not st:
+                continue
+            sign, days, d_from, d_to = st
+            side = "순매수" if sign > 0 else "순매도"
+            n = int(m.group("n"))
+            if m.group("side") != side or n == days:
+                continue
+            if not sure:
+                other = (_FLOW_STATE.get("KOSDAQ" if mk == "KOSPI" else "KOSPI") or {}).get(key)
+                if other and other[1] == n:
+                    continue
+            _pre = re.sub(r"<[^>]+>", "", src[max(0, m.start() - 240):m.start()])
+            _pre = re.split(r"[.!?]\s|\n", _pre)[-1]
+            _post = re.sub(r"<[^>]+>", "", src[m.end():m.end() + 80]).split(".")[0]
+            sent = _pre + re.sub(r"<[^>]+>", "", m.group(0)) + _post
+            if re.search(r"(직전|앞선|이전|그 전|당시|지난주)\s*\S{0,6}\s*$", _pre[-14:]):
+                continue
+            if any((int(a), int(b_)) not in ok_md for a, b_ in re.findall(r"(\d{1,2})월\s*(\d{1,2})일", sent)):
+                continue
+            rng = m.group("rng") or ""
+            new_mid = m.group("mid")
+            if rng:
+                ends = re.findall(r"(\d{1,2})/(\d{1,2})", rng)
+                if not ends or (int(ends[-1][0]), int(ends[-1][1])) not in ok_md:
+                    continue
+                new_rng = f"{int(d_from[5:7])}/{int(d_from[8:10])}~{int(d_to[5:7])}/{int(d_to[8:10])}"
+                new_mid = new_mid.replace(f"({rng})", f"({new_rng})")
+            msgs.append(f"{MK[mk]} {m.group('who')} {n}거래일 연속 {side} → {days}거래일(확정 수급 계산값{'' if sure else ', 시장 미표기→코스피로 판단'})")
+            out.append(src[last:m.start()])
+            out.append(m.group("who") + m.group("j") + str(days) + new_mid + m.group("side"))
+            last = m.end()
+        out.append(src[last:])
+        return "".join(out)
     parts = re.split(r"(<svg.*?</svg>)", htmlstr, flags=re.S)
-    htmlstr = "".join(p if p.startswith("<svg") else pat.sub(rep, p) for p in parts)
+    htmlstr = "".join(p if p.startswith("<svg") else _fix_part(p) for p in parts)
     return htmlstr, msgs
 
 def add_oil_note(htmlstr):
@@ -1545,6 +1672,7 @@ def numeric_audit_fixes(api_key, facts_text, htmlstr):
         "3) 단위 환산 오류 — $1B = 10억 달러, $108B = 1,080억 달러, $3.66B = 36억 6,000만 달러. '$108억'처럼 기호와 억을 섞어 10배 틀린 경우 포함.\n"
         "4) 산식 모순 — 'A가 전년 대비 X% 증가'와 '전년 B'가 맞지 않음, 전일·금일 종가와 등락률이 맞지 않음 등. 계산으로 맞는 값을 구할 수 있을 때만.\n"
         "5) 수급 금액·'○거래일 연속' 일수가 확정 수급과 다르거나 장중 집계가 확정치처럼 쓰인 경우, 유가 방향이 간밤 정산가와 반대로 쓰인 경우.\n"
+        "6) [사고#43] 시장(코스피/코스닥)이나 주체(외국인/기관)를 바꿔 쓴 '○거래일 연속' 일수(예: 코스닥 외국인 8거래일인데 박스에 2거래일), 수급표의 빈칸('—')인데 확정 수급에 값이 있는 경우, 하루 등락을 '주간'으로 쓴 경우(이건 notes에), 가이던스 중앙값을 '상단/하단' 값으로 쓴 경우.\n"
         "(참고로만 notes에) 장 마감 후 발표된 실적을 그날 정규장 등락의 원인으로 쓴 시점·인과 혼동.\n"
         "고치지 말 것: 전망·시나리오의 가격 범위, 목표가, 의견, 출처로 확인 불가한 숫자, 반올림 차이(0.01%p·표기 자릿수 차이).\n"
         "확신이 없으면 fixes가 아니라 notes에 적으세요.\n\n"
@@ -1985,6 +2113,10 @@ def _ai_user_prompt(mode, date_kst, items, asof, vol, rank_up, rank_dn, flows, u
         lines.append("유가 간밤 정산가(NYMEX·ICE, 전 정산 대비): " + ", ".join(
             f"{k} ${v[0]:,.2f}({v[1]:+.2f}%)" for k, v in _OIL_SETTLE.items())
             + " — '간밤 유가가 올랐다/내렸다'는 이 값으로만 판단하세요. 지수·지표의 WTI 값은 작성 시각 시세(정산가 대비)이므로, 표에 쓸 때는 '작성 시각 시세'로 밝히세요.")
+    if _IDX_WEEK:
+        lines.append("미국 지수 등락(사고#43 — 일간 = 마지막 거래일 하루, 주간 = 직전 주 마지막 종가 대비 이번 주 누적): " + "; ".join(
+            f"{k} {v[0]} 일간 {v[1]:+.2f}% · 주간 {v[2]:+.2f}%" for k, v in _IDX_WEEK.items())
+            + " — 지수 등락을 쓸 때는 '하루(○일)'인지 '주간'인지 밝히고, '주간'은 이 주간 값만 쓰세요. 하루 등락을 '주간'이라 쓰지 마세요.")
     if us_movers:
         lines.append("미국 주목 5종목(거래대금 상위 4 + 뉴스·화제성 픽 1): " + "; ".join(
             f'{x["symbol"]} {x.get("name","")} {x.get("price","")} {x.get("chg","")}'
@@ -2047,7 +2179,7 @@ def _ai_user_prompt(mode, date_kst, items, asof, vol, rank_up, rank_dn, flows, u
         "요구사항:\n"
         "1) 모든 수치·뉴스·주장에 출처를 명시하세요(web_search로 확인한 매체명+가능하면 링크). 확인 안 된 사실은 쓰지 마세요.\n"
         "2) 전망/주가 예상은 반드시 '근거 → 결론' 순서로, 시나리오(상승/하락/횡보 등)와 트리거를 함께. 단정적 매수·매도 권유는 금지.\n"
-        "2-2) [수치 일관성 · 사고#40] ① 종목의 종가·등락률·거래량은 위 '확정 데이터' 값만 씁니다. 장중 고점이나 시간 외 등락을 쓸 때는 '장중'·'시간 외'를 반드시 붙이고, 종가 등락률과 다른 숫자를 같은 의미로 섞지 마세요(예: 표 +2.87%인데 박스 +2.92% 금지). ② 한 기사 안에서 같은 수치(매출·성장률·가이던스·등락률)는 섹션이 달라도 하나의 값으로 통일합니다. ③ 달러 금액의 한국어 표기: $108B = 1,080억 달러, $3.66B = 36억 6,000만 달러. '$108억'처럼 달러 기호와 '억·조'를 섞어 쓰지 마세요. ④ '전년 동기 ○○ 달러'를 쓸 때는 성장률과 계산이 맞는지 확인하세요(예: 36억 6,000만 달러가 +168%면 전년 동기는 약 13억 6,500만 달러). ⑤ 종목의 전일 종가·종가·등락률·거래량은 본문에 직접 쓸 경우 위 '미국 주목 종목'에 준 값만 쓰고 웹 검색 값으로 바꾸지 마세요. ⑥ 웹 검색으로 얻은 실적·가이던스 숫자는 같은 기사 안에서 한 번 정한 값을 끝까지 같은 표기로 씁니다. 발행 전 별도 '숫자 교열'이 기사 전체를 대조합니다. ⑦ [사고#42] 실적 발표 시점과 주가 반응 세션을 구분하세요 — 장 마감 후 발표된 실적은 그날 정규장 등락의 원인이 될 수 없습니다. 발표 시각을 현지·한국시간으로 적고, 반응은 '시간 외' 또는 '다음 정규장'으로 씁니다. ⑧ 수급 금액·연속 일수는 '확정 수급'만, 유가 방향은 '간밤 정산가'만 기준으로 씁니다.\n"
+        "2-2) [수치 일관성 · 사고#40] ① 종목의 종가·등락률·거래량은 위 '확정 데이터' 값만 씁니다. 장중 고점이나 시간 외 등락을 쓸 때는 '장중'·'시간 외'를 반드시 붙이고, 종가 등락률과 다른 숫자를 같은 의미로 섞지 마세요(예: 표 +2.87%인데 박스 +2.92% 금지). ② 한 기사 안에서 같은 수치(매출·성장률·가이던스·등락률)는 섹션이 달라도 하나의 값으로 통일합니다. ③ 달러 금액의 한국어 표기: $108B = 1,080억 달러, $3.66B = 36억 6,000만 달러. '$108억'처럼 달러 기호와 '억·조'를 섞어 쓰지 마세요. ④ '전년 동기 ○○ 달러'를 쓸 때는 성장률과 계산이 맞는지 확인하세요(예: 36억 6,000만 달러가 +168%면 전년 동기는 약 13억 6,500만 달러). ⑤ 종목의 전일 종가·종가·등락률·거래량은 본문에 직접 쓸 경우 위 '미국 주목 종목'에 준 값만 쓰고 웹 검색 값으로 바꾸지 마세요. ⑥ 웹 검색으로 얻은 실적·가이던스 숫자는 같은 기사 안에서 한 번 정한 값을 끝까지 같은 표기로 씁니다. 발행 전 별도 '숫자 교열'이 기사 전체를 대조합니다. ⑦ [사고#42] 실적 발표 시점과 주가 반응 세션을 구분하세요 — 장 마감 후 발표된 실적은 그날 정규장 등락의 원인이 될 수 없습니다. 발표 시각을 현지·한국시간으로 적고, 반응은 '시간 외' 또는 '다음 정규장'으로 씁니다. ⑧ 수급 금액·연속 일수는 '확정 수급'만, 유가 방향은 '간밤 정산가'만 기준으로 씁니다. ⑨ [사고#43] 지수·종목 등락률은 기간을 밝히세요 — '하루(○일)'와 '주간'을 섞지 말고, '주간'은 '미국 지수 등락'의 주간 값만 씁니다. ⑩ 가이던스가 '1,080억 달러(±2%)'처럼 범위로 주어지면 1,080억 달러는 중앙값입니다. '상단·하단'은 범위의 끝값(예: 약 1,102억·1,058억 달러)으로 쓰세요. ⑪ 날짜에 요일을 붙일 때(표의 '11/13(금)' 포함)는 '확정 수급'에 적힌 요일을 그대로 쓰고, '○거래일 연속'은 시장(코스피·코스닥)과 주체(외국인·기관)를 밝혀 그 계산값을 씁니다. 같은 사실은 본문·표·박스·관전 포인트에서 같은 값이어야 합니다.\n"
         "2-1) [필수 · 사고#39] 모든 섹션은 끝(takeaway 바로 앞)에 '현재·전망·트리거' 박스(div.outlook, 위 클래스 목록의 형식 그대로)를 1개 넣습니다. ① 📍현재: 그 섹션 주제의 지금 상태를 확정 수치와 함께. ② 전망: ①상방·②기본·③하방 3개 시나리오(가능하면 지수·가격 범위). ③ 트리거: 각 시나리오마다 '이런 신호가 나오면 그 시나리오'라는 확인 신호 — 가격선, 지표 결과, 수급 전환, 예정 일정(KST 병기). 종목 심층 분석 섹션은 종목마다 박스를 1개씩 넣습니다. 트리거의 일정·날짜는 web_search로 확인된 것만 쓰고, 가격선은 제공 수치 기준으로 편집부가 정한 확인선임을 전제로 씁니다.\n"
         "3) 뉴스는 직접 인용 대신 자신의 말로 요약(저작권). 출처만 표기.\n"
         "4) 분량은 충실하게(읽을거리 있는 데일리 뉴스레터 수준). 과장·미확인 추측 금지.\n"
@@ -2762,6 +2894,36 @@ def verify_index_figures(htmlstr, items, asof):
     return (len(hard) == 0), issues
 
 
+_SLASH_WD = re.compile(r"(?<![\d/.])(\d{1,2})/(\d{1,2})\s*\(([월화수목금토일])\)")
+
+def _near_date(mo, dd, base_date, span=200):
+    best = None
+    for cy in (base_date.year - 1, base_date.year, base_date.year + 1):
+        try:
+            dt = datetime(cy, mo, dd)
+        except ValueError:
+            continue
+        gap = abs((dt.date() - base_date.date()).days)
+        if gap <= span and (best is None or gap < best[0]):
+            best = (gap, dt)
+    return best[1] if best else None
+
+def fix_slash_weekdays(htmlstr, base_date):
+    """사고#43: 표·본문의 'M/D(요일)' 요일을 달력 계산값으로 결정적 교정(날짜는 불변). 반환 (html, 교정목록)."""
+    fixes = []
+    def _sub(m):
+        mo, dd, wk = int(m.group(1)), int(m.group(2)), m.group(3)
+        if not (1 <= mo <= 12):
+            return m.group(0)
+        dt = _near_date(mo, dd, base_date)
+        if dt is None or WEEKDAY_KR[dt.weekday()] == wk:
+            return m.group(0)
+        c = WEEKDAY_KR[dt.weekday()]
+        fixes.append(f"'{m.group(0)}' → '({c})'로 요일 자동 정정({dt:%Y-%m-%d})")
+        return m.group(0).replace(f"({wk})", f"({c})")
+    parts = re.split(r"(<svg.*?</svg>)", htmlstr, flags=re.S)
+    return "".join(p if p.startswith("<svg") else _SLASH_WD.sub(_sub, p) for p in parts), fixes
+
 def fix_weekday_mismatches(htmlstr, base_date):
     """요일'만' 틀린 날짜 병기를 실제 달력 요일로 결정적 교정(2026-07-08 신설).
     재생성 피드백으로도 AI의 요일 계산 오류가 반복(두더지 게임)돼, 마지막 단계에서
@@ -2806,7 +2968,9 @@ def fix_weekday_mismatches(htmlstr, base_date):
             return m.group(0).replace(f"({stated})", f"({correct})")
         return m.group(0).replace(f"{stated}요일", f"{correct}요일")
 
-    return pat.sub(_sub, htmlstr), fixes
+    htmlstr = pat.sub(_sub, htmlstr)
+    htmlstr, _sf = fix_slash_weekdays(htmlstr, base_date)   # 사고#43
+    return htmlstr, fixes + _sf
 
 
 def _valid_date(y, mo, dd):
@@ -2855,6 +3019,11 @@ def verify_event_weekdays(htmlstr, base_date):
         issues.append(
             f"날짜-요일 불일치: '{m.group(0).strip()}' — {dt.year}년 {mo}월 {dd}일의 실제 요일은 "
             f"'{WEEKDAY_KR[dt.weekday()]}'. 일정 자체가 잘못됐을 가능성(웹 검색 재확인 필요)")
+    for m in _SLASH_WD.finditer(text):   # 사고#43: 'M/D(요일)' 형식(수급표 등)
+        mo, dd, wk = int(m.group(1)), int(m.group(2)), m.group(3)
+        dt = _near_date(mo, dd, base_date) if 1 <= mo <= 12 else None
+        if dt is not None and WEEKDAY_KR[dt.weekday()] != wk:
+            issues.append(f"날짜-요일 불일치: '{m.group(0)}' — {dt:%Y-%m-%d}의 실제 요일은 '{WEEKDAY_KR[dt.weekday()]}'")
     return (len(issues) == 0), issues
 
 # ----------------------------- manifest / build -----------------------------
@@ -2984,6 +3153,10 @@ def main():
         build_flow_facts(now, mode)
     except Exception as _e:
         sys.stderr.write(f"[flow-hist] 확정 수급 경고(무시): {_e}\n")
+    try:   # 사고#43: 미 지수 일간·주간 등락(‘주간’ 혼용 방지)
+        fetch_us_index_week()
+    except Exception as _e:
+        sys.stderr.write(f"[idx-week] 경고(무시): {_e}\n")
 
     if mode == "open":
         dji = fmp_index("^DJI", os.environ.get("FMP_API_KEY", "").strip()) or yahoo_index("^DJI")
@@ -3118,6 +3291,12 @@ def main():
             htmlstr, _fmsgs = fix_flow_streaks(htmlstr)
             for _m in _fmsgs:
                 print(f"[flow-fix] {_m}")
+            # 사고#43: 'M/D(요일)' 요일 · 일간/주간 혼용 · 가이던스 상·하단
+            htmlstr, _wmsgs = fix_slash_weekdays(htmlstr, now)
+            htmlstr, _dmsgs = fix_daily_weekly_mixups(htmlstr)
+            htmlstr, _gmsgs = fix_guidance_bounds(htmlstr)
+            for _m in _wmsgs + _dmsgs + _gmsgs:
+                print(f"[fix43] {_m}")
             htmlstr = add_oil_note(htmlstr)
         except Exception as _e:
             sys.stderr.write(f"[flow-fix] 경고(무시): {_e}\n")
