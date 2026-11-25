@@ -20,6 +20,7 @@
 """
 import json, os, sys, time, html, subprocess, urllib.request, urllib.error
 import re
+import http.client  # 사고#44
 from datetime import datetime, timezone, timedelta
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -2224,6 +2225,43 @@ def _ai_user_prompt(mode, date_kst, items, asof, vol, rank_up, rank_dn, flows, u
 _LAST_STOP = {"reason": None}   # 사고#40: 직전 호출의 stop_reason(max_tokens 잘림 감지용)
 
 
+def _read_sse(req):
+    """사고#44: Messages API 스트리밍(SSE) 응답을 읽어 (본문 텍스트, stop_reason) 반환.
+    읽기 타임아웃은 '이벤트 사이 간격' 기준(서버가 ping을 주기적으로 보냄). 끝(message_stop)까지
+    오지 않으면 ValueError → 재시도. 스트림 중 error 이벤트(과부하 등)도 재시도 대상."""
+    texts, kinds, stop, done = {}, {}, None, False
+    with urllib.request.urlopen(req, timeout=180) as r:
+        for raw in r:
+            line = raw.decode("utf-8", "ignore").rstrip("\r\n")
+            if not line.startswith("data:"):
+                continue
+            try:
+                d = json.loads(line[5:].strip())
+            except Exception:
+                continue
+            t = d.get("type")
+            if t == "content_block_start":
+                i = d.get("index"); cb = d.get("content_block") or {}
+                kinds[i] = cb.get("type")
+                if cb.get("type") == "text":
+                    texts[i] = cb.get("text", "") or ""
+            elif t == "content_block_delta":
+                dl = d.get("delta") or {}
+                if dl.get("type") == "text_delta":
+                    i = d.get("index"); texts[i] = texts.get(i, "") + (dl.get("text") or "")
+            elif t == "message_delta":
+                stop = (d.get("delta") or {}).get("stop_reason") or stop
+            elif t == "message_stop":
+                done = True
+            elif t == "error":
+                er = d.get("error") or {}
+                raise ValueError(f"스트림 오류 {er.get('type')}: {str(er.get('message'))[:200]}")
+    if not done:
+        raise ValueError("스트림이 끝나기 전에 연결 종료")
+    out = "\n".join(texts[i] for i in sorted(texts) if kinds.get(i) == "text" and texts[i]).strip()
+    return out, stop
+
+
 def call_anthropic(api_key, system, user, max_tokens=24000, max_searches=7, max_attempts=4, use_search=True):
     # 재시도 정책(사고#8 대응): 과부하·타임아웃·5xx·429 등 '일시적' 오류는 백오프 후 재시도.
     # 단 400(잔액부족 등)·401·403은 재시도해도 동일하므로 즉시 실패시켜 폴백 판단으로 넘긴다.
@@ -2237,6 +2275,7 @@ def call_anthropic(api_key, system, user, max_tokens=24000, max_searches=7, max_
     if not use_search:
         body.pop("tools", None)
     payload = json.dumps(body).encode("utf-8")
+    payload_stream = json.dumps(dict(body, stream=True)).encode("utf-8")   # 사고#44
     last_err = None
     for attempt in range(1, max_attempts + 1):
         req = urllib.request.Request("https://api.anthropic.com/v1/messages",
@@ -2246,13 +2285,20 @@ def call_anthropic(api_key, system, user, max_tokens=24000, max_searches=7, max_
                                               "anthropic-version": "2023-06-01",
                                               "User-Agent": UA}, method="POST")
         try:
-            # 사고#27·#28 대응: 폭락/폭등일 대용량 생성(web_search 포함)은 응답에 4분+ 소요될 수 있음.
-            # 240초에서 600초로 상향 — 서버가 응답을 완성할 때까지 read를 기다린다.
-            with urllib.request.urlopen(req, timeout=900) as r:
-                data = json.load(r)
-            _LAST_STOP["reason"] = data.get("stop_reason")
-            texts = [b.get("text", "") for b in data.get("content", []) if b.get("type") == "text"]
-            out = "\n".join(t for t in texts if t).strip()
+            # 사고#44: 비스트리밍은 생성 4분+ 시 유휴 연결이 끊김(RemoteDisconnected) → 스트리밍 기본.
+            # 마지막 시도만 비스트리밍(스트리밍 경로 자체 문제 대비).
+            _stream = os.environ.get("AI_STREAM", "1").strip() != "0" and attempt < max_attempts
+            if _stream:
+                req = urllib.request.Request("https://api.anthropic.com/v1/messages",
+                                             data=payload_stream, headers=req.headers, method="POST")
+                out, stop = _read_sse(req)
+                _LAST_STOP["reason"] = stop
+            else:
+                with urllib.request.urlopen(req, timeout=900) as r:
+                    data = json.load(r)
+                _LAST_STOP["reason"] = data.get("stop_reason")
+                texts = [b.get("text", "") for b in data.get("content", []) if b.get("type") == "text"]
+                out = "\n".join(t for t in texts if t).strip()
             if not out:
                 raise ValueError("빈 응답(텍스트 블록 없음)")
             return out
@@ -2264,7 +2310,7 @@ def call_anthropic(api_key, system, user, max_tokens=24000, max_searches=7, max_
                     detail = ""
                 raise RuntimeError(f"Anthropic {e.code} 비재시도 오류(잔액/인증 점검): {detail}") from e
             last_err = f"HTTP {e.code}"
-        except (urllib.error.URLError, TimeoutError, OSError, ValueError) as e:
+        except (urllib.error.URLError, TimeoutError, OSError, ValueError, http.client.HTTPException) as e:
             last_err = repr(e)
         if attempt < max_attempts:
             wait = min(45, 6 * (2 ** (attempt - 1)))  # 6 → 12 → 24 → (45)
