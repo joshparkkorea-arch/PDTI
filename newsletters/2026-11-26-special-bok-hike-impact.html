@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<!-- INVEST_STORY_LOCKED -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>[특집] 한은 기준금리 3.25% 인상 — 주식·채권·환율·금·은·비트코인·가계부채, 무엇이 어떻게 움직이나</title>
+<meta property="og:title" content="[특집] 한은 기준금리 3.25% 인상 — 주식·채권·환율·금·은·비트코인·가계부채, 무엇이 어떻게 움직이나">
+<meta property="og:description" content="11월 26일 한국은행이 기준금리를 3.00%에서 3.25%로 올렸다. 올해 세 번째 인상이다. 한국·미국 주식과 채권, 원/달러, 금·은·비트코인, 가계대출·부동산까지 자산별로 현재 상태·전망·트리거를 정리하고, 모든 숫자를 두 곳 이상 출처로 대조해 실었다.">
+<meta property="og:image" content="https://investstory.co.kr/assets/og-default.png">
+<meta property="og:type" content="article">
+<style>
+
+:root{--navy:#16335C;--navy2:#1B3C6E;--navy-bar:#2E4B77;--gold:#C9A654;--up:#C0392B;--down:#1B5E9B;--ink:#1c2431;--mut:#5b6675;--bg:#f6f7f9;--card:#ffffff;--line:#e3e7ee;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif;background:var(--bg);color:var(--ink);line-height:1.75;font-size:16.5px;-webkit-text-size-adjust:100%}
+.wrap{max-width:860px;margin:0 auto;padding:0 18px 64px}
+.masthead{background:var(--navy);color:#fff;padding:14px 18px;display:flex;justify-content:space-between;align-items:center}
+.masthead a.brand{color:#fff;text-decoration:none;font-weight:800;font-size:20px;letter-spacing:.4px}
+.masthead a.brand:visited{color:#fff}
+.masthead .sub{font-size:12.5px;opacity:.85}
+.flashbar{background:var(--navy2);color:#fff;text-align:center;font-weight:700;font-size:14px;padding:7px 10px;letter-spacing:.5px}
+h1{font-size:28px;line-height:1.38;margin:30px 0 10px;color:var(--navy);word-break:keep-all}
+.deck{font-size:18px;color:var(--mut);margin-bottom:14px;word-break:keep-all}
+.byline{font-size:13.5px;color:var(--mut);border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:10px 2px;margin-bottom:22px}
+h2{font-size:22px;color:var(--navy);margin:40px 0 14px;padding-left:12px;border-left:5px solid var(--gold);word-break:keep-all}
+h3{font-size:18px;color:var(--navy2);margin:26px 0 10px;word-break:keep-all}
+p{margin:0 0 15px;word-break:keep-all}
+.key{font-weight:700;box-shadow:inset 0 -0.55em 0 rgba(201,166,84,.32)}
+.up{color:var(--up);font-weight:700}
+.down{color:var(--down);font-weight:700}
+.num{font-weight:700;color:var(--navy);font-variant-numeric:tabular-nums}
+p.takeaway{margin:18px 0 8px;padding:13px 16px;background:#FBF7EE;border-left:4px solid var(--gold);border-radius:0 8px 8px 0;font-weight:700;color:var(--navy);font-size:15.5px;line-height:1.7}
+.lead-note{background:#fff8ec;border:1.5px solid var(--gold);border-radius:10px;padding:14px 16px;font-size:14.5px;margin:0 0 22px;color:#5a4a1e}
+.glossary{background:#fffdf7;border:1.5px solid var(--gold);border-radius:12px;padding:18px 20px;margin:0 0 30px}
+.glossary h3{margin:0 0 10px;font-size:16.5px;color:#8a6d1f}
+.glossary ul{list-style:none}
+.glossary li{font-size:14.5px;margin-bottom:7px;padding-left:14px;position:relative;word-break:keep-all}
+.glossary li::before{content:"▸";position:absolute;left:0;color:var(--gold)}
+table{width:100%;border-collapse:collapse;margin:16px 0 8px;font-size:15px;background:var(--card)}
+th{background:var(--navy);color:#fff;padding:10px 8px;font-weight:600;text-align:center;font-size:14px}
+td{padding:10px 8px;border-bottom:1px solid var(--line);text-align:center}
+td.l{text-align:left}
+.caption{font-size:13px;color:var(--mut);margin:4px 0 20px;text-align:center}
+.chart{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 14px 8px;margin:20px 0 6px}
+.chart svg{width:100%;height:auto;display:block}
+.callout{background:var(--card);border-left:5px solid var(--navy2);border-radius:0 10px 10px 0;padding:15px 18px;margin:18px 0;font-size:15.5px}
+.callout.red{border-left-color:var(--up);background:#fdf3f2}
+.callout.blue{border-left-color:var(--down);background:#f1f6fb}
+.rank{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin:18px 0}
+.rank h3{margin:0 0 4px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.rank .badge{display:inline-block;font-size:12px;font-weight:700;border-radius:20px;padding:2px 11px;color:#fff;vertical-align:middle}
+.rank .badge.neg{background:var(--down)} .rank .badge.pos{background:var(--up)}
+.rank .meta{font-size:13px;color:var(--mut);margin:0 0 11px;font-variant-numeric:tabular-nums}
+.scen{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin:16px 0}
+.scen h3{margin-top:0}
+.scen .prob{display:inline-block;background:var(--navy);color:#fff;font-size:13px;font-weight:700;border-radius:20px;padding:2px 12px;margin-left:8px;vertical-align:middle}
+.disc{background:#f0f1f4;border-radius:10px;padding:14px 16px;font-size:13px;color:var(--mut);margin:34px 0 10px}
+.homelink{display:block;text-align:center;margin:30px 0 0;font-size:15.5px}
+.homelink a{color:var(--navy2);font-weight:700;text-decoration:none;border-bottom:2px solid var(--gold)}
+ul.body-list{margin:0 0 15px 20px}
+ul.body-list li{margin-bottom:8px;word-break:keep-all}
+@media(max-width:560px){h1{font-size:22px}.deck{font-size:16px}body{font-size:15.5px}}
+
+
+.sumbox{background:linear-gradient(180deg,#16335C 0%,#1B3C6E 100%);color:#fff;border-radius:14px;padding:20px 22px 18px;margin:0 0 20px;box-shadow:0 2px 10px rgba(22,51,92,.18)}
+.sumbox h2{color:#fff;border-left:5px solid var(--gold);margin:0 0 12px;font-size:20px}
+.sumbox ol{margin:0 0 4px 22px}
+.sumbox li{margin-bottom:9px;font-size:15.5px;line-height:1.65;word-break:keep-all}
+.sumbox b,.sumbox .num{color:#FFE9A8}
+.sumbox .sub{font-size:12.5px;opacity:.85;margin-top:8px}
+.sumtbl{margin:0 0 6px;font-size:13.8px}
+.sumtbl th{font-size:13px;padding:8px 6px}
+.sumtbl td{padding:8px 6px;vertical-align:top}
+.sumtbl td.l{text-align:left;word-break:keep-all}
+.sumtbl td.n{font-variant-numeric:tabular-nums;font-weight:700;color:var(--navy);white-space:nowrap}
+.cft{border:1px solid var(--line);border-radius:12px;background:var(--card);margin:16px 0;overflow:hidden}
+.cft-row{display:flex;gap:12px;padding:12px 15px;border-bottom:1px solid var(--line);font-size:15px;line-height:1.7}
+.cft-row:last-child{border-bottom:0}
+.cft-k{flex:0 0 92px;font-weight:700;font-size:13.5px;padding-top:1px}
+.cft-k.now{color:var(--navy)} .cft-k.out{color:#8a6d1f} .cft-k.trg{color:var(--up)}
+.cft-row div{flex:1;word-break:keep-all}
+.src{font-size:12.5px;color:var(--mut);margin:-6px 0 18px}
+table.vt{font-size:13px}
+table.vt th:nth-child(3){width:48px}
+table.vt td{padding:7px 6px;text-align:left;vertical-align:top}
+table.vt td.c{text-align:center;white-space:nowrap}
+.pending{background:#fff3cd;border:1px dashed #b8860b;padding:8px 12px;border-radius:8px;font-size:14px}
+@media(max-width:560px){.cft-row{flex-direction:column;gap:3px}.cft-k{flex:none}.sumbox{padding:16px 15px}}
+
+</style>
+</head>
+<body>
+<div class="masthead">
+  <a class="brand" href="/">INVEST STORY</a>
+  <span class="sub">투자이야기 · 데일리 인베스트먼트 리포트</span>
+</div>
+<div class="flashbar">🚨 특집 — 한국은행 기준금리 3.25% 인상, 자산 지도 다시 그리기</div>
+<div class="wrap">
+
+<h1>한은, 기준금리 3.25%로 올렸다 — 주식·채권·환율·금·은·비트코인·가계부채에 퍼지는 파급 효과</h1>
+<p class="deck">반도체 수출 호황이 만든 성장률 상향과 2%대 후반 물가가 한은의 세 번째 인상을 불렀다. 인상은 시장이 이미 알고 있던 일이었다. 지금 중요한 건 "여기서 끝이냐, 한 번 더냐"다</p>
+<div class="byline">박철웅 기자 · 2026년 11월 26일 (목) · 제 252호 · 특집</div>
+
+<div class="sumbox">
+<h2>📌 3분 요약 — 먼저 읽는 핵심</h2>
+<ol>
+<li><b>무슨 일:</b> 한국은행 금융통화위원회가 11월 26일 기준금리를 <b>연 3.00%에서 3.25%로 0.25%포인트 인상</b>했다. 7월·8월에 이은 <b>올해 세 번째 인상</b>이고, 10월은 만장일치 동결이었다. 사전 조사에서 거시경제 전문가 14명은 전원 인상을 예상했다.</li>
+<li><b>왜:</b> 한은은 올해 성장률 전망을 <b>3.3%→3.9%</b>, 내년을 <b>2.9%→4.1%</b>로 올렸다. 3분기 성장률은 전기 대비 <b>1.0%</b>(한은 전망 0.3%), 10월 소비자물가와 근원물가는 모두 <b>2.8%</b>다. 11월 1~20일 수출은 <b>774억 달러(+101.5%)</b>, 반도체가 <b>385억 달러(+294.4%)</b>로 비중이 <b>49.7%</b>에 달했다.</li>
+<li><b>채권:</b> 국고채 3년 <b>3.583%</b>, 10년 <b>3.761%</b>(11/25). 연고점 대비 3년물은 <b>53.6bp</b>, 10년물은 <b>83.9bp</b> 내려와 있다. 시장은 "마지막 인상"에 먼저 베팅해 왔다.</li>
+<li><b>주식:</b> 코스피는 11/25 <b>−6.16%</b>(4,697.51)로 9월 23일 종가 고점(7,080.92) 대비 <b>−33.7%</b> 낮다. 인상보다 반도체 사이클과 미국 금리가 더 큰 변수다. 11/26 장중에는 4,780.95로 반등 중이다.</li>
+<li><b>환율·미국:</b> 원/달러 <b>1,342.4원</b>(11/26 10:07). 연준 정책금리는 <b>3.75~4.00%</b>로 한은보다 <b>0.50~0.75%p</b> 높고, 미 10월 PCE는 <b>3.8%</b>로 12월 인상 확률이 <b>98.1~99.8%</b>까지 올랐다. 한은이 올려도 한미 금리차는 그대로 남는다.</li>
+<li><b>금·은·비트코인:</b> 금(선물) <b>3,579.6달러</b>, 은 <b>41.15달러</b>, 비트코인 <b>60,519달러</b>(11/26 오전). 세 자산 모두 "금리 오르는 시대"의 압박을 받는 중이지만 오늘은 모두 반등했다.</li>
+<li><b>가계:</b> 은행 가계대출 금리 <b>4.96%</b>, 주담대 <b>4.88%</b>(9월). 한은은 0.25%p 인상이 가계 이자 부담을 약 <b>3조 3000억원</b> 늘린다고 추산한다. 서울 아파트값은 <b>+0.03%</b>(11/16 주)로 보합 근처다.</li>
+<li><b>다음 분기점:</b> 오늘 오전 <b>11시 10분 총재 기자간담회</b>, <b>12월 8~9일 미 FOMC</b>, 내년 1월 금통위. 추가 인상 신호가 나오면 단기 금리와 환율, 신호가 약하면 장기 금리와 성장주가 먼저 반응한다.</li>
+</ol>
+<div class="sub">※ 숫자는 2곳 이상 출처로 대조하거나 1차 자료 기준으로 골랐고, 시점(장중·마감·잠정)을 함께 적었다. 출처가 엇갈린 수치는 뺐고, 단일 출처로 쓴 수치는 맨 아래 「숫자 검증표」에 B등급으로 표시했다. 총재 기자간담회(11시 10분) 내용은 확인되는 대로 아래 ①절 박스에 업데이트한다.</div>
+</div>
+
+<h3 style="margin-top:6px">한눈에 보는 자산별 지도</h3>
+<table class="sumtbl">
+<tr><th>자산</th><th>현재 (시점)</th><th>인상의 영향</th><th>핵심 트리거</th></tr>
+<tr><td class="l"><b>국고채</b></td><td class="n">3년 3.583%<br>10년 3.761%<br><span style="font-weight:400;font-size:12px">(11/25)</span></td><td class="l">이미 하락 선반영 · 단기물은 신호에 민감</td><td class="l">총재 발언, 12월 국고채 발행계획</td></tr>
+<tr><td class="l"><b>원/달러</b></td><td class="n">1,342.4원<br><span style="font-weight:400;font-size:12px">(11/26 10:07)</span></td><td class="l">원화 지지 요인이나 한미 금리차 유지</td><td class="l">12/8~9 FOMC</td></tr>
+<tr><td class="l"><b>코스피</b></td><td class="n">4,697.51 (−6.16%)<br><span style="font-weight:400;font-size:12px">(11/25 종가)</span></td><td class="l">할인율 부담 vs 이익 전망 상향</td><td class="l">반도체·엔비디아, 11월 수출</td></tr>
+<tr><td class="l"><b>미국 증시</b></td><td class="n">S&amp;P 7,182.78<br>나스닥 23,585.80<br><span style="font-weight:400;font-size:12px">(11/25 마감)</span></td><td class="l">연준 인상 기대가 더 큰 변수</td><td class="l">PCE 후속, 12월 FOMC</td></tr>
+<tr><td class="l"><b>미 국채 10년</b></td><td class="n">4.85%<br><span style="font-weight:400;font-size:12px">(11/25)</span></td><td class="l">한은과 무관, 장기금리 방향 좌우</td><td class="l">12월 FOMC, 관세</td></tr>
+<tr><td class="l"><b>금 · 은</b></td><td class="n">3,579.6$ · 41.15$<br><span style="font-weight:400;font-size:12px">(선물, 11/26 오전)</span></td><td class="l">달러·실질금리 경로가 결정</td><td class="l">미 인플레이션·달러</td></tr>
+<tr><td class="l"><b>비트코인</b></td><td class="n">60,519$<br><span style="font-weight:400;font-size:12px">(11/26 오전)</span></td><td class="l">유동성 축소기 위험자산 약세</td><td class="l">ETF 자금, 12월 FOMC</td></tr>
+<tr><td class="l"><b>가계·부동산</b></td><td class="n">주담대 4.88% (9월)<br>서울 아파트 +0.03%</td><td class="l">변동금리 차주부터 이자 부담</td><td class="l">11월 코픽스, 주간 부동산 동향</td></tr>
+</table>
+
+<div class="lead-note">
+⏱ <b>본 기사는 11월 26일(목) 오전 한국은행 금융통화위원회 의결 직후(KST)</b> 기준으로 작성됐으며, 총재 기자간담회(11시 10분) 내용은 확인되는 대로 이 기사에 업데이트합니다. 국내 지수·환율은 <b>11/25 확정 종가 또는 11/26 장중</b>, 미국 지수는 <b>현지 11/25 마감치</b>입니다(미국은 11/26 추수감사절 휴장). 금·은·비트코인은 11/26 오전 시세입니다. 시나리오는 편집부 판단이며 <b>확률을 부여하지 않았고</b>, 특정 자산의 매수·매도 권유가 아닙니다.
+</div>
+
+<div class="glossary">
+<h3>📖 이 기사를 읽기 위한 핵심 용어</h3>
+<ul>
+<li><b>bp(베이시스포인트)</b> — 금리의 단위. 1bp는 0.01%p입니다. 25bp가 0.25%p, 곧 이번 인상폭입니다.</li>
+<li><b>점도표</b> — 금통위원들이 "앞으로 금리가 어디쯤 갈까"를 점으로 찍은 그림. 8월 공개분은 21개 점 중 3.25%에 10개, 3.50%에 6개였습니다(6개월 후 기준).</li>
+<li><b>근원물가</b> — 에너지·식료품처럼 들쭉날쭉한 항목을 뺀 물가. 중앙은행이 추세를 볼 때 즐겨 씁니다.</li>
+<li><b>PCE</b> — 미국 연준이 가장 중시하는 물가지표(개인소비지출 물가).</li>
+<li><b>코픽스(COFIX)</b> — 은행이 돈을 조달하는 평균 비용. 변동금리 주택담보대출이 이 숫자를 따라 움직입니다.</li>
+<li><b>한미 금리차</b> — 미국 정책금리에서 한국 정책금리를 뺀 값. 미국이 높을수록 달러로 돈이 쏠려 원화엔 부담입니다.</li>
+<li><b>스프레드</b> — 두 금리의 차이. 예를 들어 국고채 10년에서 3년을 뺀 값이 작아지면 장단기 금리가 평평해졌다(플래트닝)고 합니다.</li>
+</ul>
+</div>
+
+<h2>① 무슨 일이 있었나 — 예상대로, 그러나 의미는 다르다</h2>
+<p>11월 26일(목) 오전, 한국은행 금융통화위원회는 기준금리를 <span class="key">연 3.00%에서 3.25%로 0.25%포인트 올렸다</span>. 7월 2.50→2.75%, 8월 2.75→3.00%에 이은 올해 세 번째 인상으로, 10월 22일 만장일치 동결을 거쳐 한 달 만에 인상을 재개했다(8월 인상 이후로는 석 달 만이다). 3.25%는 2024년 가을 이후 가장 높은 수준이다. 다음 금통위는 내년 1월이라, 이번 금리는 최소 그때까지 유지된다.</p>
+
+<div class="chart"><svg viewBox="0 0 720 330" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="한국은행 기준금리 경로"><text x="360" y="26" text-anchor="middle" font-size="16" font-weight="700" fill="#16335C">한국은행 기준금리 경로 — 7월 이후 0.75%p</text><text x="360" y="46" text-anchor="middle" font-size="12.5" fill="#5b6675">올해 세 번째 인상 · 10월 22일은 만장일치 동결</text><line x1="70" y1="254.5" x2="690" y2="254.5" stroke="#eef0f4"/><text x="62" y="258.5" text-anchor="end" font-size="11.5" fill="#8a93a3">2.50%</text><line x1="70" y1="203.2" x2="690" y2="203.2" stroke="#eef0f4"/><text x="62" y="207.2" text-anchor="end" font-size="11.5" fill="#8a93a3">2.75%</text><line x1="70" y1="151.9" x2="690" y2="151.9" stroke="#eef0f4"/><text x="62" y="155.9" text-anchor="end" font-size="11.5" fill="#8a93a3">3.00%</text><line x1="70" y1="100.6" x2="690" y2="100.6" stroke="#eef0f4"/><text x="62" y="104.6" text-anchor="end" font-size="11.5" fill="#8a93a3">3.25%</text><polyline points="110,254.5 245,203.2 380,151.9 515,151.9 650,100.6" fill="none" stroke="#16335C" stroke-width="3.5" stroke-linejoin="round"/><circle cx="110" cy="254.5" r="6" fill="#16335C" stroke="#fff" stroke-width="2"/><text x="110" y="240.5" text-anchor="middle" font-size="14" font-weight="700" fill="#16335C">2.50%</text><text x="110" y="296" text-anchor="middle" font-size="12" fill="#1c2431">7월 이전</text><text x="110" y="312" text-anchor="middle" font-size="11" fill="#8a93a3"></text><circle cx="245" cy="203.2" r="6" fill="#16335C" stroke="#fff" stroke-width="2"/><text x="245" y="189.2" text-anchor="middle" font-size="14" font-weight="700" fill="#16335C">2.75%</text><text x="245" y="296" text-anchor="middle" font-size="12" fill="#1c2431">7/16</text><text x="245" y="312" text-anchor="middle" font-size="11" fill="#8a93a3">인상</text><circle cx="380" cy="151.9" r="6" fill="#16335C" stroke="#fff" stroke-width="2"/><text x="380" y="137.9" text-anchor="middle" font-size="14" font-weight="700" fill="#16335C">3.00%</text><text x="380" y="296" text-anchor="middle" font-size="12" fill="#1c2431">8/27</text><text x="380" y="312" text-anchor="middle" font-size="11" fill="#8a93a3">인상</text><circle cx="515" cy="151.9" r="6" fill="#16335C" stroke="#fff" stroke-width="2"/><text x="515" y="137.9" text-anchor="middle" font-size="14" font-weight="700" fill="#16335C">3.00%</text><text x="515" y="296" text-anchor="middle" font-size="12" fill="#1c2431">10/22</text><text x="515" y="312" text-anchor="middle" font-size="11" fill="#8a93a3">동결</text><circle cx="650" cy="100.6" r="7" fill="#C9A654" stroke="#fff" stroke-width="2"/><text x="650" y="86.6" text-anchor="middle" font-size="14" font-weight="700" fill="#C9A654">3.25%</text><text x="650" y="296" text-anchor="middle" font-size="12" fill="#1c2431">11/26</text><text x="650" y="312" text-anchor="middle" font-size="11" fill="#8a93a3">인상</text></svg></div>
+<p class="caption">기준금리 경로(2026년). 7월 이후 누적 0.75%포인트. 10월 22일은 만장일치 동결.</p>
+
+<p>시장은 이미 알고 있었다. 이투데이가 집계한 거시경제 전문가 14명은 <b>전원 인상</b>을 예상했고, 증권사 16곳도 3.25%를 전망했다. 금융투자협회 채권 전문가 100명 설문에서는 54%가 인상을 점쳤다. 따라서 "인상 자체"는 가격에 상당 부분 반영돼 있었고, 시장이 지켜본 건 <b>한은이 어디까지 갈 것이라고 말하느냐</b>다.</p>
+
+<h3>한은이 함께 내놓은 새 경제전망</h3>
+<table>
+<tr><th>항목</th><th>8월 전망</th><th>11월 전망</th><th>변화</th></tr>
+<tr><td class="l">성장률 2026년</td><td>3.3%</td><td class="num">3.9%</td><td><span class="up">+0.6%p</span></td></tr>
+<tr><td class="l">성장률 2027년</td><td>2.9%</td><td class="num">4.1%</td><td><span class="up">+1.2%p</span></td></tr>
+<tr><td class="l">성장률 2028년</td><td>—</td><td class="num">3.0%</td><td>처음 제시</td></tr>
+<tr><td class="l">소비자물가 2026년</td><td>2.7%</td><td class="num">2.7%</td><td>유지</td></tr>
+<tr><td class="l">소비자물가 2027년</td><td>2.3%</td><td class="num">2.4%</td><td><span class="up">+0.1%p</span></td></tr>
+<tr><td class="l">소비자물가 2028년</td><td>—</td><td class="num">2.1%</td><td>처음 제시</td></tr>
+</table>
+<p class="caption">자료: 헤럴드경제 보도(이투데이·서울신문 헤드라인과 성장률 수치 일치). 2026년 물가의 8월 수치는 "유지" 표기에 따라 동일하게 적었다.</p>
+
+<p>숫자의 결은 분명하다. <b>성장은 크게 올리고(+0.6%p, +1.2%p), 물가는 거의 그대로 둔 채 내년만 소폭 올렸다.</b> 3분기 성장률이 전기 대비 1.0%로 한은 전망(0.3%)을 세 배 이상 웃돌았고(수출 +2.3%, 설비투자 +4.1%), 10월 소비자물가와 근원물가가 모두 2.8%로 9월(2.9%)에서 내려오지 않았다. 반대편에는 <b>민간소비 −0.2%</b>가 있다. 반도체가 끌고 가계는 따라오지 못하는 성장이고, 한은의 인상은 그 사이의 간격 위에서 이뤄졌다.</p>
+
+<div class="callout">
+<b>🧭 총재 기자간담회 핵심</b> <span style="font-size:13px;color:#5b6675">(11시 10분 시작 · 확인되는 대로 업데이트)</span><br>
+<span class="pending">총재 기자간담회 내용을 확인하는 중입니다. 확인되는 대로 이 박스에 표결 결과, 추가 인상 관련 발언, 점도표 중간값을 반영합니다.</span>
+</div>
+
+<h2>② 채권 — 한국은 "인상 막바지" 베팅, 미국은 "더 올린다"</h2>
+<h3>한국 국고채</h3>
+<div class="chart"><svg viewBox="0 0 720 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="정책금리와 장기금리 비교"><text x="360" y="26" text-anchor="middle" font-size="16" font-weight="700" fill="#16335C">정책금리와 시장금리 — 한 줄로 놓고 보면</text><text x="360" y="46" text-anchor="middle" font-size="12.5" fill="#5b6675">연준 정책금리는 3.75~4.00% 구간의 상단 · 막대 끝 숫자가 금리(%)</text><text x="190" y="90" text-anchor="end" font-size="13" fill="#1c2431">한은 기준금리</text><rect x="200" y="70" width="286.0" height="28" rx="4" fill="#16335C"/><text x="494.0" y="90" font-size="14" font-weight="700" fill="#16335C">3.25%</text><text x="190" y="134" text-anchor="end" font-size="13" fill="#1c2431">국고채 3년 (11/25)</text><rect x="200" y="114" width="315.3" height="28" rx="4" fill="#2E4B77"/><text x="523.3" y="134" font-size="14" font-weight="700" fill="#2E4B77">3.583%</text><text x="190" y="178" text-anchor="end" font-size="13" fill="#1c2431">국고채 10년 (11/25)</text><rect x="200" y="158" width="331.0" height="28" rx="4" fill="#2E4B77"/><text x="539.0" y="178" font-size="14" font-weight="700" fill="#2E4B77">3.761%</text><text x="190" y="222" text-anchor="end" font-size="13" fill="#1c2431">연준 정책금리 상단</text><rect x="200" y="202" width="352.0" height="28" rx="4" fill="#C9A654"/><text x="560.0" y="222" font-size="14" font-weight="700" fill="#C9A654">4.00%</text><text x="190" y="266" text-anchor="end" font-size="13" fill="#1c2431">미 국채 10년 (11/25)</text><rect x="200" y="246" width="426.8" height="28" rx="4" fill="#C0392B"/><text x="634.8" y="266" font-size="14" font-weight="700" fill="#C0392B">4.85%</text></svg></div>
+<p class="caption">금리 수준 비교. 한국 금리는 11/25, 미국 국채는 11/25 마감 기준. 연준 정책금리는 3.75~4.00% 구간의 상단.</p>
+<div class="cft"><div class="cft-row"><span class="cft-k now">📍 현재 상태</span><div>국고채 3년 <span class="num">3.583%</span>(전일 대비 5.7bp 하락), 10년 <span class="num">3.761%</span>(5.8bp 하락)(11/25). 연고점(3년 4.119%·9/28, 10년 4.60%·9/15) 대비 <b>3년 53.6bp, 10년 83.9bp</b> 하락. 11/20 대비로는 3년 <span class="down">−5.9bp</span>, 10년 <span class="down">−9.6bp</span>. 3년물은 새 기준금리(3.25%)보다 <b>33.3bp</b>, 10년물은 <b>51.1bp</b> 높다. 10년-3년 스프레드는 <b>17.8bp</b>(11/20 21.5bp)로 더 평평해졌다. 외국인은 11/18~24 <b>5거래일 연속</b> 10년 국채선물을 순매수(누적 2만 5808계약).</div></div><div class="cft-row"><span class="cft-k out">🔭 전망</span><div>시장은 "이번이 마지막 인상"일 가능성에 먼저 베팅해 왔다. 그래서 인상 자체보다 <b>총재의 추가 인상 신호의 세기</b>가 금리를 가른다. 신호가 강하면 단기물(3년) 중심으로 금리가 오르는 약세가 나오고(키움증권 안예하), 한화투자증권 김성수는 금통위 이후 3년 3.80%·10년 4.10%까지의 상승도 시나리오로 제시했다. 반대로 NH투자증권 강승원은 기준금리가 3.50%까지 오르면 장기금리에는 오히려 하락 요인이 될 수 있다고 본다.</div></div><div class="cft-row"><span class="cft-k trg">⚡ 트리거</span><div>① 총재 간담회 표현(추가 인상 문구) ② 12/8~9 미 FOMC ③ 오늘 발표되는 12월 국고채 발행계획 ④ 내년 1월 금통위 ⑤ 외국인 국채선물 수급 방향 전환</div></div></div>
+
+<h3>미국 국채</h3>
+<div class="cft"><div class="cft-row"><span class="cft-k now">📍 현재 상태</span><div>미 10년물 <span class="num">4.85%</span>(11/25), 2년물 <b>4.61%</b>, 30년물 <b>5.24%</b>. 11/18의 5.07%에서 <span class="down">−22bp</span> 내려왔다. 한국 10년물과의 차이는 <b>약 109bp(1.09%p)</b>. 미 10월 PCE는 전년 대비 <b>3.8%</b>(9월 3.6%), 근원 <b>3.3%</b>(예상 3.2%, 2023년 이후 최고)였고, 3분기 GDP(잠정)는 연율 <b>4.3%</b>(속보 3.4%)로 상향됐다.</div></div><div class="cft-row"><span class="cft-k out">🔭 전망</span><div>연준(의장 케빈 워시)은 10월 FOMC에서 10대 2로 동결했지만 2명이 인상을 주장했고, 10월 의사록에서는 "거의 모든 참석자"가 추가 인상 필요 가능성을 크게 봤다. CME 페드워치의 12월 0.25%p 인상 확률은 <b>98.1~99.8%</b>(보도 시점별)다. 한은이 올려도 연준이 더 올리면 <b>한국 장기금리의 하방은 미국 장기금리가 막는다</b>.</div></div><div class="cft-row"><span class="cft-k trg">⚡ 트리거</span><div>① 12월 8~9일 FOMC(점도표·의장 발언) ② 11월 PCE·CPI 등 후속 물가 ③ 한국 포함 14개국 과잉생산 관세 확정 과정(서면 의견 2027년 1월 5일까지)</div></div></div>
+
+<h2>③ 환율 — 한은이 올려도 "금리차"는 그대로</h2>
+<table>
+<tr><th>구분</th><th>수치</th><th>시점</th></tr>
+<tr><td class="l">원/달러</td><td class="num">1,342.4원 (-3.1원)</td><td>11/26 10:07 (다음금융)</td></tr>
+<tr><td class="l">전일 기준가</td><td class="num">1,345.5원</td><td>11/25</td></tr>
+<tr><td class="l">10월 말 / 9월 말</td><td class="num">1,334.3원 / 1,352.8원</td><td>비즈워치 보도</td></tr>
+<tr><td class="l">정책금리 격차</td><td class="num">연준 3.75~4.00% vs 한은 3.25%</td><td>미국이 0.50~0.75%p 높음</td></tr>
+<tr><td class="l">장기금리 격차</td><td class="num">미 10년 4.85% − 한 10년 3.761% = 109bp</td><td>11/25</td></tr>
+</table>
+<p class="caption">환율은 서비스별 기준(매매기준율·전신환·장중)이 달라 몇 원씩 차이가 날 수 있다. 같은 출처(다음금융) 값끼리만 비교했다.</p>
+<div class="cft"><div class="cft-row"><span class="cft-k now">📍 현재 상태</span><div>원/달러는 1,340원대 초반(1,342.4원). 10월 말(1,334.3원)보다 +0.6% 높고 9월 말(1,352.8원)보다는 −0.8% 낮다. 미국의 한국 관세는 USTR 발표에서 <b>15% 상한이 유지</b>됐다(기존 합의 수준, 일본·EU·대만도 15%).</div></div><div class="cft-row"><span class="cft-k out">🔭 전망</span><div>이론상 금리 인상은 원화 지지 요인이다. 그러나 연준이 12월 인상을 사실상 예약해 놓은 상태여서 <b>한은의 25bp가 격차를 줄이지 못한다</b>. 환율은 금리보다 ① 반도체 수출과 외국인 증시 수급, ② 달러 강세 흐름이 더 크게 좌우할 가능성이 높다. 원화에 부담이 될 수 있는 변수는 미디어펜이 전한 <b>"투자 약속 이행이 미흡하면 최대 25% 검토"</b> 경고다.</div></div><div class="cft-row"><span class="cft-k trg">⚡ 트리거</span><div>① 12/8~9 FOMC ② 총재의 추가 인상 시사 강도 ③ 관세 서면 의견 마감(2027.1.5)과 최종 세율 ④ 외국인 순매수·순매도 전환</div></div></div>
+
+<h2>④ 국내 주식 — 금리보다 반도체가 먼저다</h2>
+<table>
+<tr><th>지수</th><th>11/24 종가</th><th>11/25 종가</th><th>등락</th><th>11/26 장중</th></tr>
+<tr><td class="l">코스피</td><td>5,006.03</td><td class="num">4,697.51</td><td><span class="down">−6.16%</span></td><td>4,780.95 (<span class="up">+1.78%</span>)</td></tr>
+<tr><td class="l">코스닥</td><td>665.88</td><td class="num">650.64</td><td><span class="down">−2.29%</span></td><td>666.64 (<span class="up">+2.46%</span>)</td></tr>
+</table>
+<p class="caption">출처: 다음금융 일별 시세. 장중 수치는 11/26 오전(10시대) 시점으로, 확정 종가가 아니다. 코스피 9월 23일 종가 7,080.92(최근 60거래일 중 최고)와 비교하면 11/25 종가는 −33.7% 낮다.</p>
+<div class="cft"><div class="cft-row"><span class="cft-k now">📍 현재 상태</span><div>코스피는 11/24 <span class="up">+6.32%</span> 급등(5,006.03)한 뒤 11/25 <span class="down">−6.16%</span> 급락(4,697.51)했다. 10월 28일 종가(6,012.44) 대비로는 <span class="down">−21.9%</span>, 9월 23일 고점 대비 <span class="down">−33.7%</span>. 11/26 오전에는 삼성전자 174,900원(<span class="up">+2.46%</span>), SK하이닉스 1,083,000원(<span class="up">+5.15%</span>)으로 반등 중(장중). 반면 실물은 뜨겁다 — 11/1~20 반도체 수출 <b>385억 달러(+294.4%)</b>, 수출 비중 <b>49.7%</b>.</div></div><div class="cft-row"><span class="cft-k out">🔭 전망</span><div>금리 인상은 ① 미래 이익의 현재가치(할인율)를 낮춰 성장주에 불리하고 ② 빚내서 산 투자자(신용융자)의 이자 부담을 키우며 ③ 은행 등 금리 수혜 업종에는 상대적으로 우호적이다. 다만 이번 인상은 거의 전원이 예상했던 일이라 <b>가격 충격은 제한적</b>일 수 있다. 오히려 한은의 성장률 상향(3.9%·4.1%)은 이익 전망에 힘을 싣는 재료다. 결국 방향은 <b>반도체 사이클과 미국 기술주 금리 민감도</b>가 정한다.</div></div><div class="cft-row"><span class="cft-k trg">⚡ 트리거</span><div>① 총재의 추가 인상 시사 강도 ② 엔비디아·마이크론 등 미국 반도체주 흐름 ③ 12월 초 발표될 11월 수출입 통계 ④ 12/8~9 FOMC ⑤ 외국인 수급(순매도 전환 여부)</div></div></div>
+
+<h2>⑤ 미국 주식 — 한은이 아니라 연준과 관세가 움직인다</h2>
+<table>
+<tr><th>지수</th><th>11/24</th><th>11/25 마감</th><th>일간</th></tr>
+<tr><td class="l">S&amp;P 500</td><td>7,201.09</td><td class="num">7,182.78</td><td><span class="down">−0.25%</span></td></tr>
+<tr><td class="l">나스닥 종합</td><td>23,733.54</td><td class="num">23,585.80</td><td><span class="down">−0.62%</span></td></tr>
+<tr><td class="l">다우존스</td><td>50,018.70</td><td class="num">50,182.95</td><td><span class="up">+0.33%</span></td></tr>
+</table>
+<p class="caption">출처: FMP 일별 종가. 미국 증시는 11/26 추수감사절 휴장.</p>
+<div class="cft"><div class="cft-row"><span class="cft-k now">📍 현재 상태</span><div>11/25 S&amp;P 500 <b>7,182.78</b>, 나스닥 <b>23,585.80</b>, 다우 <b>50,182.95</b>. 변동폭이 크다 — 11/20 S&amp;P <span class="down">−3.70%</span>·나스닥 <span class="down">−5.28%</span> 급락 뒤 11/23 S&amp;P <span class="up">+4.73%</span>·나스닥 <span class="up">+6.51%</span> 반등했다. 다우는 11/4 종가(53,356.12) 대비 <span class="down">−5.9%</span>. 10월 PCE 3.8%·근원 3.3%로 12월 연준 인상 확률은 98.1~99.8%다.</div></div><div class="cft-row"><span class="cft-k out">🔭 전망</span><div>미국 주식에 한은 금리는 직접 변수가 아니다. 핵심은 <b>연준 인상 경로와 PCE·관세</b>다. 기술주는 장기금리(10년 4.85%)에 민감해 금리가 5%에 다시 가까워질수록 부담이 커진다. USTR이 한국 관세에 15% 상한 유지를 밝힌 점은 한국 수출주에 안도 재료지만, 14개국 대상 301조 관세 절차 자체는 내년 1월 시행 가능성이 거론되는 불확실성이다.</div></div><div class="cft-row"><span class="cft-k trg">⚡ 트리거</span><div>① 12/8~9 FOMC ② 11월 PCE·CPI 후속 ③ 연휴 이후 첫 정상 거래일(11/30) 반응 ④ 관세 서면 의견·공청회 일정 ⑤ AI·반도체 투자 우려</div></div></div>
+
+<h2>⑥ 금·은 — 달러와 실질금리의 게임</h2>
+<table>
+<tr><th>자산</th><th>11/25 마감(선물)</th><th>11/26 오전(선물)</th><th>등락</th></tr>
+<tr><td class="l">금 (달러/온스)</td><td>3,535.8</td><td class="num">3,579.6</td><td><span class="up">+1.24%</span></td></tr>
+<tr><td class="l">은 (달러/온스)</td><td>40.06</td><td class="num">41.15</td><td><span class="up">+2.73%</span></td></tr>
+</table>
+<p class="caption">출처: FMP 선물 시세(금 GCUSD·은 SIUSD). 현물 가격과는 몇십 달러 차이가 날 수 있다. 11/24 뉴욕 종가는 금 3,556.19달러·은 40.94달러로 보도됐다(코리안투데이). 국내 KRX 금은 11/25 종가 g당 152,200원.</p>
+<div class="cft"><div class="cft-row"><span class="cft-k now">📍 현재 상태</span><div>금은 3,500달러대 중반에서 거래된다. 11/25에는 달러 강세와 연준 긴축 우려로 한때 3,490달러 아래까지 밀렸다가 선물 기준 3,535.8달러로 마감했고, 11/26 오전엔 <span class="up">+1.24%</span> 반등했다. 은은 40달러선 공방(11/25 장중 한때 40달러 하회) 끝에 41.15달러. 금은 비율은 11/25 선물 기준 약 <b>88배</b>다.</div></div><div class="cft-row"><span class="cft-k out">🔭 전망</span><div>금·은은 이자를 주지 않아 <b>금리가 오르고 달러가 강해질 때 보유 기회비용이 커져 약세</b>를 보이는 게 전형이다. 한은의 25bp만으로 움직일 변수는 아니고, 연준의 12월 인상·PCE 3.8% 같은 미국발 신호가 더 직접적이다. 은은 산업 수요 비중이 커 경기 둔화 우려에 금보다 변동이 크다(오늘 반등폭 은이 금의 두 배 이상).</div></div><div class="cft-row"><span class="cft-k trg">⚡ 트리거</span><div>① 달러 강세/약세 방향 ② 12/8~9 FOMC와 미 후속 물가 ③ 지정학·관세 뉴스(안전자산 수요) ④ 국내는 환율과 KRX 금 가격</div></div></div>
+
+<h2>⑦ 비트코인 — 유동성이 조여질 때 가장 먼저 흔들리는 자산</h2>
+<div class="cft"><div class="cft-row"><span class="cft-k now">📍 현재 상태</span><div>비트코인은 11/26 오전 약 <b>60,519달러</b>(<span class="up">+1.30%</span>, 전일 대비). 11월 중순에도 6만 2천~6만 4천 달러대에서 등락했다(11/15 장중 저점 약 6만 2,006달러, 위키트리 보도). 11/5~13 미국 현물 비트코인 ETF는 <b>7거래일 연속 순유출(약 19억 1,000만 달러)</b>이었다.</div></div><div class="cft-row"><span class="cft-k out">🔭 전망</span><div>위험자산인 비트코인은 금리 인상·달러 강세 국면에서 압박을 받는다. 한은 인상의 직접 영향은 작지만, <b>12월 연준 인상 확률(98.1~99.8%)</b>과 ETF 자금 방향이 가격을 좌우할 가능성이 크다. 국내에서는 환율(1,342원대)과 거래소 시세 괴리가 원화 가격을 흔든다.</div></div><div class="cft-row"><span class="cft-k trg">⚡ 트리거</span><div>① 미국 현물 ETF 순유입/순유출 전환 ② 12/8~9 FOMC ③ 달러 강세 ④ 기술주(특히 AI·반도체) 흐름과의 동조 여부</div></div></div>
+
+<h2>⑧ 가계부채·대출·부동산 — 이자 청구서는 시차를 두고 온다</h2>
+<table>
+<tr><th>항목</th><th>수치</th><th>시점·출처</th></tr>
+<tr><td class="l">은행 가계대출 금리(신규)</td><td class="num">4.96%</td><td>2026년 9월 · 5개월 연속 상승</td></tr>
+<tr><td class="l">주택담보대출 금리(신규)</td><td class="num">4.88%</td><td>9월 · 2012년 4월 이후 최고</td></tr>
+<tr><td class="l">일반 신용대출 금리</td><td class="num">6.49%</td><td>9월</td></tr>
+<tr><td class="l">코픽스(신규취급액)</td><td class="num">3.62%</td><td>10월 · 2년 8개월 만의 최고</td></tr>
+<tr><td class="l">가계신용 잔액</td><td class="num">2030조 5000억원</td><td>3분기 말 · 한국은행(11/18) · 사상 최대</td></tr>
+<tr><td class="l">변동금리 대출 비중</td><td class="num">57.3%</td><td>8월 말</td></tr>
+<tr><td class="l">취약차주 대출 연체율</td><td class="num">10.39%</td><td>2분기 말</td></tr>
+<tr><td class="l">0.25%p 인상 시 이자 부담</td><td class="num">약 3조 3000억원</td><td>한국은행 추산(보도 인용)</td></tr>
+</table>
+<p class="caption">자료: 파이낸셜뉴스(뉴스1) 11/19 보도. 은행권 금리는 보도에서 출처 기관을 따로 밝히지 않았다.</p>
+<div class="cft"><div class="cft-row"><span class="cft-k now">📍 현재 상태</span><div>한은은 3억원 변동금리 대출자의 이자가 연 75만원 늘어나는 수준으로 추산한다(보도 인용). 주택관련대출 잔액은 사상 처음 1,200조원을 넘었다. 서울 아파트는 11/16 주 <b>+0.03%</b>(전주 +0.07%)로 5주째 둔화, 서울 25개 자치구 중 7곳이 약세다. 강남구 <span class="down">−0.30%</span>(15주 연속), 서초구 <span class="down">−0.31%</span>(15주 연속), 송파구 <span class="down">−0.42%</span>(11주 연속)이고 경기는 <span class="up">+0.21%</span>, 전국 <span class="up">+0.06%</span>. 서울 전세는 <span class="up">+0.14%</span>.</div></div><div class="cft-row"><span class="cft-k out">🔭 전망</span><div>이번 인상분은 <b>코픽스 공시를 거쳐 변동금리 대출에 시차를 두고</b> 반영된다. 매매는 둔화되는데 전세는 오르는 구도라 "집값 하락 → 전세 불안"과 "금리 부담 → 취약차주 연체" 두 경로를 함께 봐야 한다. 부동산 시장 전망은 전문가 사이에서도 연말까지 하락세와 보합~소폭 하락으로 갈린다(머니투데이 보도). 취약차주에게는 내년 상반기가 고비라는 진단도 나온다(파이낸셜뉴스 보도).</div></div><div class="cft-row"><span class="cft-k trg">⚡ 트리거</span><div>① 11월 코픽스 공시(12월 중순) ② 은행 가계대출 금리·가계대출 증가폭 ③ 한국부동산원 주간 동향(매주 목요일) ④ 12월 분양 예정인 디에이치 반포124 등 강남권 변수 ⑤ 취약차주·자영업자 연체율</div></div></div>
+
+<h2>⑨ 내수와 실물 — 반도체가 끌고, 가계는 따라오지 못한다</h2>
+<table>
+<tr><th>지표</th><th>수치</th><th>시점</th></tr>
+<tr><td class="l">11월 1~20일 수출</td><td class="num">774억 달러 (<span class="up">+101.5%</span>)</td><td>관세청 잠정(11/23 발표)</td></tr>
+<tr><td class="l">반도체 수출</td><td class="num">385억 달러 (<span class="up">+294.4%</span>)</td><td>비중 49.7% (전년 동기 25.4%)</td></tr>
+<tr><td class="l">누적 수출</td><td class="num">1조 76억 달러</td><td>1월 1일~11월 20일 · 사상 첫 1조 달러</td></tr>
+<tr><td class="l">3분기 성장률(전기비)</td><td class="num">+1.0%</td><td>한은 전망 0.3%</td></tr>
+<tr><td class="l">3분기 민간소비(전기비)</td><td class="num"><span class="down">−0.2%</span></td><td>—</td></tr>
+<tr><td class="l">소비자심리지수</td><td class="num">103.1 (−2.3p)</td><td>11월</td></tr>
+<tr><td class="l">10월 소비자물가·근원물가</td><td class="num">2.8% · 2.8%</td><td>전년 동월 대비</td></tr>
+</table>
+<div class="cft"><div class="cft-row"><span class="cft-k now">📍 현재 상태</span><div>수출은 전년의 두 배 수준인데 소비는 뒷걸음질한다. 반도체 비중이 절반에 가까워 <b>경기와 증시가 반도체 한 업종에 쏠려 있다</b>. 이 상태에서 금리를 올리면 수출 대기업보다 내수·자영업의 부담이 먼저 커진다.</div></div><div class="cft-row"><span class="cft-k out">🔭 전망</span><div>한은은 내년 성장률을 4.1%로 보지만 이 성장은 수출이 이끄는 것이다. 금리 인상의 비용은 내수 부문에, 혜택(이익 상향)은 반도체 대기업에 집중되는 <b>"양극화형 긴축"</b>이 될 위험이 있다. 반도체 가격 흐름이 꺾이면 성장률 전망과 금리 경로가 동시에 흔들릴 수 있다.</div></div><div class="cft-row"><span class="cft-k trg">⚡ 트리거</span><div>① 12월 초 11월 수출입 통계(관세청) ② 11월 소비자물가 ③ 12월 소비 심리 ④ 반도체 가격·글로벌 AI 투자 뉴스</div></div></div>
+
+<h2>⑩ 앞으로 — 세 가지 시나리오 (확률은 부여하지 않음)</h2>
+<div class="scen">
+<h3>🅰️ 기본: "3.25% 정점론" — 한 번 쉬고 데이터를 본다</h3>
+<p>총재가 추가 인상 가능성은 열어두되 "데이터 의존"을 강조하는 경우. 올해 세 번의 인상으로 누적 0.75%p가 쌓였고, 내년 1월 전까지 한 번 더 확인할 시간이 있다.</p>
+<p><b>시장 반응:</b> 국고채 단기물 안정, 장기물은 미국 금리를 따라 움직임. 원/달러는 1,340원대 박스권 가능성. 코스피는 반도체 사이클이 방향 결정.</p>
+<p><b>확인 신호:</b> 총재가 "금리 경로는 데이터에 달렸다"는 취지로 발언, 점도표 중간값이 3.25%에 머묾.</p>
+</div>
+<div class="scen">
+<h3>🅱️ 매파: "3.50%까지 간다" — 한 번 더 올린다</h3>
+<p>8월 점도표에서 3.50%를 찍은 점이 6개(21개 중)였다는 점이 이 경로의 근거다. 한화투자증권은 금통위 이후 국고 3년 3.80%·10년 4.10%까지의 상승을 시나리오로 제시했다.</p>
+<p><b>시장 반응:</b> 단기금리 상승·장단기 스프레드 확대 압력, 원화는 단기 지지받지만 연준 인상과 겹쳐 효과가 상쇄될 수 있음, 성장주·가상자산은 부담, 변동금리 차주 이자 부담 가중.</p>
+<p><b>확인 신호:</b> 총재가 "추가 인상" 문구를 명시하거나 점도표 중간값이 3.50%로 이동, 11월 물가가 2%대 후반을 유지.</p>
+</div>
+<div class="scen">
+<h3>🅲 하방: "성장 둔화가 먼저 온다" — 인상 사이클 조기 종료</h3>
+<p>민간소비 −0.2%, 소비심리 103.1(−2.3p), 취약차주 연체 같은 약한 고리가 터지거나 반도체 사이클이 꺾이는 경우. NH투자증권의 시각처럼 3.50%에 가까워질수록 장기금리는 내려갈 요인이 된다.</p>
+<p><b>시장 반응:</b> 장기 국채 강세(금리 하락), 코스피 변동성 확대, 금·은은 달러 방향에 연동.</p>
+<p><b>확인 신호:</b> 월별 소비·고용 둔화, 반도체 수출 증가율 급감, 부동산 PF·연체 지표 악화.</p>
+</div>
+
+<h2>⑪ 핵심 체크리스트 — 앞으로 볼 날짜</h2>
+<ul class="body-list">
+<li><b>오늘 11시 10분</b> — 한은 총재 기자간담회: 표결·추가 인상·점도표 문구 확인 <b>(이 기사 ①절 반영)</b></li>
+<li><b>오늘</b> — 기획재정부 12월 국고채 발행계획 발표(이투데이 보도): 장기금리 수급 변수</li>
+<li><b>11월 27일(금)</b> — 미 증시 추수감사절 다음 날 단축 거래, 11월 30일(월) 정상 거래 재개</li>
+<li><b>12월 초</b> — 11월 수출입 통계·11월 소비자물가: 반도체 호황과 물가의 지속성 확인</li>
+<li><b>12월 8~9일</b> — 미 FOMC: 0.25%p 인상 확률 98.1~99.8%, 한미 금리차의 향방</li>
+<li><b>12월 중순</b> — 11월 코픽스 공시: 이번 인상분이 변동금리 대출에 실리는 시점</li>
+<li><b>2027년 1월 5일</b> — 미국 14개국 과잉생산 관세 서면 의견 접수 마감(한국은 15% 상한 유지 방침)</li>
+<li><b>내년 1월</b> — 다음 금통위: 3.25% 유지냐 추가 인상이냐</li>
+<li><b>매주 목요일</b> — 한국부동산원 주간 아파트 가격 동향</li>
+</ul>
+
+<div class="callout">
+<b>💡 종합 — 지금은 어떤 국면인가</b><br>
+이번 인상은 <span class="key">반도체가 만든 성장(3.9%·4.1%)과 2%대 후반 물가</span>를 근거로 한 선제 긴축의 세 번째 단계다. 시장은 인상을 이미 반영했고, 채권은 "마지막 인상"에 먼저 베팅해 금리를 내려놨다. 그래서 <b>이번 인상의 시장 영향은 '결정'보다 '그 다음에 하는 말'에서 나온다</b>. 자산별로 보면 ① 단기 금리·환율은 총재 신호에, ② 장기 금리·주식·가상자산은 12월 연준과 반도체에, ③ 가계·부동산은 코픽스를 통한 시차에 달려 있다.
+</div>
+
+<h2>🔎 숫자 검증표 — 어디서 확인했나</h2>
+<p style="font-size:14px">이 기사의 수치는 아래 기준으로 걸렀다. <b>A</b>: 서로 다른 둘 이상의 출처가 일치하거나 1차 자료로 확인, <b>B</b>: 단일 출처이거나 시점(장중·잠정)이 달라 표기를 제한해 사용. 출처가 엇갈린 수치(예: 내년 1월 추가 인상 확률, 삼성전자·SK하이닉스 11/25 하락폭)는 <b>본문에서 제외</b>했다.</p>
+<table class="vt">
+<tr><th>항목</th><th>수치</th><th>등급</th><th>출처·비고</th></tr>
+<tr><td>기준금리 결정</td><td>3.00→3.25%</td><td class="c">A</td><td>뉴스핌·미디어펜·헤럴드경제·파이낸셜뉴스·이투데이·서울신문(11/26) 일치</td></tr>
+<tr><td>한은 경제전망</td><td>성장 3.9/4.1/3.0, 물가 2.7/2.4/2.1</td><td class="c">A</td><td>헤럴드경제 본문, 이투데이·서울신문·뉴스핌 헤드라인(성장률) 일치</td></tr>
+<tr><td>3분기 성장·물가</td><td>+1.0%, 2.8%/2.8%</td><td class="c">A</td><td>뉴스핌·미디어펜·헤럴드경제</td></tr>
+<tr><td>사전 전망</td><td>전문가 14명 전원, 증권사 16곳</td><td class="c">A</td><td>이투데이, 서울경제TV·세이프머니</td></tr>
+<tr><td>국고채 3년·10년</td><td>3.583% / 3.761% (11/25)</td><td class="c">A/B</td><td>3년물: 복수 매체 일치, 10년물: 글로벌이코노믹 기준(장중·마감 구분 미표기)</td></tr>
+<tr><td>미 국채·연준</td><td>10년 4.85%, 정책금리 3.75~4.00%</td><td class="c">A</td><td>FMP 재무부 금리, 파이낸셜뉴스·헤럴드·FAM타임스·블록미디어</td></tr>
+<tr><td>미 10월 PCE·3분기 GDP</td><td>3.8%/근원 3.3%, 4.3%</td><td class="c">A</td><td>아시아경제·MTN(상무부 11/25 발표 인용)</td></tr>
+<tr><td>12월 FOMC 인상 확률</td><td>98.1~99.8%</td><td class="c">B</td><td>CME 페드워치 인용, 보도 시점이 달라 범위로 표기</td></tr>
+<tr><td>코스피·코스닥</td><td>종가 4,697.51 / 650.64</td><td class="c">A</td><td>다음금융 일별 시세, 뉴스핌 보도</td></tr>
+<tr><td>미국 3대 지수</td><td>11/25 종가</td><td class="c">A</td><td>FMP, INVEST STORY 11/26 개장호 일치</td></tr>
+<tr><td>원/달러</td><td>1,342.4원 (11/26 10:07)</td><td class="c">B</td><td>다음금융(장중). 서비스별 기준 차이 가능</td></tr>
+<tr><td>금·은</td><td>선물 시세</td><td class="c">B</td><td>FMP 선물, 11/24 종가 등 국내 보도와 대조해 수준 일치 확인(현물과 차이)</td></tr>
+<tr><td>비트코인</td><td>약 6만 519달러</td><td class="c">B</td><td>FMP 실시간, 11월 중순 보도(6만 2천~6만 4천 달러대)와 같은 범위</td></tr>
+<tr><td>수출</td><td>774억 달러(+101.5%), 반도체 385억(+294.4%)</td><td class="c">A</td><td>관세청 잠정 · 시사저널e·경제타임스·아주경제</td></tr>
+<tr><td>가계대출·가계신용</td><td>4.96%, 4.88%, 2030조 5000억</td><td class="c">A/B</td><td>파이낸셜뉴스(뉴스1). 한국은행 11/18 발표 수치 포함</td></tr>
+<tr><td>서울 아파트</td><td>+0.03% (11/16 주)</td><td class="c">A</td><td>한국부동산원 · 연합뉴스·머니투데이</td></tr>
+<tr><td>미국 관세</td><td>한국 15% 상한 유지</td><td class="c">A</td><td>파이낸셜뉴스·경향신문·미디어펜(USTR 발표 11/25)</td></tr>
+</table>
+<p class="src">※ 등락률·금리차(bp)·고점 대비 비율은 위 원자료로 편집부가 직접 계산했다.</p>
+
+<div class="disc">
+⚠️ 본 기사는 정보 제공용 분석이며 특정 종목·자산의 매수·매도 권유가 아닙니다. 편집자는 라이선스를 보유한 투자자문가가 아니며, 투자의 최종 판단과 책임은 투자자 본인에게 있습니다. 시나리오는 편집부 판단이며 확률을 부여하지 않았고, 총재 간담회·12월 FOMC 등 이후 사건의 결과에 따라 달라질 수 있습니다. 본문 수치는 한국은행·관세청·한국부동산원·미 상무부·USTR 발표 및 뉴스핌·미디어펜·헤럴드경제·파이낸셜뉴스·이투데이·서울신문·글로벌이코노믹·아시아경제·MTN·머니투데이·연합뉴스·위키트리 보도와 다음금융·FMP 시세를 종합한 것으로, 장중 수치는 확정 종가와 다를 수 있습니다. 금통위 발언 인용은 언론 보도를 통한 재인용이며 정확한 전문은 한국은행 자료를 확인하시기 바랍니다.
+</div>
+
+<p class="homelink"><a href="/">← 다른 리포트 보러가기</a></p>
+</div>
+</body>
+</html>
