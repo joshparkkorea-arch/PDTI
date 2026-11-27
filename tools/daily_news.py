@@ -208,6 +208,7 @@ def fetch_investors(token, app_key, app_secret):
 # ===================== 사고#42: 확정 수급 이력 · 유가 정산가 · 금액 단위 =====================
 _FLOW_FACTS = []      # 프롬프트에 넣을 '확정 수급' 줄(코드 계산)
 _FLOW_STATE = {}      # 결정적 교정용: {"KOSPI": {"frgn": (sign, days), ...}}
+_ECOS_FACTS = []      # 한국은행 ECOS 공식 통계 줄(코드 계산) — 2026-11-26 도입
 _OIL_SETTLE = {}      # {"WTI": (정산가, 등락%), "브렌트": (...)}
 _IDX_WEEK = {}        # 사고#43: {"필라델피아 반도체지수": ("11/13(금)", 일간%, 주간%), ...}
 
@@ -330,6 +331,109 @@ def build_flow_facts(now, mode):
                        "수급표를 만들면 외국인·기관·개인 칸을 위 일별 값으로 모두 채우세요. '○거래일 연속'은 시장(코스피·코스닥)과 주체(외국인·기관)별 "
                        "위 값을 쓰고, 문장에 시장을 꼭 밝히세요. '마감 직후 잠정치'로 표시된 값은 본문에 '잠정'이라고 밝히세요.)")
     print(f"[flow-hist] 확정 수급 {len(_FLOW_FACTS)}줄 확보({src})")
+
+# ===================== 한국은행 ECOS 공식 통계 (2026-11-26 도입) =====================
+# 기준금리·국고채·원/달러 매매기준율·소비자물가를 한은 1차 자료로 프롬프트에 주입한다.
+# 키는 환경변수 ECOS_API_KEY(Actions 시크릿)로만 받으며 로그·예외 메시지에 노출하지 않는다.
+# 실패해도 발행은 계속(해당 줄만 생략).
+def _ecos_rows(key, stat, cycle, start, end, item, n=100):
+    url = f"https://ecos.bok.or.kr/api/StatisticSearch/{key}/json/kr/1/{n}/{stat}/{cycle}/{start}/{end}/{item}"
+    try:
+        j = json.loads(_http_text(url, timeout=20))
+    except Exception as e:
+        raise RuntimeError(f"ECOS {stat} 호출 실패: {e}".replace(key, "***")[:200])
+    s = j.get("StatisticSearch")
+    if not s:
+        msg = str((j.get("RESULT") or {}).get("MESSAGE", "응답 없음"))
+        raise RuntimeError(f"ECOS {stat}: {msg}".replace(key, "***")[:200])
+    out = []
+    for r in s.get("row", []):
+        try:
+            out.append((r["TIME"], float(r["DATA_VALUE"])))
+        except (TypeError, ValueError, KeyError):
+            pass
+    out.sort()
+    return out
+
+def _fd(t):
+    """'YYYYMMDD' → 'M/D'"""
+    return f"{int(t[4:6])}/{int(t[6:8])}"
+
+def build_ecos_facts(now):
+    """한국은행 ECOS → 프롬프트용 '한국은행 공식 통계' 줄. 숫자는 코드가 계산(bp·전년비)."""
+    _ECOS_FACTS.clear(); _ECOS_FACTS_RAW.clear()
+    key = os.environ.get("ECOS_API_KEY", "").strip()
+    if not key:
+        print("::notice title=ECOS 키 없음::ECOS_API_KEY 미설정 — 한국은행 공식 통계 블록 생략")
+        return
+    end = now.strftime("%Y%m%d")
+    s21 = (now - timedelta(days=21)).strftime("%Y%m%d")
+    s500 = (now - timedelta(days=500)).strftime("%Y%m%d")
+    lines, fails = [], []
+    base_now = None
+    try:   # 기준금리(일별) — 마지막 변경일 추적
+        rows = _ecos_rows(key, "722Y001", "D", s500, end, "0101000", n=700)
+        cur_t, cur_v = rows[-1]
+        i = len(rows) - 1
+        while i > 0 and rows[i - 1][1] == cur_v:
+            i -= 1
+        base_now = cur_v
+        if i > 0:
+            lines.append(f"기준금리: 연 {cur_v:.2f}% ({_fd(rows[i][0])}부터 적용, 직전 {rows[i-1][1]:.2f}%, ECOS {_fd(cur_t)} 조회)")
+        else:
+            lines.append(f"기준금리: 연 {cur_v:.2f}% (최근 500일 변경 없음, ECOS {_fd(cur_t)} 조회)")
+    except Exception as e:
+        fails.append(str(e))
+    for label, item in (("국고채 3년", "010200000"), ("국고채 10년", "010210000")):
+        try:
+            rows = _ecos_rows(key, "817Y002", "D", s21, end, item)
+            if len(rows) < 2:
+                raise RuntimeError(f"ECOS {label}: 데이터 부족")
+            (t, v), (tp, vp) = rows[-1], rows[-2]
+            seg = f"{label} {v:.3f}%({_fd(t)}) · 전 거래일({_fd(tp)}) 대비 {round((v - vp) * 100, 1):+.1f}bp"
+            if len(rows) >= 6:
+                t5, v5 = rows[-6]
+                seg += f" · 5거래일 전({_fd(t5)}) 대비 {round((v - v5) * 100, 1):+.1f}bp"
+            if base_now is not None:
+                seg += f" · 기준금리와의 차 {round((v - base_now) * 100, 1):+.1f}bp"
+            lines.append(seg)
+            _ECOS_FACTS_RAW[label] = rows[-1]
+        except Exception as e:
+            fails.append(str(e))
+    if "국고채 3년" in _ECOS_FACTS_RAW and "국고채 10년" in _ECOS_FACTS_RAW:
+        a, b = _ECOS_FACTS_RAW["국고채 3년"], _ECOS_FACTS_RAW["국고채 10년"]
+        if a[0] == b[0]:
+            lines.append(f"국고채 10년-3년 스프레드 {round((b[1] - a[1]) * 100, 1):+.1f}bp({_fd(a[0])})")
+    try:
+        rows = _ecos_rows(key, "731Y001", "D", s21, end, "0000001")
+        (t, v), (tp, vp) = rows[-1], rows[-2]
+        lines.append(f"원/달러 매매기준율 {v:,.1f}원({_fd(t)}) · 전 거래일({_fd(tp)}) 대비 {v - vp:+.1f}원 (장중 시세 아님)")
+    except Exception as e:
+        fails.append(str(e))
+    try:   # 소비자물가지수 총지수(2020=100) 전년동월비
+        s14 = (now.replace(day=1) - timedelta(days=430)).strftime("%Y%m")
+        rows = _ecos_rows(key, "901Y009", "M", s14, now.strftime("%Y%m"), "0")
+        t, v = rows[-1]
+        prev_y = f"{int(t[:4]) - 1}{t[4:6]}"
+        d = dict(rows)
+        if prev_y in d and len(rows) >= 2:
+            yoy = (v / d[prev_y] - 1) * 100
+            mom = (v / rows[-2][1] - 1) * 100
+            lines.append(f"소비자물가지수(총지수) {t[:4]}년 {int(t[4:6])}월 전년동월비 {yoy:+.1f}% · 전월비 {mom:+.1f}% (지수 {v:.2f}, 통계청 작성·ECOS 수록)")
+    except Exception as e:
+        fails.append(str(e))
+    for f in fails:
+        print(f"::warning title=ECOS 일부 실패::{f}")
+    if not lines:
+        return
+    _ECOS_FACTS.append("[한국은행 공식 통계(ECOS) — 1차 자료. 아래 값은 코드가 계산한 확정치]: " + " | ".join(lines))
+    _ECOS_FACTS.append("(ECOS 사용 규칙 — 기준금리·국고채(3년·10년) 금리·원/달러 매매기준율·소비자물가 전년비는 위 값만 쓰세요. "
+                       "웹 검색 기사 값과 다르면 위 값을 따르고 날짜를 함께 밝히세요. 날짜가 오늘보다 앞서면 '○일 기준'으로 쓰고 오늘 값처럼 쓰지 마세요. "
+                       "국고채 금리 변동은 위 bp 계산값을 그대로 옮기세요. 매매기준율은 장중 시세가 아니라 고시 기준환율이며 USD/KRW 현재 시세(지표표)와 구분하세요.)")
+    print(f"[ecos] 공식 통계 {len(lines)}줄 확보" + (f" (실패 {len(fails)})" if fails else ""))
+
+_ECOS_FACTS_RAW = {}
+
 
 def fetch_us_index_week():
     """사고#43: 미 주요 지수의 마지막 거래일 '하루' 등락과 '주간'(직전 주 마지막 종가 대비) 등락. 야후 일봉."""
@@ -2110,6 +2214,8 @@ def _ai_user_prompt(mode, date_kst, items, asof, vol, rank_up, rank_dn, flows, u
     elif flows:
         lines.append("수급(KIS 응답, 단위 불명 — 금액으로 인용 금지): " + "; ".join(
             f'{m} 외 {v.get("frgn")} 기 {v.get("orgn")} 개 {v.get("indv")}' for m, v in flows.items()))
+    if _ECOS_FACTS:
+        lines.extend(_ECOS_FACTS)
     if _OIL_SETTLE:
         lines.append("유가 간밤 정산가(NYMEX·ICE, 전 정산 대비): " + ", ".join(
             f"{k} ${v[0]:,.2f}({v[1]:+.2f}%)" for k, v in _OIL_SETTLE.items())
@@ -3107,6 +3213,7 @@ def selftest(token, key, sec):
     print("KIS 키:", "있음" if (key and sec) else "없음")
     print("ANTHROPIC_API_KEY:", "있음" if os.environ.get("ANTHROPIC_API_KEY", "").strip() else "없음(→템플릿 모드)")
     print("토큰:", "발급 성공" if token else "발급 실패/없음")
+    print("ECOS_API_KEY:", "있음" if os.environ.get("ECOS_API_KEY", "").strip() else "없음(→한은 공식 통계 생략)")
     items, asof = load_ticker()
     print("ticker.json:", f"{len(items)}종 수신" if items else "없음/실패", "| asof:", asof)
     if token:
@@ -3199,6 +3306,10 @@ def main():
         build_flow_facts(now, mode)
     except Exception as _e:
         sys.stderr.write(f"[flow-hist] 확정 수급 경고(무시): {_e}\n")
+    try:   # 한국은행 ECOS 공식 통계(기준금리·국고채·환율·물가)
+        build_ecos_facts(now)
+    except Exception as _e:
+        sys.stderr.write(f"[ecos] 경고(무시): {str(_e).replace(os.environ.get('ECOS_API_KEY','~~none~~'), '***')}\n")
     try:   # 사고#43: 미 지수 일간·주간 등락(‘주간’ 혼용 방지)
         fetch_us_index_week()
     except Exception as _e:
